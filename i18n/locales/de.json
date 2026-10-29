@@ -13,5 +13,24 @@
     "monthly": "Monatlich",
     "quarterly": "Vierteljährlich",
     "yearly": "Jährlich"
+  },
+  "costs": {
+    "title": "Kosten",
+    "columns": {
+      "name": "Name",
+      "category": "Kategorie",
+      "kind": "Art",
+      "amount": "Betrag",
+      "business": "Geschäftlich",
+      "when": "Wann"
+    }
+  },
+  "kind": {
+    "recurring": "Wiederkehrend",
+    "purchase": "Anschaffung"
+  },
+  "common": {
+    "yes": "Ja",
+    "no": "Nein"
   }
 }

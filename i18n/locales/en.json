@@ -13,5 +13,24 @@
     "monthly": "Monthly",
     "quarterly": "Quarterly",
     "yearly": "Yearly"
+  },
+  "costs": {
+    "title": "Costs",
+    "columns": {
+      "name": "Name",
+      "category": "Category",
+      "kind": "Kind",
+      "amount": "Amount",
+      "business": "Business",
+      "when": "When"
+    }
+  },
+  "kind": {
+    "recurring": "Recurring",
+    "purchase": "Purchase"
+  },
+  "common": {
+    "yes": "Yes",
+    "no": "No"
   }
 }
