@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { RecurringCost, Purchase, CostItem } from '~~/shared/types/calculation'
-import { totalAnnualRecurring, totalAnnualPurchases, filterByBusiness } from '~~/shared/utils/costs'
+import { totalAnnualRecurring, totalAnnualPurchases, filterByBusiness, totalsByCategory } from '~~/shared/utils/costs'
 
 const YEAR = 2026
 
@@ -134,5 +134,57 @@ describe('filterByBusiness', () => {
     // compiles only if the result is still a RecurringCost[]
     expect(totalAnnualRecurring(filterByBusiness(items, true))).toBe(1200)
     expect(totalAnnualRecurring(filterByBusiness(items, false))).toBe(50)
+  })
+})
+describe('totalsByCategory', () => {
+  it('gives the right sums per category', () => {
+    const purchasesItems: Purchase[] = [
+      purchase({ amount: 200}),
+      purchase({ amount: 50, category: 'food'})
+    ]
+     const recurringItems: RecurringCost[] = [
+      recurring({ amount: 100 }),
+      recurring({ amount: 600, category: 'food' })
+    ]
+    const categoryTotals = totalsByCategory(recurringItems, purchasesItems, YEAR);
+    expect(categoryTotals.housing).toEqual(1400)
+    expect(categoryTotals.food).toEqual(7250)
+  })
+  it('an empty category stays 0', () => {
+    const purchasesItems: Purchase[] = [
+      purchase({ amount: 200}),
+      purchase({ amount: 50, category: 'food'})
+    ]
+     const recurringItems: RecurringCost[] = [
+      recurring({ amount: 100 }),
+      recurring({ amount: 600, category: 'food' })
+    ]
+    const categoryTotals = totalsByCategory(recurringItems, purchasesItems, YEAR);
+    expect(categoryTotals.insurance).toEqual(0)
+  })
+  it('a purchase from another year is ignored', () => {
+    const purchasesItems: Purchase[] = [
+      purchase({ amount: 50, category: 'food', date: '2025-01-23'})
+    ]
+     const recurringItems: RecurringCost[] = [
+      recurring({ amount: 600, category: 'food' })
+    ]
+    const categoryTotals = totalsByCategory(recurringItems, purchasesItems, YEAR);
+    expect(categoryTotals.food).toEqual(7200)
+  })
+  it('adds up to the total annual cost', () => {
+    const purchases: Purchase[] = [
+      purchase({ amount: 200 }),
+      purchase({ amount: 50, category: 'food' })
+    ]
+    const recurringItems: RecurringCost[] = [
+      recurring({ amount: 100 }),
+      recurring({ amount: 600, category: 'food', interval: 'yearly' })
+    ]
+
+    const byCategory = totalsByCategory(recurringItems, purchases, YEAR)
+    const sum = Object.values(byCategory).reduce((total, value) => total + value, 0)
+
+    expect(sum).toBe(totalAnnualCost(recurringItems, purchases, YEAR))
   })
 })
