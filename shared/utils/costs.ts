@@ -1,5 +1,7 @@
-export function totalAnnualCost(items: CostItem[]): number {
-    var total = 0
+import type { Purchase, RecurringCost } from '~~/shared/types/calculation'
+
+export function totalAnnualCost(items: RecurringCost[]): number {
+    let total = 0
     items.forEach((item) => {
         if (item.interval === 'monthly') {
             total += item.amount*12
@@ -8,4 +10,8 @@ export function totalAnnualCost(items: CostItem[]): number {
         }
     })
     return total;
+}
+export function totalAnnualPurchases(items: Purchase[], year: number): number {
+    const inYear = items.filter((item) => new Date(item.date).getUTCFullYear() === year)
+    return inYear.reduce((sum, item) => sum + item.amount, 0)
 }

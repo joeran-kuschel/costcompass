@@ -62,12 +62,14 @@ budgetly/
 └── tsconfig.json
 ```
 
-Import rules: inside `app/` use `~/...`; for files outside `app/` (e.g. `shared/`) use `~~/...`. Only the top level of `shared/types/` and `shared/utils/` is auto-imported, not subfolders. The database migrations folder depends on the database access decision (see open decisions).
+Import rules: inside `app/` use `~/...`; for files outside `app/` (e.g. `shared/`) use `~~/...`. Only the top level of `shared/types/` and `shared/utils/` is auto-imported, not subfolders. Files in `shared/utils/` import their types explicitly (`import type { ... } from '~~/shared/types/calculation'`) instead of relying on auto-import, because the editor's generated types can lag behind. After adding a new auto-imported file, restart the TS server or run `pnpm dlx nuxt prepare`. The database migrations folder depends on the database access decision (see open decisions).
+
+Tests live in `tests/nuxt/` (the folder the Nuxt TypeScript config includes), one `describe` per function. Test data comes from small helper functions with defaults (`recurring()`, `purchase()`) and a `YEAR` constant, so each test only states what it cares about.
 
 ## Cost tracking logic
 
 1. Recurring costs: amount plus interval (monthly, yearly, possibly quarterly), normalized to one period
-2. One-off purchases: date and price, optionally spread over their lifespan (e.g. appliance of 1,200 € over 10 years = 120 €/year) as a reserve for irregular costs
+2. One-off purchases: date and price, counted fully in the year of purchase (spreading over a lifespan is parked, see decisions)
 3. Categories (housing, insurance, appliances, etc.) and an optional business flag
 4. Totals per period and category, household versus business
 
@@ -114,14 +116,21 @@ Import rules: inside `app/` use `~/...`; for files outside `app/` (e.g. `shared/
 - Docker Desktop Kubernetes
 - Accessibility matters: proper labels, error messages and focus handling in all forms
 
+## Decisions made
+
+- Cost model: a shared base `CostItem` (name, amount, category, business) in `shared/types/calculation.ts`; `RecurringCost` extends it with an interval (monthly, yearly), `Purchase` extends it with a date (ISO string, `YYYY-MM-DD`)
+- Category: a fixed list, `CATEGORIES` as a `const` array with `Category` derived from it. Ids are English; display names come from the locale files. The database stores the category as text (optionally with a check or enum), and the server validates against `CATEGORIES`. User-defined categories would need a table instead.
+- Dates and years: years are passed to functions as numbers, never read from "today" inside the core. Years of ISO dates are read in UTC (`getUTCFullYear`) so results do not depend on the time zone.
+- Depreciation is parked for now (tricky to get right). A purchase counts fully in the year it was bought, which is also how a household thinks. Later, an optional lifespan can spread the price over several years (mostly a business concept), with the detailed German rules (AfA, thresholds for low-value assets).
+- Business: a boolean flag on an item, not a category
+- Money: plain euro numbers, no integer cents
+
 ## Open decisions
 
-- Cost model: one `CostItem` type with optional fields, or separate types for recurring costs and purchases
-- Business: boolean flag on an item, or a category
-- Intervals: whether to add quarterly and a one-off type with a lifespan for spreading purchases
+- Depreciation: optional lifespan for purchases, evenly spread or per AfA rules (parked)
+- Intervals: whether to add quarterly to the recurring costs
 - Time handling: how dates and periods (month, year) are represented and queried
 - Currency: euro only, or configurable
-- Money representation: plain euro numbers or integer cents
 - State handling: plain composables or Pinia
 - Database access: Drizzle, Prisma, Kysely or plain SQL
 - Postgres in k8s: own StatefulSet manifests, Helm chart, or an operator like CloudNativePG
@@ -130,4 +139,4 @@ Import rules: inside `app/` use `~/...`; for files outside `app/` (e.g. `shared/
 
 ## Current status
 
-Step 1 (setup) is done: Nuxt 4 with Nuxt UI, ESLint, Vitest and `@nuxtjs/i18n` installed (i18n not yet configured). Step 2 has started: `CostItem` type and `totalAnnualCost` with tests exist, but the cost model is still open (see open decisions).
+Step 1 (setup) is done: Nuxt 4 with Nuxt UI, ESLint, Vitest and `@nuxtjs/i18n` installed (i18n not yet configured). Step 2 is in progress: the cost model is decided (see decisions made), and `totalAnnualCost` (recurring costs) and `totalAnnualPurchases` (purchases in a year) exist with 11 passing tests. Next: a filter helper for the business flag, a combined total for a year, and totals per category.
