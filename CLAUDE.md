@@ -50,7 +50,7 @@ budgetly/
 ├── shared/                   # Code for both app and server (the ~~ alias is the project root)
 │   ├── types/                # Types, auto-imported (calculation.ts)
 │   └── utils/                # Pure calculation functions, auto-imported (costs.ts)
-├── i18n/locales/             # (planned) en and de locale files
+├── i18n/locales/             # en.json and de.json locale files
 ├── tests/nuxt/               # Vitest tests, run in the Nuxt environment
 ├── public/                   # Static files
 ├── k8s/                      # (planned) Kubernetes manifests
