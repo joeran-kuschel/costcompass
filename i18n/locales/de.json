@@ -1,0 +1,17 @@
+{
+  "app": {
+    "name": "Budgetly"
+  },
+  "category": {
+    "housing": "Wohnen",
+    "insurance": "Versicherung",
+    "appliances": "Geräte",
+    "food": "Essen",
+    "mobility": "Mobilität"
+  },
+  "interval": {
+    "monthly": "Monatlich",
+    "quarterly": "Vierteljährlich",
+    "yearly": "Jährlich"
+  }
+}
