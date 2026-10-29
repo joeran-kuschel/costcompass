@@ -139,4 +139,4 @@ Tests live in `tests/nuxt/` (the folder the Nuxt TypeScript config includes), on
 
 ## Current status
 
-Step 1 (setup) is done: Nuxt 4 with Nuxt UI, ESLint, Vitest and `@nuxtjs/i18n` installed (i18n not yet configured). Step 2 is in progress: the cost model is decided (see decisions made), and `totalAnnualCost` (recurring costs) and `totalAnnualPurchases` (purchases in a year) exist with 11 passing tests. Next: a filter helper for the business flag, a combined total for a year, and totals per category.
+Step 1 (setup) is done: Nuxt 4 with Nuxt UI, ESLint, Vitest and `@nuxtjs/i18n` installed (i18n not yet configured). Step 2 is in progress: the cost model is decided (see decisions made), and `totalAnnualRecurring` (recurring costs) and `totalAnnualPurchases` (purchases in a year) exist with 11 passing tests. Next: a filter helper for the business flag, a combined total for a year, and totals per category.

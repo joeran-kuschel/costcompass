@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { RecurringCost, Purchase } from '~~/shared/types/calculation'
-import { totalAnnualCost, totalAnnualPurchases } from '~~/shared/utils/costs'
+import { totalAnnualRecurring, totalAnnualPurchases } from '~~/shared/utils/costs'
 
 const YEAR = 2026
 
@@ -11,51 +11,50 @@ function recurring(overrides: Partial<RecurringCost>): RecurringCost {
   return { name: 'Item', amount: 0, category: 'housing', business: false, interval: 'monthly', ...overrides }
 }
 
-describe('totalAnnualCost', () => {
+describe('totalAnnualRecurring', () => {
   it('sums monthly and yearly items per year', () => {
     const items: RecurringCost[] = [
       recurring({ amount: 100 }),
       recurring({ amount: 600, interval: 'yearly' })
     ]
-    expect(totalAnnualCost(items)).toBe(1800)
+    expect(totalAnnualRecurring(items)).toBe(1800)
   })
   it('returns 0 for an empty list', () => {
     const items: RecurringCost[] = []
-    expect (totalAnnualCost(items)).toBe(0)
+    expect (totalAnnualRecurring(items)).toBe(0)
   })
   it('sums only monthly items', () => {
     const items: RecurringCost[] = [
-      
       recurring({ amount: 100 }),
       recurring({ amount: 200 })
     ]
-    expect(totalAnnualCost(items)).toBe(3600)
+    expect(totalAnnualRecurring(items)).toBe(3600)
   })
   it('sums only yearly items', () => {
     const items: RecurringCost[] = [
       recurring({ amount: 100, interval: 'yearly' }),
       recurring({ amount: 200, interval: 'yearly' })
     ]
-    expect(totalAnnualCost(items)).toBe(300)
+    expect(totalAnnualRecurring(items)).toBe(300)
   })
   it('handles decimal amounts', () => {
     const items: RecurringCost[] = [
       recurring({ amount: 19.99 })
     ]
-    expect(totalAnnualCost(items)).toBeCloseTo(239.88, 2)
+    expect(totalAnnualRecurring(items)).toBeCloseTo(239.88, 2)
   })
   it('handles a single item', () => {
     const items: RecurringCost[] = [
       recurring({ amount: 50, interval: 'yearly' })
     ]
-    expect(totalAnnualCost(items)).toBe(50)
+    expect(totalAnnualRecurring(items)).toBe(50)
   })
   it('ignores items with an amount of 0', () => {
     const items: RecurringCost[] = [
       recurring({ amount: 0 }),
       recurring({ amount: 100, interval: 'yearly' })
     ]
-    expect(totalAnnualCost(items)).toBe(100)
+    expect(totalAnnualRecurring(items)).toBe(100)
   })
 })
 describe('totalAnnualPurchases', () => {
@@ -86,5 +85,25 @@ describe('totalAnnualPurchases', () => {
       purchase({ amount: 1500, date: `${YEAR}-11-11` })
     ]
     expect(totalAnnualPurchases(items, YEAR)).toBe(2500)
+  })
+})
+describe('totalAnnualCost', () => {
+  it('sums purchases and recurring for a year', () => {
+    const purchases: Purchase[] = [
+      purchase({ amount: 1500})
+    ]
+    const recurringCosts: RecurringCost[] = [
+      recurring({ amount: 100 })
+    ]
+    expect(totalAnnualCost(recurringCosts, purchases, YEAR)).toBe(2700)
+  })
+  it('does not add a purchase from another year', () => {
+    const purchases: Purchase[] = [
+      purchase({ amount: 1000, date: `${YEAR - 1}-11-11` })
+    ]
+    const recurringCosts: RecurringCost[] = [
+      recurring({ amount: 100 })
+    ]
+    expect(totalAnnualCost(recurringCosts, purchases, YEAR)).toBe(1200)
   })
 })
