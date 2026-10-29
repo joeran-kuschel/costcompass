@@ -13,6 +13,6 @@ export default defineNuxtConfig({
     strategy: 'prefix_except_default',
   },
   runtimeConfig: {
-    databaseUrl: process.env.DATABASE_URL,
+    databaseUrl: '',
   }
 })
