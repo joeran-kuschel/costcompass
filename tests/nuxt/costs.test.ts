@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import type { RecurringCost, Purchase, CostItem } from '~~/shared/types/calculation'
-import { totalAnnualRecurring, totalAnnualPurchases, filterByBusiness, totalsByCategory } from '~~/shared/utils/costs'
+import type { RecurringCost, Purchase, CostItem, Month } from '~~/shared/types/calculation'
+import { totalAnnualRecurring, totalAnnualPurchases, filterByBusiness, totalsByCategory, occursInMonth, totalMonthlyCost } from '~~/shared/utils/costs'
 
 const YEAR = 2026
 
@@ -206,5 +206,55 @@ describe('totalsByCategory', () => {
     const sum = Object.values(byCategory).reduce((total, value) => total + value, 0)
 
     expect(sum).toBe(totalAnnualCost(recurringItems, purchases, YEAR))
+  })
+})
+describe('occursInMonth', () => {
+  it('a monthly cost occurs in every month', () => {
+    const item = recurring({ interval: 'monthly' })
+    expect(occursInMonth(item, 1)).toBe(true)
+    expect(occursInMonth(item, 7)).toBe(true)
+    expect(occursInMonth(item, 12)).toBe(true)
+  })
+  it('a yearly cost occurs only in its due month', () => {
+    const item = recurring({ interval: 'yearly', dueMonth: 6 })
+    expect(occursInMonth(item, 6)).toBe(true)
+    expect(occursInMonth(item, 7)).toBe(false)
+  })
+  it('a quarterly cost occurs every three months from its due month', () => {
+    const item = recurring({ interval: 'quarterly', dueMonth: 2 })
+    expect([2, 5, 8, 11].every((month) => occursInMonth(item, month as Month))).toBe(true)
+    expect(occursInMonth(item, 3)).toBe(false)
+    expect(occursInMonth(item, 1)).toBe(false)
+  })
+  it('a yearly or quarterly cost without a due month does not occur', () => {
+    expect(occursInMonth(recurring({ interval: 'yearly' }), 6)).toBe(false)
+    expect(occursInMonth(recurring({ interval: 'quarterly' }), 6)).toBe(false)
+  })
+})
+describe('totalMonthlyCost', () => {
+  it('a monthly cost counts in any month', () => {
+    const items = [recurring({ amount: 100 })]
+    expect(totalMonthlyCost(items, [], YEAR, 1)).toBe(100)
+    expect(totalMonthlyCost(items, [], YEAR, 9)).toBe(100)
+  })
+  it('a purchase counts only in its own month and year', () => {
+    const items = [purchase({ amount: 500, date: `${YEAR}-03-15` })]
+    expect(totalMonthlyCost([], items, YEAR, 3)).toBe(500)
+    expect(totalMonthlyCost([], items, YEAR, 4)).toBe(0)
+    expect(totalMonthlyCost([], items, YEAR + 1, 3)).toBe(0)
+  })
+  it('a yearly cost counts only in its due month', () => {
+    const items = [recurring({ amount: 600, interval: 'yearly', dueMonth: 6 })]
+    expect(totalMonthlyCost(items, [], YEAR, 6)).toBe(600)
+    expect(totalMonthlyCost(items, [], YEAR, 7)).toBe(0)
+  })
+  it('adds recurring costs and purchases', () => {
+    const recurringItems = [recurring({ amount: 100 })]
+    const purchases = [purchase({ amount: 500, date: `${YEAR}-03-15` })]
+    expect(totalMonthlyCost(recurringItems, purchases, YEAR, 3)).toBe(600)
+    expect(totalMonthlyCost(recurringItems, purchases, YEAR, 4)).toBe(100)
+  })
+  it('returns 0 for empty lists', () => {
+    expect(totalMonthlyCost([], [], YEAR, 1)).toBe(0)
   })
 })
