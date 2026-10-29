@@ -56,6 +56,26 @@ describe('totalAnnualRecurring', () => {
     ]
     expect(totalAnnualRecurring(items)).toBe(100)
   })
+  it('counts a quarterly item four times a year', () => {
+    const items: RecurringCost[] = [
+      recurring({ amount: 100, interval: 'quarterly', dueMonth: 2 })
+    ]
+    expect(totalAnnualRecurring(items)).toBe(400)
+  })
+  it('sums monthly, quarterly and yearly items', () => {
+    const items: RecurringCost[] = [
+      recurring({ amount: 100 }),
+      recurring({ amount: 50, interval: 'quarterly', dueMonth: 1 }),
+      recurring({ amount: 600, interval: 'yearly', dueMonth: 6 })
+    ]
+    // 1200 + 200 + 600
+    expect(totalAnnualRecurring(items)).toBe(2000)
+  })
+  it('does not change the annual amount through the due month', () => {
+    const early = recurring({ amount: 600, interval: 'yearly', dueMonth: 1 })
+    const late = recurring({ amount: 600, interval: 'yearly', dueMonth: 12 })
+    expect(totalAnnualRecurring([early])).toBe(totalAnnualRecurring([late]))
+  })
 })
 describe('totalAnnualPurchases', () => {
   it('sums purchases for a year', () => {

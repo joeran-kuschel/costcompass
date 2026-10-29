@@ -126,12 +126,13 @@ Tests live in `tests/nuxt/` (the folder the Nuxt TypeScript config includes), on
 - Depreciation is parked for now (tricky to get right). A purchase counts fully in the year it was bought, which is also how a household thinks. Later, an optional lifespan can spread the price over several years (mostly a business concept), with the detailed German rules (AfA, thresholds for low-value assets).
 - Business: a boolean flag on an item, not a category
 - Money: plain euro numbers, no integer cents
+- Yearly and quarterly recurring costs get a `dueMonth` (1-12), a month only, not a full date. A yearly cost falls in that month every year; a quarterly cost starts in that month and repeats every 3 months (`dueMonth: 2` means February, May, August, November). `'quarterly'` is added to `Interval` (`PERIODS_PER_YEAR` gets `quarterly: 4`).
 
 ## Open decisions
 
 - Depreciation: optional lifespan for purchases, evenly spread or per AfA rules (parked)
-- Yearly recurring costs in the monthly views: optional `dueMonth` (1-12) on `RecurringCost` with an even 1/12 spread when missing (recommended), or a required `dueMonth` for yearly costs. Start and end dates for recurring costs can wait.
-- Intervals: whether to add quarterly to the recurring costs
+- `dueMonth` on yearly and quarterly costs: required (type-level union, monthly has none) or optional with an even 1/12 spread when missing, or only checked in API validation
+- Start and end dates for recurring costs (can wait)
 - Time handling: how dates and periods (month, year) are represented and queried (months are 1-12 in the API, array index 0 = January in `monthlyTotals`)
 - Currency: euro only, or configurable
 - State handling: plain composables or Pinia
@@ -142,4 +143,4 @@ Tests live in `tests/nuxt/` (the folder the Nuxt TypeScript config includes), on
 
 ## Current status
 
-Step 1 (setup) is done: Nuxt 4 with Nuxt UI, ESLint, Vitest and `@nuxtjs/i18n` installed (i18n not yet configured). Step 2 is nearly done: the cost model is decided (see decisions made), and the annual core exists in `shared/utils/costs.ts` with 20 passing tests: `annualAmount`, `totalAnnualRecurring`, `totalAnnualPurchases`, `totalAnnualCost`, `filterByBusiness` and `totalsByCategory`. Next: the monthly views, first `monthlyTotals` (12 true monthly totals), then `costsInMonth` (list of costs in one month). Both wait on the `dueMonth` decision for yearly costs (see open decisions). After that: i18n setup (step 3) and the database (step 4). ESLint currently crashes because `typescript-eslint` does not support TypeScript 7; `pnpm add -D typescript@6` would fix it (cosmetic, not urgent).
+Step 1 (setup) is done: Nuxt 4 with Nuxt UI, ESLint, Vitest and `@nuxtjs/i18n` installed (i18n not yet configured). Step 2 is nearly done: the cost model is decided (see decisions made), and the annual core exists in `shared/utils/costs.ts` with 20 passing tests: `annualAmount`, `totalAnnualRecurring`, `totalAnnualPurchases`, `totalAnnualCost`, `filterByBusiness` and `totalsByCategory`. Next: the monthly views, first `monthlyTotals` (12 true monthly totals), then `costsInMonth` (list of costs in one month). Both need `dueMonth` and the quarterly interval in the types first (decided, see decisions made); whether `dueMonth` is required is still open. After that: i18n setup (step 3) and the database (step 4). ESLint currently crashes because `typescript-eslint` does not support TypeScript 7; `pnpm add -D typescript@6` would fix it (cosmetic, not urgent).

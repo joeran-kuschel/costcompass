@@ -1,6 +1,7 @@
 import { CATEGORIES, type CostItem, type Purchase, type RecurringCost, type Category, type Interval } from '~~/shared/types/calculation'
 const PERIODS_PER_YEAR: Record<Interval, number> = {
   monthly: 12,
+  quarterly: 4,
   yearly: 1,
 }
 export function annualAmount (item: RecurringCost): number {
