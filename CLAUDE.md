@@ -38,11 +38,11 @@ budgetly/
 ├── app/                      # Client side (the ~ alias points here)
 │   ├── app.vue               # Root component (<UApp>, <NuxtLayout>, <NuxtPage>)
 │   ├── assets/css/main.css   # Tailwind + Nuxt UI imports
-│   ├── components/           # (planned) Reusable Vue components
+│   ├── components/           # Reusable Vue components (LanguageSwitcher.vue)
 │   ├── composables/          # (planned) Reusable stateful logic (useXxx)
 │   ├── layouts/              # (planned) Page layouts
 │   ├── middleware/           # (planned) Client route middleware
-│   └── pages/                # (planned) Pages (auto-routing)
+│   └── pages/                # Pages (auto-routing): costs.vue; index.vue (dashboard) is reserved and planned
 ├── server/                   # Nitro server, the only layer touching the DB
 │   ├── api/                  # API routes: recurring-costs/ and purchases/ (index.get/post, [id].patch/delete)
 │   ├── db/                   # Drizzle schema and migrations
@@ -84,6 +84,25 @@ Tests live in `tests/nuxt/` (the folder the Nuxt TypeScript config includes), on
 4. Buffer and savings (reserves for quiet months, investments)
 5. Billable capacity: working days minus vacation, sick days and public holidays, minus the non-billable share (acquisition, admin, learning)
 6. Result: required annual revenue ÷ billable hours = minimum hourly rate, with scenarios (e.g. different utilization levels)
+
+## Pages and views
+
+Pages for now:
+
+1. `/` **Dashboard** (`pages/index.vue`, planned): year selector, annual total, household versus business split, totals per category, the 12 monthly totals. Everything comes from the `shared/` core, no new API routes.
+2. `/costs` (`pages/costs.vue`, exists): one table with recurring costs and purchases together, a `kind` column and a "when" column (interval and month for recurring, date for purchases). Add, edit and delete actions come next.
+3. `/calculator`: later (roadmap step 9), not part of the first UI.
+
+Views that are not pages:
+
+- **Add/edit form:** a modal or slide-over opened from `/costs`, not its own routes. One form for both kinds of cost. Built with `UForm` and the Zod schemas, with labelled fields.
+- **Month detail:** the list of costs in one month (`costsInMonth`), opened from the dashboard's monthly view as a slide-over or section.
+
+Shared structure:
+
+- A layout with a header: navigation (Dashboard, Costs) and the language switcher, which moves there from the costs page.
+- The selected year is shared by the dashboard and the costs table, as a small composable (`useYear`), because the core takes the year as a parameter.
+- Not needed yet: login (single user), settings.
 
 ## Kubernetes setup (Docker Desktop)
 
@@ -145,7 +164,9 @@ Tests live in `tests/nuxt/` (the folder the Nuxt TypeScript config includes), on
 - State handling: plain composables or Pinia
 - Postgres in k8s: own StatefulSet manifests, Helm chart, or an operator like CloudNativePG
 - Manifest management: plain YAML, Kustomize or Helm
+- Costs table and year: should the table be filtered by the selected year? Only purchases have a year, recurring costs have none
+- Language select needs an accessible label (`language.label` locale key plus `aria-label`) before it moves to the header
 
 ## Current status
 
-Steps 1-5 are done. The cost core in `shared/` is complete (annual totals, `totalsByCategory`, `filterByBusiness`, the monthly views), the Drizzle schema and migration exist, and the API has `GET`, `POST`, `PATCH` and `DELETE` for both recurring costs and purchases, tested by hand against the local Postgres. 73 Vitest tests pass (the cost core and all Zod schemas); the routes themselves and the update functions are not covered by automated tests yet. Next: the UI (step 6, `app/` is still the Nuxt welcome page). Still open: the `RecurringCost` union type in the core (`dueMonth` required for yearly and quarterly, absent for monthly; the API already enforces it), and the rate calculator (later). ESLint currently crashes because `typescript-eslint` does not support TypeScript 7; `pnpm add -D typescript@6` would fix it (cosmetic, not urgent).
+Steps 1-5 are done. The cost core in `shared/` is complete (annual totals, `totalsByCategory`, `filterByBusiness`, the monthly views), the Drizzle schema and migration exist, and the API has `GET`, `POST`, `PATCH` and `DELETE` for both recurring costs and purchases, tested by hand against the local Postgres. 73 Vitest tests pass (the cost core and all Zod schemas); the routes themselves and the update functions are not covered by automated tests yet. Step 6 (UI) has started: `app.vue` renders `<NuxtPage />`, `pages/costs.vue` shows the combined table with translated columns and a "when" column, and `components/LanguageSwitcher.vue` (a `USelect` calling `setLocale`) sits on that page. Next: the add/edit form, then the layout with header, the dashboard and the year selector (see Pages and views). Still open: the `RecurringCost` union type in the core (`dueMonth` required for yearly and quarterly, absent for monthly; the API already enforces it), and the rate calculator (later). ESLint currently crashes because `typescript-eslint` does not support TypeScript 7; `pnpm add -D typescript@6` would fix it (cosmetic, not urgent).
