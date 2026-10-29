@@ -11,5 +11,8 @@ export default defineNuxtConfig({
       { code: 'de', language: 'de-DE', name: 'Deutsch', file: 'de.json' },
     ],
     strategy: 'prefix_except_default',
+  },
+  runtimeConfig: {
+    databaseUrl: process.env.DATABASE_URL,
   }
 })

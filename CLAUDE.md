@@ -126,6 +126,7 @@ Tests live in `tests/nuxt/` (the folder the Nuxt TypeScript config includes), on
 - Depreciation is parked for now (tricky to get right). A purchase counts fully in the year it was bought, which is also how a household thinks. Later, an optional lifespan can spread the price over several years (mostly a business concept), with the detailed German rules (AfA, thresholds for low-value assets).
 - Business: a boolean flag on an item, not a category
 - Money: plain euro numbers, no integer cents
+- Database access: Drizzle (TypeScript schema, no code generation, `drizzle-kit` for migrations). The `CATEGORIES` array is reused for the category column so the list lives in one place.
 - i18n: `@nuxtjs/i18n` with `en` (default) and `de`, strategy `prefix_except_default` (English at `/`, German at `/de/...`). Locale files are `i18n/locales/en.json` and `de.json`; category and interval names are keyed by their ids (`category.housing`, `interval.monthly`).
 - `RecurringCost` and `Purchase` each carry a `kind` discriminant (`'recurring'` / `'purchase'`), and `type Cost = RecurringCost | Purchase`. No separate entry type for the monthly list. Test helpers set `kind` by default.
 - Yearly and quarterly recurring costs get a `dueMonth` (1-12), a month only, not a full date. A yearly cost falls in that month every year; a quarterly cost starts in that month and repeats every 3 months (`dueMonth: 2` means February, May, August, November). `'quarterly'` is added to `Interval` (`PERIODS_PER_YEAR` gets `quarterly: 4`). `MONTHS` and `Month` are derived from a const array. `RecurringCost` is a union type: a monthly cost has no `dueMonth`, a yearly or quarterly cost must have one (the compiler enforces it). Currently `dueMonth?: Month` is still optional until the union is in place.
@@ -138,7 +139,6 @@ Tests live in `tests/nuxt/` (the folder the Nuxt TypeScript config includes), on
 - Time handling: how dates and periods (month, year) are represented and queried (months are 1-12 in the API, array index 0 = January in `monthlyTotals`)
 - Currency: euro only, or configurable
 - State handling: plain composables or Pinia
-- Database access: Drizzle, Prisma, Kysely or plain SQL
 - Postgres in k8s: own StatefulSet manifests, Helm chart, or an operator like CloudNativePG
 - Manifest management: plain YAML, Kustomize or Helm
 
