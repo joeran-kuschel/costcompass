@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { CATEGORIES } from '~~/shared/types/calculation'
+import { CATEGORIES, INTERVALS } from '~~/shared/types/calculation'
 const monthSchema = z.number().int().min(1).max(12)
 const baseFields = {
   name: z.string().trim().min(1).max(200),
@@ -19,3 +19,19 @@ export const createPurchaseSchema = z.object({
   date: z.iso.date(),
 })
 export type CreatePurchase = z.infer<typeof createPurchaseSchema>
+export const idParamsSchema = z.object({
+  id: z.coerce.number().int().positive(),
+})
+const notEmpty = (o: object) => Object.keys(o).length > 0
+
+export const patchRecurringCostSchema = z.object({
+  ...baseFields,
+  interval: z.enum(INTERVALS),
+  dueMonth: monthSchema,
+}).partial().refine(notEmpty, 'Empty patch')
+
+export const patchPurchaseSchema = createPurchaseSchema.partial().refine(notEmpty, 'Empty patch')
+
+export type PatchRecurringCost = z.infer<typeof patchRecurringCostSchema>
+export type PatchPurchase = z.infer<typeof patchPurchaseSchema>
+

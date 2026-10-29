@@ -43,13 +43,14 @@ budgetly/
 │   ├── layouts/              # (planned) Page layouts
 │   ├── middleware/           # (planned) Client route middleware
 │   └── pages/                # (planned) Pages (auto-routing)
-├── server/                   # (planned) Nitro server, the only layer touching the DB
-│   ├── api/                  # API routes
-│   ├── middleware/           # Server middleware
-│   └── utils/                # Server utilities (e.g. database client)
+├── server/                   # Nitro server, the only layer touching the DB
+│   ├── api/                  # API routes: recurring-costs/ and purchases/ (index.get/post, [id].patch/delete)
+│   ├── db/                   # Drizzle schema and migrations
+│   ├── middleware/           # (planned) Server middleware
+│   └── utils/                # Server utilities (db.ts client, costs.ts queries and row mappers)
 ├── shared/                   # Code for both app and server (the ~~ alias is the project root)
 │   ├── types/                # Types, auto-imported (calculation.ts)
-│   └── utils/                # Pure calculation functions, auto-imported (costs.ts)
+│   └── utils/                # Pure functions, auto-imported (costs.ts calculations, validation.ts Zod schemas)
 ├── i18n/locales/             # en.json and de.json locale files
 ├── tests/nuxt/               # Vitest tests, run in the Nuxt environment
 ├── public/                   # Static files
@@ -131,6 +132,9 @@ Tests live in `tests/nuxt/` (the folder the Nuxt TypeScript config includes), on
 - `RecurringCost` and `Purchase` each carry a `kind` discriminant (`'recurring'` / `'purchase'`), and `type Cost = RecurringCost | Purchase`. No separate entry type for the monthly list. Test helpers set `kind` by default.
 - Yearly and quarterly recurring costs get a `dueMonth` (1-12), a month only, not a full date. A yearly cost falls in that month every year; a quarterly cost starts in that month and repeats every 3 months (`dueMonth: 2` means February, May, August, November). `'quarterly'` is added to `Interval` (`PERIODS_PER_YEAR` gets `quarterly: 4`). `MONTHS` and `Month` are derived from a const array. `RecurringCost` is a union type: a monthly cost has no `dueMonth`, a yearly or quarterly cost must have one (the compiler enforces it). Currently `dueMonth?: Month` is still optional until the union is in place.
 - With the union type a yearly or quarterly cost always has a `dueMonth`. Data that reaches the core without one (untyped input, old rows) is skipped in the monthly views (`monthlyTotals`, `costsInMonth`) but still counts in the annual totals, so the API must validate that `dueMonth` is present for those intervals.
+- API: REST routes per resource, `GET`/`POST` on `/api/<resource>` and `PATCH`/`DELETE` on `/api/<resource>/[id]`. Routes stay thin: validate with Zod (`readValidatedBody`, `getValidatedRouterParams`), call a function in `server/utils/costs.ts`, return the result. All schemas live in `shared/utils/validation.ts`; the shared `idParamsSchema` coerces the id from the URL (400 on an invalid id).
+- Status codes: invalid input 400 (Zod issues in the body), unknown id 404, successful `DELETE` 204 without a body, `PATCH` returns the updated item with 200.
+- PATCH: body is a partial of the create fields (`patchRecurringCostSchema`, `patchPurchaseSchema`), an empty patch is rejected. For recurring costs `interval` and `dueMonth` can change; `updateRecurringCost` loads the stored row, merges the patch, validates the result with `createRecurringCostSchema` (400 if e.g. a yearly cost has no `dueMonth`) and writes `dueMonth: null` when the result is monthly, so no stale month stays behind. The 400 is thrown inside the util function.
 
 ## Open decisions
 
@@ -144,4 +148,4 @@ Tests live in `tests/nuxt/` (the folder the Nuxt TypeScript config includes), on
 
 ## Current status
 
-Steps 1-3 are done: Nuxt 4 with Nuxt UI, Vitest and `@nuxtjs/i18n` configured (English and German), and the cost core in `shared/` is complete with 43 passing tests: annual totals (`totalAnnualRecurring`, `totalAnnualPurchases`, `totalAnnualCost`), `totalsByCategory`, `filterByBusiness`, and the monthly views (`occursInMonth`, `totalMonthlyCost`, `monthlyTotals`, `costsInMonth`). Next: the database (step 4) and the API (step 5). Still open: the `RecurringCost` union type (`dueMonth` required for yearly and quarterly, absent for monthly), the database access tool, and the rate calculator (later). ESLint currently crashes because `typescript-eslint` does not support TypeScript 7; `pnpm add -D typescript@6` would fix it (cosmetic, not urgent).
+Steps 1-5 are done. The cost core in `shared/` is complete (annual totals, `totalsByCategory`, `filterByBusiness`, the monthly views), the Drizzle schema and migration exist, and the API has `GET`, `POST`, `PATCH` and `DELETE` for both recurring costs and purchases, tested by hand against the local Postgres. 73 Vitest tests pass (the cost core and all Zod schemas); the routes themselves and the update functions are not covered by automated tests yet. Next: the UI (step 6, `app/` is still the Nuxt welcome page). Still open: the `RecurringCost` union type in the core (`dueMonth` required for yearly and quarterly, absent for monthly; the API already enforces it), and the rate calculator (later). ESLint currently crashes because `typescript-eslint` does not support TypeScript 7; `pnpm add -D typescript@6` would fix it (cosmetic, not urgent). `nuxt.config.ts` reads `process.env.DATABASE_URL` while the Configuration section above mentions `NUXT_DATABASE_URL`; pick one.
