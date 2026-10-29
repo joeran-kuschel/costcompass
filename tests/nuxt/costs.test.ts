@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import type { RecurringCost, Purchase } from '~~/shared/types/calculation'
-import { totalAnnualRecurring, totalAnnualPurchases } from '~~/shared/utils/costs'
+import type { RecurringCost, Purchase, CostItem } from '~~/shared/types/calculation'
+import { totalAnnualRecurring, totalAnnualPurchases, filterByBusiness } from '~~/shared/utils/costs'
 
 const YEAR = 2026
 
@@ -105,5 +105,34 @@ describe('totalAnnualCost', () => {
       recurring({ amount: 100 })
     ]
     expect(totalAnnualCost(recurringCosts, purchases, YEAR)).toBe(1200)
+  })
+})
+describe('filterByBusiness', () => {
+  it('filters costs by business', () => {
+    const costItems: CostItem[] = [
+      purchase({ name: 'Laptop', business: true }),
+      purchase({}),
+      recurring({ name:'test', business: true })
+    ]
+    const business = filterByBusiness(costItems, true)
+    expect(business).toHaveLength(2)
+    expect(business.map((i) => i.name)).toEqual(['Laptop', 'test'])
+
+    const household = filterByBusiness(costItems, false)
+    expect(household).toHaveLength(1);
+    expect(household.map((i) => i.name)).toEqual(['Item'])
+  })
+  it('returns an empty list for an empty list', () => {
+    expect(filterByBusiness([], true)).toEqual([])
+    expect(filterByBusiness([], false)).toEqual([])
+  })
+  it('keeps the specific type of the items', () => {
+    const items: RecurringCost[] = [
+      recurring({ amount: 100, business: true }),
+      recurring({ amount: 50, interval: 'yearly' })
+    ]
+    // compiles only if the result is still a RecurringCost[]
+    expect(totalAnnualRecurring(filterByBusiness(items, true))).toBe(1200)
+    expect(totalAnnualRecurring(filterByBusiness(items, false))).toBe(50)
   })
 })

@@ -1,4 +1,4 @@
-import type { Purchase, RecurringCost } from '~~/shared/types/calculation'
+import type { CostItem, Purchase, RecurringCost } from '~~/shared/types/calculation'
 
 export function totalAnnualRecurring(items: RecurringCost[]): number {
     let total = 0
@@ -17,4 +17,7 @@ export function totalAnnualPurchases(items: Purchase[], year: number): number {
 }
 export function totalAnnualCost(recurring: RecurringCost[], purchases: Purchase[], year: number): number {
     return totalAnnualRecurring(recurring) + totalAnnualPurchases(purchases, year)
+}
+export function filterByBusiness<T extends CostItem>(items: T[], business: boolean): T[] {
+    return items.filter((item) => item.business === business)
 }
