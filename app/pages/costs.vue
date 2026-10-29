@@ -30,6 +30,7 @@ function whenLabel(cost: Cost): string {
 </script>
 <template>
     <h1>{{ t('costs.title') }}</h1>
+    <LanguageSwitcher />
     <UTable :data="costs" :columns="columns">
         <template #category-cell="{ row }">{{ t(`category.${row.original.category}`) }}</template>
         <template #kind-cell="{ row }">{{ t(`kind.${row.original.kind}`) }}</template>
