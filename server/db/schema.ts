@@ -2,7 +2,7 @@ import { pgEnum, pgTable, serial, text, numeric, boolean, date, integer } from '
 import { CATEGORIES, INTERVALS } from '../../shared/types/calculation'
 
 export const categoryEnum = pgEnum('category', CATEGORIES)
-export const intervalEnum = pgEnum('interval', INTERVALS)
+export const intervalEnum = pgEnum('recurring_interval', INTERVALS)
 
 export const recurringCosts = pgTable('recurring_costs', {
     id: serial('id').primaryKey(),

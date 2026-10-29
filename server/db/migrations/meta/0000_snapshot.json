@@ -1,5 +1,5 @@
 {
-  "id": "90001bfb-d6c2-4dfc-950a-0c3354cc0145",
+  "id": "4c4e88e0-af63-4f82-8471-7992d2b68635",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -93,7 +93,7 @@
         },
         "interval": {
           "name": "interval",
-          "type": "interval",
+          "type": "recurring_interval",
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
@@ -126,8 +126,8 @@
         "mobility"
       ]
     },
-    "public.interval": {
-      "name": "interval",
+    "public.recurring_interval": {
+      "name": "recurring_interval",
       "schema": "public",
       "values": [
         "monthly",
