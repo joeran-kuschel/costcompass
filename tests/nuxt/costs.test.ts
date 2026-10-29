@@ -1,14 +1,14 @@
 import { describe, it, expect } from 'vitest'
 import type { RecurringCost, Purchase, CostItem, Month } from '~~/shared/types/calculation'
-import { totalAnnualRecurring, totalAnnualPurchases, filterByBusiness, totalsByCategory, occursInMonth, totalMonthlyCost, monthlyTotals } from '~~/shared/utils/costs'
+import { totalAnnualRecurring, totalAnnualPurchases, filterByBusiness, totalsByCategory, occursInMonth, totalMonthlyCost, monthlyTotals, costsInMonth } from '~~/shared/utils/costs'
 
 const YEAR = 2026
 
 function purchase(overrides: Partial<Purchase>): Purchase {
-  return { name: 'Item', amount: 0, category: 'housing', business: false, date: `${YEAR}-06-15`, ...overrides }
+  return { name: 'Item', kind: 'purchase', amount: 0, category: 'housing', business: false, date: `${YEAR}-06-15`, ...overrides }
 }
 function recurring(overrides: Partial<RecurringCost>): RecurringCost {
-  return { name: 'Item', amount: 0, category: 'housing', business: false, interval: 'monthly', ...overrides }
+  return { name: 'Item', kind: 'recurring', amount: 0, category: 'housing', business: false, interval: 'monthly', ...overrides }
 }
 
 describe('totalAnnualRecurring', () => {
@@ -284,5 +284,77 @@ describe('monthlyTotals', () => {
       purchase({ amount: 500, date: `${YEAR}-03-15` }),
     ]
     expect(monthlyTotals(recurringCosts, purchases, YEAR).reduce((total, value) => total + value, 0)).toEqual(totalAnnualCost(recurringCosts, purchases, YEAR))
+  })
+})
+describe('costsInMonth', () => {
+  it('a monthly cost and a purchase in the same month returns both values', () => {
+    const recurringCosts = [
+      recurring({ amount: 100 })
+    ]
+    const purchases = [
+      purchase({ amount: 500, date: `${YEAR}-03-15` })
+    ]
+    expect(costsInMonth(recurringCosts, purchases, YEAR, 3).length).toEqual(2)
+  })
+  it('a purchase in another month is not returned', () => {
+    const recurringCosts = [
+      recurring({ amount: 100 })
+    ]
+    const purchases = [
+      purchase({ amount: 500, date: `${YEAR}-04-15` })
+    ]
+    expect(costsInMonth(recurringCosts, purchases, YEAR, 3)).toHaveLength(1)
+    expect(costsInMonth(recurringCosts, purchases, YEAR, 3)[0]?.kind).toBe('recurring')
+  })
+  it('a purchase in another year is not returned', () => {
+    const recurringCosts = [
+      recurring({ amount: 100 })
+    ]
+    const purchases = [
+      purchase({ amount: 500, date: `${YEAR + 1}-03-15` })
+    ]
+    expect(costsInMonth(recurringCosts, purchases, YEAR, 3)).toHaveLength(1)
+  })
+  it('a yearly cost is returned only for the month it is due', () => {
+    const recurringCosts = [
+      recurring({ amount: 100, interval: 'yearly', dueMonth: 3 })
+    ]
+    expect(costsInMonth(recurringCosts, [], YEAR, 3)).toHaveLength(1)
+    expect(costsInMonth(recurringCosts, [], YEAR, 2)).toHaveLength(0)
+    expect(costsInMonth(recurringCosts, [], YEAR, 7)).toHaveLength(0)
+  })
+  it('an empty input returns 0', () => {
+    const recurringCosts: RecurringCost[] = []
+    const purchases: Purchase[] = []
+    expect(costsInMonth(recurringCosts, purchases, YEAR, 3)).toHaveLength(0)
+  })
+  it('a purchase and a recurring in a month have the proper kind', () => {
+    const recurringCosts = [
+      recurring({ amount: 100, kind: 'recurring' })
+    ]
+    const purchases = [
+      purchase({ amount: 500, date: `${YEAR}-03-15`, kind: 'purchase' })
+    ]
+    const kinds = costsInMonth(recurringCosts, purchases, YEAR, 3).map((cost) => cost.kind)
+    expect(kinds).toHaveLength(2)
+    expect(kinds).toContain('recurring')
+    expect(kinds).toContain('purchase')
+  })
+  it('the listed amounts add up to the monthly total', () => {
+    const recurringCosts = [
+      recurring({ amount: 100 }),
+      recurring({ amount: 600, interval: 'yearly', dueMonth: 3 }),
+      recurring({ amount: 50, interval: 'yearly', dueMonth: 9 })
+    ]
+    const purchases = [
+      purchase({ amount: 500, date: `${YEAR}-03-15` }),
+      purchase({ amount: 70, date: `${YEAR}-04-02` })
+    ]
+    const list = costsInMonth(recurringCosts, purchases, YEAR, 3)
+    const sum = list.reduce((total, cost) => total + cost.amount, 0)
+
+    expect(list).toHaveLength(3)
+    expect(sum).toBe(1200)
+    expect(sum).toBe(totalMonthlyCost(recurringCosts, purchases, YEAR, 3))
   })
 })

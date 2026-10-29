@@ -73,7 +73,7 @@ Tests live in `tests/nuxt/` (the folder the Nuxt TypeScript config includes), on
 3. Categories (housing, insurance, appliances, etc.) and an optional business flag
 4. Totals per period and category, household versus business
 5. Monthly overview: `monthlyTotals(recurring, purchases, year)` returns the true cost of each of the 12 months (not an average); purchases land in the month of their date, monthly recurring costs count in every month
-6. Monthly breakdown: `costsInMonth(recurring, purchases, year, month)` returns the list of costs that occur in one month, as entries with name, amount charged that month, category, business flag and kind (recurring or purchase). The month totals can be derived from these lists, so both views agree.
+6. Monthly breakdown: `costsInMonth(recurring, purchases, year, month)` returns the list of costs that occur in one month as `Cost[]`, so the UI can show recurring costs and purchases clearly apart. `monthlyTotals` and `totalMonthlyCost` are consistent with it (a month's total is the sum of its list).
 
 ## Rate calculator (later)
 
@@ -126,6 +126,7 @@ Tests live in `tests/nuxt/` (the folder the Nuxt TypeScript config includes), on
 - Depreciation is parked for now (tricky to get right). A purchase counts fully in the year it was bought, which is also how a household thinks. Later, an optional lifespan can spread the price over several years (mostly a business concept), with the detailed German rules (AfA, thresholds for low-value assets).
 - Business: a boolean flag on an item, not a category
 - Money: plain euro numbers, no integer cents
+- `RecurringCost` and `Purchase` each carry a `kind` discriminant (`'recurring'` / `'purchase'`), and `type Cost = RecurringCost | Purchase`. No separate entry type for the monthly list. Test helpers set `kind` by default.
 - Yearly and quarterly recurring costs get a `dueMonth` (1-12), a month only, not a full date. A yearly cost falls in that month every year; a quarterly cost starts in that month and repeats every 3 months (`dueMonth: 2` means February, May, August, November). `'quarterly'` is added to `Interval` (`PERIODS_PER_YEAR` gets `quarterly: 4`). `MONTHS` and `Month` are derived from a const array. `RecurringCost` is a union type: a monthly cost has no `dueMonth`, a yearly or quarterly cost must have one (the compiler enforces it). Currently `dueMonth?: Month` is still optional until the union is in place.
 - With the union type a yearly or quarterly cost always has a `dueMonth`. Data that reaches the core without one (untyped input, old rows) is skipped in the monthly views (`monthlyTotals`, `costsInMonth`) but still counts in the annual totals, so the API must validate that `dueMonth` is present for those intervals.
 
