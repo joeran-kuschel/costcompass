@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { RecurringCost, Purchase, CostItem, Month } from '~~/shared/types/calculation'
-import { totalAnnualRecurring, totalAnnualPurchases, filterByBusiness, totalsByCategory, occursInMonth, totalMonthlyCost } from '~~/shared/utils/costs'
+import { totalAnnualRecurring, totalAnnualPurchases, filterByBusiness, totalsByCategory, occursInMonth, totalMonthlyCost, monthlyTotals } from '~~/shared/utils/costs'
 
 const YEAR = 2026
 
@@ -256,5 +256,33 @@ describe('totalMonthlyCost', () => {
   })
   it('returns 0 for empty lists', () => {
     expect(totalMonthlyCost([], [], YEAR, 1)).toBe(0)
+  })
+})
+describe('monthlyTotals', () => {
+  it('returns a result with 12 entries', () => {
+    const items = [recurring({ amount: 100 })]
+    expect(monthlyTotals(items, [], YEAR).length).toEqual(12)
+  })
+  it('a monthly cost of 100 gives 12 100s', () => {
+    const items = [recurring({ amount: 100 })]
+    expect(monthlyTotals(items, [], YEAR)).toEqual(Array(12).fill(100))
+  })
+  it('a March purchase of 500 € lands only at index 2', () => {
+    const purchases = [purchase({ amount: 500, date: `${YEAR}-03-15` })]
+    const expected = Array(12).fill(0)
+    expected[2] = 500
+    expect(monthlyTotals([], purchases, YEAR)).toEqual(expected)
+  })
+  it('the monthly values add up to the yearly total', () => {
+    const recurringCosts = [
+      recurring({ amount: 100 }),
+      recurring({ amount: 5000, interval: 'yearly', dueMonth: 6}),
+      recurring({ amount: 200, interval: 'quarterly', dueMonth: 2 }),
+    ]
+    const purchases = [
+      purchase({ amount: 500, date: `${YEAR}-03-15` }),
+      purchase({ amount: 500, date: `${YEAR}-03-15` }),
+    ]
+    expect(monthlyTotals(recurringCosts, purchases, YEAR).reduce((total, value) => total + value, 0)).toEqual(totalAnnualCost(recurringCosts, purchases, YEAR))
   })
 })
