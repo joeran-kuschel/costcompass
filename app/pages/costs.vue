@@ -33,6 +33,8 @@ async function refreshAll() {
     await Promise.all([refreshRecurring(), refreshPurchases()])
 }
 const open = ref(false)
+const toDelete = ref<Stored<Cost> | null>(null)
+
 async function onSaved() {
     await refreshAll()
     open.value = false
@@ -45,6 +47,11 @@ async function onDelete (cost: Stored<Cost>) {
     } catch {
         toast.add({ title: t('costs.deleteError'), color: 'error'})
     }
+}
+async function confirmDelete() {
+    if (!toDelete.value) return
+    await onDelete(toDelete.value)
+    toDelete.value = null
 }
 </script>
 <template>
@@ -62,7 +69,19 @@ async function onDelete (cost: Stored<Cost>) {
         <template #when-cell="{ row }">{{ whenLabel(row.original) }}</template>
         <template #business-cell="{ row }">{{ row.original.business ? t('common.yes') : t('common.no') }}</template>
         <template #actions-cell="{ row }">
-            <UButton icon="i-lucide-trash-2" color="error" variant="ghost" @click="onDelete(row.original)" :aria-label="t('costs.delete', { name: row.original.name })"/>
+            <UButton icon="i-lucide-trash-2" color="error" variant="ghost" @click="toDelete = row.original" :aria-label="t('costs.delete', { name: row.original.name })"/>
         </template>
     </UTable>
+    <UModal
+        :open="toDelete !== null"
+        :title="t('costs.confirmTitle')"
+        :description="t('costs.confirmText', { name: toDelete?.name ?? '' })"
+        @update:open="(isOpen: boolean) => { if (!isOpen) toDelete = null }"
+    >
+        <template #footer>
+            <UButton color="neutral" variant="outline" :label="t('common.cancel')" @click="toDelete = null" />
+            <UButton color="error" :label="t('common.delete')" @click="confirmDelete" />
+        </template>
+    </UModal>
+
 </template>

@@ -19,6 +19,8 @@
     "add": "Add cost",
     "delete": "Delete {name}",
     "deleteError": "Could not delete the cost. Please try again.",
+    "confirmTitle": "Delete cost?",
+    "confirmText": "{name} will be permanently deleted.",
     "columns": {
       "name": "Name",
       "category": "Category",
@@ -35,7 +37,9 @@
   },
   "common": {
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "cancel": "Cancel",
+    "delete": "Delete"
   },
   "nav": {
     "dashboard": "Dashboard",

@@ -19,6 +19,8 @@
     "add": "Kosten hinzufügen",
     "delete": "{name} löschen",
     "deleteError": "Die Kosten konnten nicht gelöscht werden. Bitte versuche es erneut.",
+    "confirmTitle": "Kosten löschen?",
+    "confirmText": "{name} wird endgültig gelöscht.",
     "columns": {
       "name": "Name",
       "category": "Kategorie",
@@ -35,7 +37,9 @@
   },
   "common": {
     "yes": "Ja",
-    "no": "Nein"
+    "no": "Nein",
+    "cancel": "Abbrechen",
+    "delete": "Löschen"
   },
   "nav": {
     "dashboard": "Dashboard",
