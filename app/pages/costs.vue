@@ -1,8 +1,8 @@
 <script setup lang="ts">
 const { t, n, locale } = useI18n()
-const { data: recurring, refresh: refreshRecurring } = await useFetch<RecurringCost[]>('/api/recurring-costs')
-const { data: purchases, refresh: refreshPurchases } = await useFetch<Purchase[]>('/api/purchases')
-const costs = computed<Cost[]>(() => [
+const { data: recurring, refresh: refreshRecurring } = await useFetch<Stored<RecurringCost>[]>('/api/recurring-costs')
+const { data: purchases, refresh: refreshPurchases } = await useFetch<Stored<Purchase>[]>('/api/purchases')
+const costs = computed<Stored<Cost>[]>(() => [
     ...(recurring.value ?? []),
     ...(purchases.value ?? []),
 ])
@@ -13,8 +13,9 @@ const columns = computed(() => [
     { id: 'when', header: t('costs.columns.when') },
     { accessorKey: 'amount', header: t('costs.columns.amount') },
     { accessorKey: 'business', header: t('costs.columns.business') },
+    { id: 'actions', header: t('costs.columns.actions') },
 ])
-
+const toast = useToast()
 function monthName(month: number): string {
     return new Intl.DateTimeFormat(locale.value, { month: 'long', timeZone: 'UTC' })
         .format(new Date(Date.UTC(2000, month - 1, 1)))
@@ -36,6 +37,15 @@ async function onSaved() {
     await refreshAll()
     open.value = false
 }
+async function onDelete (cost: Stored<Cost>) {
+    const url = cost.kind === 'recurring' ? '/api/recurring-costs' : '/api/purchases'
+    try {
+        await $fetch(`${url}/${cost.id}`, { method: 'DELETE' })
+        await refreshAll()
+    } catch {
+        toast.add({ title: t('costs.deleteError'), color: 'error'})
+    }
+}
 </script>
 <template>
     <h1>{{ t('costs.title') }}</h1>
@@ -51,5 +61,8 @@ async function onSaved() {
         <template #amount-cell="{ row }">{{ n(row.original.amount, { style: 'currency', currency: 'EUR' }) }}</template>
         <template #when-cell="{ row }">{{ whenLabel(row.original) }}</template>
         <template #business-cell="{ row }">{{ row.original.business ? t('common.yes') : t('common.no') }}</template>
+        <template #actions-cell="{ row }">
+            <UButton icon="i-lucide-trash-2" color="error" variant="ghost" @click="onDelete(row.original)" :aria-label="t('costs.delete', { name: row.original.name })"/>
+        </template>
     </UTable>
 </template>

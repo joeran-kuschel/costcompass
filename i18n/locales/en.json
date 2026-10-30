@@ -17,13 +17,16 @@
   "costs": {
     "title": "Costs",
     "add": "Add cost",
+    "delete": "Delete {name}",
+    "deleteError": "Could not delete the cost. Please try again.",
     "columns": {
       "name": "Name",
       "category": "Category",
       "kind": "Kind",
       "amount": "Amount",
       "business": "Business",
-      "when": "When"
+      "when": "When",
+      "actions": "Actions"
     }
   },
   "kind": {

@@ -17,13 +17,16 @@
   "costs": {
     "title": "Kosten",
     "add": "Kosten hinzufügen",
+    "delete": "{name} löschen",
+    "deleteError": "Die Kosten konnten nicht gelöscht werden. Bitte versuche es erneut.",
     "columns": {
       "name": "Name",
       "category": "Kategorie",
       "kind": "Art",
       "amount": "Betrag",
       "business": "Geschäftlich",
-      "when": "Wann"
+      "when": "Wann",
+      "actions": "Aktionen"
     }
   },
   "kind": {
