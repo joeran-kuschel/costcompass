@@ -16,6 +16,7 @@
   },
   "costs": {
     "title": "Kosten",
+    "add": "Kosten hinzufügen",
     "columns": {
       "name": "Name",
       "category": "Kategorie",
@@ -36,5 +37,16 @@
   "nav": {
     "dashboard": "Dashboard",
     "costs": "Kosten"
+  },
+  "form": {
+    "kind": "Art",
+    "name": "Name",
+    "amount": "Betrag",
+    "category": "Kategorie",
+    "business": "Geschäftliche Kosten",
+    "interval": "Intervall",
+    "dueMonth": "Fälligkeitsmonat",
+    "date": "Datum",
+    "submit": "Kosten hinzufügen"
   }
 }

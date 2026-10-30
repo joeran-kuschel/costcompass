@@ -16,6 +16,7 @@
   },
   "costs": {
     "title": "Costs",
+    "add": "Add cost",
     "columns": {
       "name": "Name",
       "category": "Category",
@@ -36,5 +37,16 @@
   "nav": {
     "dashboard": "Dashboard",
     "costs": "Costs"
+  },
+  "form": {
+    "kind": "Type",
+    "name": "Name",
+    "amount": "Amount",
+    "category": "Category",
+    "business": "Business cost",
+    "interval": "Interval",
+    "dueMonth": "Due month",
+    "date": "Date",
+    "submit": "Add cost"
   }
 }
