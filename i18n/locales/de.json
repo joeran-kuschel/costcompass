@@ -47,6 +47,7 @@
     "interval": "Intervall",
     "dueMonth": "Fälligkeitsmonat",
     "date": "Datum",
-    "submit": "Kosten hinzufügen"
+    "submit": "Kosten hinzufügen",
+    "error": "Die Kosten konnten nicht gespeichert werden. Bitte versuche es erneut."
   }
 }

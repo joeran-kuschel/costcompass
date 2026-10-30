@@ -47,6 +47,7 @@
     "interval": "Interval",
     "dueMonth": "Due month",
     "date": "Date",
-    "submit": "Add cost"
+    "submit": "Add cost",
+    "error": "Could not save the cost. Please try again."
   }
 }

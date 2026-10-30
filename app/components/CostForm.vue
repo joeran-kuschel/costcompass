@@ -26,11 +26,15 @@ const monthItems = computed(() => MONTHS.map(m => ({
     value: m,
 })))
 const emit = defineEmits<{ saved: [] }>()
-
+const toast = useToast()
 async function onSubmit(event: FormSubmitEvent<CreateRecurringCost | CreatePurchase>) {
     const url = kind.value === 'recurring' ? '/api/recurring-costs' : '/api/purchases'
-    await $fetch(url, { method: 'POST', body: event.data })
-    emit('saved')
+    try {
+        await $fetch(url, { method: 'POST', body: event.data })
+        emit('saved')
+    } catch {
+        toast.add({ title: t('form.error'), color: 'error'})
+    }
 }
 </script>
 <template>
