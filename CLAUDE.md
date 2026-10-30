@@ -91,17 +91,17 @@ Pages for now:
 
 1. `/` **Dashboard** (`pages/index.vue`, planned): year selector, annual total, household versus business split, totals per category, the 12 monthly totals. Everything comes from the `shared/` core, no new API routes.
 2. `/costs` (`pages/costs.vue`, exists): one table with recurring costs and purchases together, a `kind` column and a "when" column (interval and month for recurring, date for purchases). Add, edit and delete actions come next.
-3. `/calculator`: later (roadmap step 9), not part of the first UI.
+3. `/months/[year]/[month]` **Month page** (`pages/months/[year]/[month].vue`, planned): the costs of one month (`costsInMonth`) and the month's total, with an add action that opens the same form as `/costs`. The year is part of the URL, so a month page does not depend on shared year state, can be bookmarked, and works with the back button. The dashboard's monthly totals link to these pages.
+4. `/calculator`: later (roadmap step 9), not part of the first UI.
 
 Views that are not pages:
 
-- **Add/edit form:** a modal or slide-over opened from `/costs`, not its own routes. One form for both kinds of cost. Built with `UForm` and the Zod schemas, with labelled fields.
-- **Month detail:** the list of costs in one month (`costsInMonth`), opened from the dashboard's monthly view as a slide-over or section.
+- **Add/edit form:** a modal or slide-over opened from `/costs` and from the month pages, not its own routes. One form component for both kinds of cost. Built with `UForm` and the Zod schemas, with labelled fields. On a month page it opens with defaults from that month: a purchase gets a date in that month (day left to fill in), a yearly or quarterly recurring cost gets that month as `dueMonth`.
 
 Shared structure:
 
 - A layout with a header: navigation (Dashboard, Costs) and the language switcher, which moves there from the costs page.
-- The selected year is shared by the dashboard and the costs table, as a small composable (`useYear`), because the core takes the year as a parameter.
+- The selected year is shared by the dashboard and the costs table, as a small composable (`useYear`), because the core takes the year as a parameter. Month pages take their year from the URL instead.
 - Not needed yet: login (single user), settings.
 
 ## Kubernetes setup (Docker Desktop)
