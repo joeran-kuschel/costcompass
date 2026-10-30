@@ -40,9 +40,9 @@ budgetly/
 │   ├── assets/css/main.css   # Tailwind + Nuxt UI imports
 │   ├── components/           # Reusable Vue components (LanguageSwitcher.vue)
 │   ├── composables/          # (planned) Reusable stateful logic (useXxx)
-│   ├── layouts/              # (planned) Page layouts
+│   ├── layouts/              # Page layouts (default.vue: header with navigation and language switcher)
 │   ├── middleware/           # (planned) Client route middleware
-│   └── pages/                # Pages (auto-routing): costs.vue; index.vue (dashboard) is reserved and planned
+│   └── pages/                # Pages (auto-routing): costs.vue; index.vue (dashboard) is a placeholder for now
 ├── server/                   # Nitro server, the only layer touching the DB
 │   ├── api/                  # API routes: recurring-costs/ and purchases/ (index.get/post, [id].patch/delete)
 │   ├── db/                   # Drizzle schema and migrations
@@ -100,7 +100,7 @@ Views that are not pages:
 
 Shared structure:
 
-- A layout with a header: navigation (Dashboard, Costs) and the language switcher, which moves there from the costs page.
+- `layouts/default.vue` (exists): `UHeader` with the title, a `UNavigationMenu` (Dashboard, Costs) and the `LanguageSwitcher`, then `UMain` and `UContainer` around the page. Nuxt UI components render the landmarks (`<header>`, `<nav>`, `<main>`); labels that go through `t()` must be wrapped in `computed` so they update when the language changes. Month pages will be added to the navigation only when they exist.
 - The selected year is shared by the dashboard and the costs table, as a small composable (`useYear`), because the core takes the year as a parameter. Month pages take their year from the URL instead.
 - Not needed yet: login (single user), settings.
 
@@ -165,8 +165,8 @@ Shared structure:
 - Postgres in k8s: own StatefulSet manifests, Helm chart, or an operator like CloudNativePG
 - Manifest management: plain YAML, Kustomize or Helm
 - Costs table and year: should the table be filtered by the selected year? Only purchases have a year, recurring costs have none
-- Language select needs an accessible label (`language.label` locale key plus `aria-label`) before it moves to the header
+- Language select (now in the header) still needs an accessible label (`language.label` locale key plus `aria-label`)
 
 ## Current status
 
-Steps 1-5 are done. The cost core in `shared/` is complete (annual totals, `totalsByCategory`, `filterByBusiness`, the monthly views), the Drizzle schema and migration exist, and the API has `GET`, `POST`, `PATCH` and `DELETE` for both recurring costs and purchases, tested by hand against the local Postgres. 73 Vitest tests pass (the cost core and all Zod schemas); the routes themselves and the update functions are not covered by automated tests yet. Step 6 (UI) has started: `app.vue` renders `<NuxtPage />`, `pages/costs.vue` shows the combined table with translated columns and a "when" column, and `components/LanguageSwitcher.vue` (a `USelect` calling `setLocale`) sits on that page. Next: the add/edit form, then the layout with header, the dashboard and the year selector (see Pages and views). Still open: the `RecurringCost` union type in the core (`dueMonth` required for yearly and quarterly, absent for monthly; the API already enforces it), and the rate calculator (later). ESLint currently crashes because `typescript-eslint` does not support TypeScript 7; `pnpm add -D typescript@6` would fix it (cosmetic, not urgent).
+Steps 1-5 are done. The cost core in `shared/` is complete (annual totals, `totalsByCategory`, `filterByBusiness`, the monthly views), the Drizzle schema and migration exist, and the API has `GET`, `POST`, `PATCH` and `DELETE` for both recurring costs and purchases, tested by hand against the local Postgres. 73 Vitest tests pass (the cost core and all Zod schemas); the routes themselves and the update functions are not covered by automated tests yet. Step 6 (UI) has started: `app.vue` renders `<NuxtLayout><NuxtPage /></NuxtLayout>`, `layouts/default.vue` provides the header with navigation and the language switcher, `pages/costs.vue` shows the combined table with translated columns and a "when" column, and `pages/index.vue` is a placeholder for the dashboard. Next: the add/edit form, then the dashboard, the year selector and the month pages (see Pages and views). Still open: the `RecurringCost` union type in the core (`dueMonth` required for yearly and quarterly, absent for monthly; the API already enforces it), and the rate calculator (later). ESLint currently crashes because `typescript-eslint` does not support TypeScript 7; `pnpm add -D typescript@6` would fix it (cosmetic, not urgent).
