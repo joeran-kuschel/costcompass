@@ -66,5 +66,12 @@
     "date": "Date",
     "submit": "Add cost",
     "error": "Could not save the cost. Please try again."
+  },
+  "dashboard": {
+    "loading": "Loading your costs…",
+    "error": "Could not load your costs.",
+    "retry": "Try again",
+    "emptyTitle": "No costs yet",
+    "emptyText": "Add a recurring cost or a purchase to see your totals here."
   }
 }
