@@ -102,7 +102,7 @@ Views that are not pages:
 
 Shared structure:
 
-- `layouts/default.vue` (exists): `UHeader` with the title, a `UNavigationMenu` (Dashboard, Costs) and the `LanguageSwitcher`, then `UMain` and `UContainer` around the page. Nuxt UI components render the landmarks (`<header>`, `<nav>`, `<main>`); labels that go through `t()` must be wrapped in `computed` so they update when the language changes. Month pages will be added to the navigation only when they exist.
+- `layouts/default.vue` (exists): `UHeader` with the title, a `UNavigationMenu` (Dashboard, Costs) and the `LanguageSwitcher` (a `USelect` whose accessible name comes from `language.label` as an `aria-label`, so it has no visible label), then `UMain` and `UContainer` around the page. Nuxt UI components render the landmarks (`<header>`, `<nav>`, `<main>`); labels that go through `t()` must be wrapped in `computed` so they update when the language changes. Month pages will be added to the navigation only when they exist.
 - The selected year is shared by the dashboard and the costs table, as a small composable (`useYear`), because the core takes the year as a parameter. Month pages take their year from the URL instead.
 - Not needed yet: login (single user), settings.
 
@@ -168,8 +168,6 @@ Shared structure:
 - Postgres in k8s: own StatefulSet manifests, Helm chart, or an operator like CloudNativePG
 - Manifest management: plain YAML, Kustomize or Helm
 - Costs table and year: should the table be filtered by the selected year? Only purchases have a year, recurring costs have none
-- Language select (now in the header) still needs an accessible label (`language.label` locale key plus `aria-label`)
-
 ## Current status
 
 Steps 1-5 are done. The cost core in `shared/` is complete (annual totals, `totalsByCategory`, `filterByBusiness`, the monthly views), the Drizzle schema and migration exist, and the API has `GET`, `POST`, `PATCH` and `DELETE` for both recurring costs and purchases, tested by hand against the local Postgres. 117 Vitest tests pass (the cost core, all Zod schemas, the server functions on a mocked `db`, `CostForm` and the costs page); the API routes and the real SQL (ordering, `returning`) are not covered by automated tests, that would need a test Postgres. Step 6 (UI) has started: `app.vue` renders `<NuxtLayout><NuxtPage /></NuxtLayout>`, `layouts/default.vue` provides the header with navigation and the language switcher, `pages/costs.vue` shows the combined table with translated columns and a "when" column, and `pages/index.vue` is a placeholder for the dashboard. The add form is done (`components/CostForm.vue` in a modal on `/costs`). Failed saves and failed deletes show an error toast, delete works from the table after a confirmation, and edit works from the table in the same modal as add. Next: the dashboard, the year selector and the month pages (see Pages and views). Still open: the `RecurringCost` union type in the core (`dueMonth` required for yearly and quarterly, absent for monthly; the API already enforces it), and the rate calculator (later). ESLint currently crashes because `typescript-eslint` does not support TypeScript 7; `pnpm add -D typescript@6` would fix it (cosmetic, not urgent).

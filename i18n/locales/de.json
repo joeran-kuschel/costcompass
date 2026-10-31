@@ -47,6 +47,9 @@
     "dashboard": "Dashboard",
     "costs": "Kosten"
   },
+  "language": {
+    "label": "Sprache"
+  },
   "form": {
     "kind": "Art",
     "name": "Name",
