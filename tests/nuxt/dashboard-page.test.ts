@@ -611,3 +611,100 @@ describe('dashboard page this month card', () => {
     expect(section().exists()).toBe(false)
   })
 })
+
+describe('dashboard page this month cost list', () => {
+  const today = new Date()
+  const year = today.getUTCFullYear()
+  const month = today.getUTCMonth() + 1
+  const previousYear = month === 1 ? year - 1 : year
+  const previousMonth = month === 1 ? 12 : month - 1
+  const dateIn = (y: number, m: number) => `${y}-${String(m).padStart(2, '0')}-15`
+  const monthName = (locale: string) => new Intl.DateTimeFormat(locale, { month: 'long', timeZone: 'UTC' }).format(new Date(Date.UTC(2026, month - 1, 1)))
+  const lamp = (id: number, amount: number, date: string, business = false) => ({ id, kind: 'purchase', name: 'Lamp', amount, category: 'appliances', business, date })
+  const section = () => wrapper.find('section[aria-labelledby="this-month-title"]')
+  const list = () => section().find('ul')
+  // The parts of a row are flex items without whitespace between them: join them with a space.
+  const rows = () => section().findAll('li').map(item => Array.from(item.element.children).map(part => part.textContent?.trim()).join(' '))
+
+  it('lists the costs of the month with name, kind and amount, recurring costs first', async () => {
+    api.purchases.rows = [lamp(2, 300, dateIn(year, month))]
+    api.recurring.rows = [rent]
+    await mountPage()
+    await vi.waitFor(() => expect(list().exists()).toBe(true))
+    expect(rows()).toEqual(['Rent Recurring €800', 'Lamp Purchase €300'])
+  })
+  it('gives the list an accessible name with the month', async () => {
+    api.recurring.rows = [rent]
+    await mountPage()
+    await vi.waitFor(() => expect(list().exists()).toBe(true))
+    expect(list().attributes('aria-label')).toBe(`Costs in ${monthName('en')}`)
+  })
+  it('marks business costs with a text badge and no other cost', async () => {
+    api.recurring.rows = [rent]
+    api.purchases.rows = [lamp(2, 300, dateIn(year, month), true)]
+    await mountPage()
+    await vi.waitFor(() => expect(list().exists()).toBe(true))
+    expect(rows()).toEqual(['Rent Recurring €800', 'Lamp Purchase Business €300'])
+  })
+  it('lists only the costs of the current month', async () => {
+    api.recurring.rows = [rent]
+    api.purchases.rows = [
+      lamp(2, 300, dateIn(year, month)),
+      lamp(3, 999, dateIn(previousYear, previousMonth)),
+      lamp(4, 999, dateIn(year - 1, month)),
+    ]
+    await mountPage()
+    await vi.waitFor(() => expect(list().exists()).toBe(true))
+    expect(rows()).toHaveLength(2)
+    expect(section().text()).not.toContain('€999')
+  })
+  it('lists a recurring cost and a purchase with the same id', async () => {
+    api.recurring.rows = [{ ...rent, id: 5 }]
+    api.purchases.rows = [lamp(5, 300, dateIn(year, month))]
+    await mountPage()
+    await vi.waitFor(() => expect(list().exists()).toBe(true))
+    expect(rows()).toHaveLength(2)
+  })
+  it('adds up to the total of the card', async () => {
+    api.recurring.rows = [rent]
+    api.purchases.rows = [lamp(2, 300, dateIn(year, month))]
+    await mountPage()
+    await vi.waitFor(() => expect(list().exists()).toBe(true))
+    expect(section().text()).toContain('€1,100')
+  })
+  it('shows an empty state with an add action when the month has no costs', async () => {
+    api.purchases.rows = [lamp(2, 300, dateIn(previousYear, previousMonth))]
+    await mountPage()
+    await vi.waitFor(() => expect(section().exists()).toBe(true))
+    expect(list().exists()).toBe(false)
+    expect(section().text()).toContain('No costs this month yet.')
+    const add = section().find('a')
+    expect(add.text()).toBe('Add cost')
+    expect(add.attributes('href')).toBe('/costs')
+  })
+  it('shows no empty state while the month has costs', async () => {
+    api.recurring.rows = [rent]
+    await mountPage()
+    await vi.waitFor(() => expect(list().exists()).toBe(true))
+    expect(section().text()).not.toContain('No costs this month yet.')
+    expect(section().find('a').exists()).toBe(false)
+  })
+  it('is German with German texts when the language is German', async () => {
+    await setLanguage('de')
+    api.recurring.rows = [rent]
+    api.purchases.rows = [lamp(2, 300, dateIn(year, month), true)]
+    await mountPage()
+    await vi.waitFor(() => expect(list().exists()).toBe(true))
+    expect(list().attributes('aria-label')).toBe(`Kosten im ${monthName('de')}`)
+    expect(rows()[0]).toMatch(/^Rent Wiederkehrend 800\s€$/)
+    expect(rows()[1]?.replace(/\s/g, ' ')).toBe('Lamp Anschaffung Geschäftlich 300 €')
+  })
+  it('German empty state', async () => {
+    await setLanguage('de')
+    api.purchases.rows = [lamp(2, 300, dateIn(previousYear, previousMonth))]
+    await mountPage()
+    await vi.waitFor(() => expect(section().exists()).toBe(true))
+    expect(section().text()).toContain('In diesem Monat gibt es noch keine Kosten.')
+    expect(section().find('a').text()).toBe('Kosten hinzufügen')
+  })
+})

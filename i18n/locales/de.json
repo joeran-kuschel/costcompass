@@ -98,7 +98,10 @@
         "less": "{percent} % weniger als im {previous}",
         "more": "{percent} % mehr als im {previous}",
         "same": "Genauso viel wie im {previous}",
-        "none": "Keine Kosten im {previous} zum Vergleichen"
+        "none": "Keine Kosten im {previous} zum Vergleichen",
+        "list": "Kosten im {month}",
+        "business": "Geschäftlich",
+        "empty": "In diesem Monat gibt es noch keine Kosten."
     }
   }
 }

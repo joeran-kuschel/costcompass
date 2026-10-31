@@ -98,7 +98,10 @@
       "less": "{percent}% less than {previous}",
       "more": "{percent}% more than {previous}",
       "same": "Same as {previous}",
-      "none": "No costs in {previous} to compare with"
+      "none": "No costs in {previous} to compare with",
+      "list": "Costs in {month}",
+      "business": "Business",
+      "empty": "No costs this month yet."
     }
   }
 }

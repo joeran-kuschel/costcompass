@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { annualSummary, categoryBreakDown, splitPercentages, monthBreakdown, monthChange } from '~~/shared/utils/costs'
+import { annualSummary, categoryBreakDown, splitPercentages, monthBreakdown, monthChange, costsInMonth} from '~~/shared/utils/costs'
 
 const { t, locale } = useI18n()
 const year = new Date().getUTCFullYear()
@@ -45,7 +45,15 @@ const thisMonth = computed(() => {
         title: t('dashboard.thisMonth.title', { month: monthName(currentMonth), year}),
         total: euros(change.current),
         comparison: t(`dashboard.thisMonth.${direction}`, { percent: Math.abs(percent ?? 0), previous: monthName (currentMonth === 1 ? 12 : currentMonth - 1) }),
-        icon: { less: 'i-lucide-trending-down', more: 'i-lucide-trending-up', same: 'i-lucide-minus', none: 'i-lucide-minus'}[direction]
+        icon: { less: 'i-lucide-trending-down', more: 'i-lucide-trending-up', same: 'i-lucide-minus', none: 'i-lucide-minus'}[direction],
+                listLabel: t('dashboard.thisMonth.list', { month: monthName(currentMonth) }),
+        rows: costsInMonth(recurring.value ?? [], purchases.value ?? [], year, currentMonth).map(cost => ({
+            key: `${cost.kind}-${cost.id}`,
+            name: cost.name,
+            kind: t(`kind.${cost.kind}`),
+            business: cost.business,
+            amount: euros(cost.amount),
+        }))
     }
 })
 
@@ -80,6 +88,18 @@ async function retry() {
                     <UIcon :name="thisMonth.icon" aria-hidden="true" />
                     {{ thisMonth.comparison }}
                 </p>
+                <ul v-if="thisMonth.rows.length" :aria-label="thisMonth.listLabel" class="mt-4 divide-y divide-default">
+                    <li v-for="row in thisMonth.rows" :key="row.key" class="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
+                        <span class="min-w-0 flex-1 break-words">{{ row.name }}</span>
+                        <UBadge :label="row.kind" color="neutral" variant="subtle" />
+                        <UBadge v-if="row.business" :label="t('dashboard.thisMonth.business')" color="secondary" variant="subtle" />
+                        <span class="w-24 text-right">{{ row.amount }}</span>
+                    </li>
+                </ul>
+                <div v-else class="mt-4">
+                    <p>{{ t('dashboard.thisMonth.empty') }}</p>
+                    <UButton to="/costs" :label="t('costs.add')" class="mt-2" />
+                </div>
             </UCard>
         </section>
         <section aria-labelledby="summary-title">

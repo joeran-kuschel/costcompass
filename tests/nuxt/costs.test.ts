@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import type { RecurringCost, Purchase, CostItem, Month, AnnualSummary } from '~~/shared/types/calculation'
+import type { RecurringCost, Purchase, CostItem, Month, AnnualSummary, Stored } from '~~/shared/types/calculation'
 import { CATEGORIES } from '~~/shared/types/calculation'
 import { totalAnnualRecurring, totalAnnualPurchases, totalAnnualCost, filterByBusiness, totalsByCategory, occursInMonth, totalMonthlyCost, monthlyTotals, costsInMonth, annualSummary, categoryBreakDown, splitPercentages, monthBreakdown, monthChange } from '~~/shared/utils/costs'
 
@@ -655,5 +655,19 @@ describe('monthChange', () => {
   it('does not look into the previous year for other months', () => {
     const purchases = [purchase({ amount: 999, date: `${YEAR - 1}-05-15` }), purchase({ amount: 100, date: `${YEAR}-06-15` })]
     expect(monthChange([], purchases, YEAR, 6).previous).toBe(0)
+  })
+})
+
+describe('costsInMonth with stored items', () => {
+  it('keeps the id of every returned item', () => {
+    const recurringCosts: Stored<RecurringCost>[] = [{ ...recurring({ amount: 100 }), id: 7 }]
+    const purchases: Stored<Purchase>[] = [{ ...purchase({ amount: 500, date: `${YEAR}-03-15` }), id: 9 }]
+    const result = costsInMonth(recurringCosts, purchases, YEAR, 3)
+    expect(result.map(item => item.id)).toEqual([7, 9])
+  })
+  it('lists recurring costs first and then purchases', () => {
+    const recurringCosts = [recurring({ name: 'Rent', amount: 100 })]
+    const purchases = [purchase({ name: 'Lamp', amount: 500, date: `${YEAR}-03-15` })]
+    expect(costsInMonth(recurringCosts, purchases, YEAR, 3).map(item => item.name)).toEqual(['Rent', 'Lamp'])
   })
 })

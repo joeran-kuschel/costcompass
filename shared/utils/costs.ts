@@ -1,4 +1,4 @@
-import { CATEGORIES, MONTHS, type CostItem, type Purchase, type RecurringCost, type Category, type Interval, type Month, type Cost, type AnnualSummary, type CategoryTotal, type SplitPercentages, type MonthTotal, type MonthChange } from '~~/shared/types/calculation'
+import { CATEGORIES, MONTHS, type CostItem, type Purchase, type RecurringCost, type Category, type Interval, type Month, type AnnualSummary, type CategoryTotal, type SplitPercentages, type MonthTotal, type MonthChange } from '~~/shared/types/calculation'
 const PERIODS_PER_YEAR: Record<Interval, number> = {
   monthly: 12,
   quarterly: 4,
@@ -43,7 +43,7 @@ export function totalMonthlyCost(recurring: RecurringCost[], purchases: Purchase
 export function monthlyTotals(recurring: RecurringCost[], purchases: Purchase[], year: number): number[] {
     return MONTHS.map((month) => totalMonthlyCost(recurring, purchases, year, month))
 }
-export function costsInMonth(recurring: RecurringCost[], purchases: Purchase[], year: number, month: Month): Cost[] {
+export function costsInMonth<R extends RecurringCost, P extends Purchase>(recurring: R[], purchases: P[], year: number, month: Month): (R | P)[] {
     const fromRecurring = recurring.filter(item => occursInMonth(item, month))
     const fromPurchases = purchases.filter(item => purchasedIn(item, year, month))
     return [...fromRecurring, ...fromPurchases]
@@ -89,3 +89,4 @@ export function monthChange(recurring: RecurringCost[], purchases: Purchase[], y
     const previous = totalMonthlyCost(recurring, purchases, previousYear, previousMonth) 
     return { current, previous, percent: previous === 0 ? null : Math.round((current - previous) / previous * 100)}
 }
+
