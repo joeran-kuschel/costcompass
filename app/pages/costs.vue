@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { TableColumn } from '@nuxt/ui'
 
 const { t, n, locale } = useI18n()
 const { data: recurring, refresh: refreshRecurring } = await useFetch<Stored<RecurringCost>[]>('/api/recurring-costs')
@@ -6,14 +7,15 @@ const { data: purchases, refresh: refreshPurchases } = await useFetch<Stored<Pur
 const costs = computed<Stored<Cost>[]>(() => [
     ...(recurring.value ?? []),
     ...(purchases.value ?? []),
-])
-const columns = computed(() => [
-    { accessorKey: 'name', header: t('costs.columns.name') },
-    { accessorKey: 'category', header: t('costs.columns.category') },
-    { accessorKey: 'kind', header: t('costs.columns.kind') },
+].sort((a, b) => a.name.localeCompare(b.name, locale.value)))
+
+const columns = computed<TableColumn<Stored<Cost>>[]>(()  => [
+    { accessorKey: 'name', header: sortableHeader(t('costs.columns.name')), sortingFn: (a, b) => a.original.name.localeCompare(b.original.name, locale.value) },
+    { accessorKey: 'category', header: sortableHeader(t('costs.columns.category')), sortingFn: (a, b) => t(`category.${a.original.category}`).localeCompare(t(`category.${b.original.category}`) , locale.value) },
+    { accessorKey: 'kind', header: sortableHeader(t('costs.columns.kind')), sortingFn: (a, b) => t(`kind.${a.original.kind}`).localeCompare(t(`kind.${b.original.kind}`), locale.value) },
     { id: 'when', header: t('costs.columns.when') },
-    { accessorKey: 'amount', header: t('costs.columns.amount') },
-    { accessorKey: 'business', header: t('costs.columns.business') },
+    { accessorKey: 'amount', header: sortableHeader(t('costs.columns.amount')) },
+    { accessorKey: 'business', header: sortableHeader(t('costs.columns.business')) },
     { id: 'actions', header: t('costs.columns.actions') },
 ])
 const toast = useToast()
@@ -55,6 +57,26 @@ async function confirmDelete() {
     if (!toDelete.value) return
     await onDelete(toDelete.value)
     toDelete.value = null
+}
+const UButton = resolveComponent('UButton')
+
+type SortableColumn = {
+    getIsSorted: () => false | 'asc' | 'desc'
+    toggleSorting: (desc?: boolean) => void
+}
+
+function sortableHeader(label: string) {
+    return ({ column }: { column: SortableColumn }) => {
+        const sorted = column.getIsSorted()
+        return h(UButton, {
+            color: 'neutral',
+            variant: 'ghost',
+            label,
+            'aria-label': t(`costs.sort.${sorted || 'none'}`, { column: label }),
+            icon: sorted === 'asc' ? 'i-lucide-arrow-up' : sorted === 'desc' ? 'i-lucide-arrow-down' : 'i-lucide-arrow-up-down',
+            onClick: () => column.toggleSorting(sorted === 'asc'),
+        })
+    }
 }
 </script>
 <template>

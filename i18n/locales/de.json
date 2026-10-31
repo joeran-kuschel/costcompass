@@ -30,6 +30,11 @@
       "business": "Geschäftlich",
       "when": "Wann",
       "actions": "Aktionen"
+    },
+    "sort": {
+      "none": "Nach {column} sortieren",
+      "asc": "{column}, aufsteigend sortiert",
+      "desc": "{column}, absteigend sortiert"
     }
   },
   "kind": {

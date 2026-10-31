@@ -30,6 +30,11 @@
       "business": "Business",
       "when": "When",
       "actions": "Actions"
+    },
+    "sort": {
+      "none": "Sort by {column}",
+      "asc": "{column}, sorted ascending",
+      "desc": "{column}, sorted descending"
     }
   },
   "kind": {
