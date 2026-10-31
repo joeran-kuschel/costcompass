@@ -1,14 +1,20 @@
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui'
 
+type SortableColumn = {
+    getIsSorted: () => false | 'asc' | 'desc'
+    toggleSorting: (desc?: boolean) => void
+}
+
 const { t, n, locale } = useI18n()
 const { data: recurring, refresh: refreshRecurring } = await useFetch<Stored<RecurringCost>[]>('/api/recurring-costs')
 const { data: purchases, refresh: refreshPurchases } = await useFetch<Stored<Purchase>[]>('/api/purchases')
+const toast = useToast()
+const UButton = resolveComponent('UButton')
 const costs = computed<Stored<Cost>[]>(() => [
     ...(recurring.value ?? []),
     ...(purchases.value ?? []),
 ].sort((a, b) => a.name.localeCompare(b.name, locale.value)))
-
 const columns = computed<TableColumn<Stored<Cost>>[]>(()  => [
     { accessorKey: 'name', header: sortableHeader(t('costs.columns.name')), sortingFn: (a, b) => a.original.name.localeCompare(b.original.name, locale.value) },
     { accessorKey: 'category', header: sortableHeader(t('costs.columns.category')), sortingFn: (a, b) => t(`category.${a.original.category}`).localeCompare(t(`category.${b.original.category}`) , locale.value) },
@@ -18,7 +24,13 @@ const columns = computed<TableColumn<Stored<Cost>>[]>(()  => [
     { accessorKey: 'business', header: sortableHeader(t('costs.columns.business')) },
     { id: 'actions', header: t('costs.columns.actions') },
 ])
-const toast = useToast()
+const open = ref(false)
+const toDelete = ref<Stored<Cost> | null>(null)
+const toEdit = ref<Stored<Cost> | null>(null)
+
+watch(open, (isOpen) => { if (!isOpen) toEdit.value = null })
+useHead({ title: () => t('costs.title') })
+
 function monthName(month: number): string {
     return new Intl.DateTimeFormat(locale.value, { month: 'long', timeZone: 'UTC' })
         .format(new Date(Date.UTC(2000, month - 1, 1)))
@@ -32,18 +44,16 @@ function whenLabel(cost: Cost): string {
     if (cost.dueMonth === undefined) return interval
     return `${interval}, ${monthName(cost.dueMonth)}`
 }
+
 async function refreshAll() {
     await Promise.all([refreshRecurring(), refreshPurchases()])
 }
-const open = ref(false)
-const toDelete = ref<Stored<Cost> | null>(null)
-const toEdit = ref<Stored<Cost> | null>(null)
 
-watch(open, (isOpen) => { if (!isOpen) toEdit.value = null })
 async function onSaved() {
     await refreshAll()
     open.value = false
 }
+
 async function onDelete (cost: Stored<Cost>) {
     const url = cost.kind === 'recurring' ? '/api/recurring-costs' : '/api/purchases'
     try {
@@ -53,16 +63,11 @@ async function onDelete (cost: Stored<Cost>) {
         toast.add({ title: t('costs.deleteError'), color: 'error'})
     }
 }
+
 async function confirmDelete() {
     if (!toDelete.value) return
     await onDelete(toDelete.value)
     toDelete.value = null
-}
-const UButton = resolveComponent('UButton')
-
-type SortableColumn = {
-    getIsSorted: () => false | 'asc' | 'desc'
-    toggleSorting: (desc?: boolean) => void
 }
 
 function sortableHeader(label: string) {

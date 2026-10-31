@@ -5,7 +5,9 @@ import type { CreatePurchase, CreateRecurringCost } from '~~/shared/utils/valida
 const props = defineProps<{
     cost?: Stored<Cost> | null        
 }>()
+const emit = defineEmits<{ saved: [], cancel: [] }>()
 const { t, locale } = useI18n()
+const toast = useToast()
 const kindItems = computed(() => [
     { label: t('kind.recurring'), value: 'recurring' },
     { label: t('kind.purchase'), value: 'purchase' },
@@ -20,10 +22,6 @@ const state = reactive({
     dueMonth: undefined as Month | undefined,
     date: ''
 })
-if (props.cost) {
-    kind.value = props.cost.kind
-    Object.assign(state, props.cost)
-}
 const schema = computed(() => kind.value === 'recurring' ? createRecurringCostSchema : createPurchaseSchema)
 const categoryItems = computed(() => CATEGORIES.map(c => ({label: t(`category.${c}`), value: c})))
 const intervalItems = computed(() => INTERVALS.map(i => ({ label: t(`interval.${i}`), value: i })))
@@ -32,8 +30,12 @@ const monthItems = computed(() => MONTHS.map(m => ({
         .format(new Date(Date.UTC(2000, m - 1, 1))),
     value: m,
 })))
-const emit = defineEmits<{ saved: [], cancel: [] }>()
-const toast = useToast()
+
+if (props.cost) {
+    kind.value = props.cost.kind
+    Object.assign(state, props.cost)
+}
+
 async function onSubmit(event: FormSubmitEvent<CreateRecurringCost | CreatePurchase>) {
     const base = kind.value === 'recurring' ? '/api/recurring-costs' : '/api/purchases'
     try {
