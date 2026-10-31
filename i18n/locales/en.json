@@ -72,6 +72,13 @@
     "error": "Could not load your costs.",
     "retry": "Try again",
     "emptyTitle": "No costs yet",
-    "emptyText": "Add a recurring cost or a purchase to see your totals here."
+    "emptyText": "Add a recurring cost or a purchase to see your totals here.",
+    "summary": {
+      "title": "Summary for {year}",
+      "total": "Annual total",
+      "household": "Household",
+      "business": "Business",
+      "averagePerMonth": "Average per month"
+    }
   }
 }

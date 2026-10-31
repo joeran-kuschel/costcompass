@@ -141,3 +141,80 @@ describe('dashboard page error state', () => {
     expect(alert().find('button').text()).toBe('Erneut versuchen')
   })
 })
+
+describe('dashboard page summary tiles', () => {
+  const year = new Date().getUTCFullYear()
+  // Annual: 800 x 12 + 1,200 + 300 = 11,100; business 1,200; household 9,900; average 925.
+  const costs = () => {
+    api.recurring.rows = [
+      rent,
+      { id: 3, kind: 'recurring', name: 'Insurance', amount: 1200, category: 'insurance', business: true, interval: 'yearly', dueMonth: 3 },
+    ]
+    api.purchases.rows = [
+      { id: 2, kind: 'purchase', name: 'Lamp', amount: 300, category: 'appliances', business: false, date: `${year}-03-15` },
+      { id: 4, kind: 'purchase', name: 'Old laptop', amount: 500, category: 'appliances', business: true, date: `${year - 1}-03-15` },
+    ]
+  }
+  const cards = () => wrapper.findAll('section [data-slot="root"]').map(card => card.text().replace(/\u00A0/g, ' '))
+  const tile = (label: string) => cards().find(text => text.startsWith(label))
+
+  it('shows a summary heading for the current year', async () => {
+    costs()
+    await mountPage()
+    await vi.waitFor(() => expect(wrapper.find('section h2').exists()).toBe(true))
+    expect(wrapper.find('section h2').text()).toBe(`Summary for ${year}`)
+  })
+  it('labels the summary section with its heading', async () => {
+    costs()
+    await mountPage()
+    await vi.waitFor(() => expect(wrapper.find('section h2').exists()).toBe(true))
+    const section = wrapper.find('section')
+    expect(section.attributes('aria-labelledby')).toBe(wrapper.find('section h2').attributes('id'))
+  })
+  it('shows the four tiles with the right values in whole euros', async () => {
+    costs()
+    await mountPage()
+    await vi.waitFor(() => expect(cards()).toHaveLength(4))
+    expect(tile('Annual total')).toContain('€11,100')
+    expect(tile('Household')).toContain('€9,900')
+    expect(tile('Business')).toContain('€1,200')
+    expect(tile('Average per month')).toContain('€925')
+  })
+  it('counts only the purchases of the current year', async () => {
+    costs()
+    await mountPage()
+    await vi.waitFor(() => expect(cards()).toHaveLength(4))
+    // The 500 from last year would make the total 11,600.
+    expect(tile('Annual total')).not.toContain('11,600')
+  })
+  it('is German with German number formatting when the language is German', async () => {
+    await setLanguage('de')
+    costs()
+    await mountPage()
+    await vi.waitFor(() => expect(cards()).toHaveLength(4))
+    expect(wrapper.find('section h2').text()).toBe(`Übersicht ${year}`)
+    expect(tile('Jahressumme')).toContain('11.100 €')
+    expect(tile('Haushalt')).toContain('9.900 €')
+    expect(tile('Geschäftlich')).toContain('1.200 €')
+    expect(tile('Durchschnitt pro Monat')).toContain('925 €')
+  })
+  it('shows no tiles while the lists are loading', async () => {
+    costs()
+    api.purchases.delay = 300
+    await mountPage()
+    expect(cards()).toHaveLength(0)
+    await vi.waitFor(() => expect(cards()).toHaveLength(4), { timeout: 2000 })
+  })
+  it('shows no tiles when loading fails', async () => {
+    costs()
+    api.recurring.fail = true
+    await mountPage()
+    await vi.waitFor(() => expect(alert().exists()).toBe(true))
+    expect(cards()).toHaveLength(0)
+  })
+  it('shows no tiles when there are no costs at all', async () => {
+    await mountPage()
+    await vi.waitFor(() => expect(wrapper.text()).toContain('No costs yet'))
+    expect(cards()).toHaveLength(0)
+  })
+})

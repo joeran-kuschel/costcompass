@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { RecurringCost, Purchase, CostItem, Month } from '~~/shared/types/calculation'
-import { totalAnnualRecurring, totalAnnualPurchases, filterByBusiness, totalsByCategory, occursInMonth, totalMonthlyCost, monthlyTotals, costsInMonth } from '~~/shared/utils/costs'
+import { totalAnnualRecurring, totalAnnualPurchases, totalAnnualCost, filterByBusiness, totalsByCategory, occursInMonth, totalMonthlyCost, monthlyTotals, costsInMonth, annualSummary } from '~~/shared/utils/costs'
 
 const YEAR = 2026
 
@@ -356,5 +356,75 @@ describe('costsInMonth', () => {
     expect(list).toHaveLength(3)
     expect(sum).toBe(1200)
     expect(sum).toBe(totalMonthlyCost(recurringCosts, purchases, YEAR, 3))
+  })
+})
+
+describe('annualSummary', () => {
+  it('reports the total and splits it into household and business', () => {
+    const recurringCosts = [
+      recurring({ amount: 100 }),
+      recurring({ amount: 600, interval: 'yearly', dueMonth: 3, business: true })
+    ]
+    const purchases = [
+      purchase({ amount: 300, business: true }),
+      purchase({ amount: 200 })
+    ]
+    const summary = annualSummary(recurringCosts, purchases, YEAR)
+    expect(summary.total).toBe(2300)
+    expect(summary.business).toBe(900)
+    expect(summary.household).toBe(1400)
+  })
+  it('household plus business equals the total, also with decimal amounts', () => {
+    const recurringCosts = [
+      recurring({ amount: 0.1, business: true }),
+      recurring({ amount: 0.2 })
+    ]
+    const purchases = [purchase({ amount: 19.99 }), purchase({ amount: 0.07, business: true })]
+    const summary = annualSummary(recurringCosts, purchases, YEAR)
+    expect(summary.household + summary.business).toBeCloseTo(summary.total, 10)
+  })
+  it('equals totalAnnualCost for the total', () => {
+    const recurringCosts = [recurring({ amount: 80 }), recurring({ amount: 90, interval: 'yearly', dueMonth: 5 })]
+    const purchases = [purchase({ amount: 400, date: `${YEAR}-02-01` })]
+    expect(annualSummary(recurringCosts, purchases, YEAR).total).toBe(totalAnnualCost(recurringCosts, purchases, YEAR))
+  })
+  it('counts only the purchases of the given year', () => {
+    const purchases = [
+      purchase({ amount: 500, date: `${YEAR}-03-01` }),
+      purchase({ amount: 700, date: `${YEAR - 1}-12-31` }),
+      purchase({ amount: 900, date: `${YEAR + 1}-01-01` })
+    ]
+    expect(annualSummary([], purchases, YEAR).total).toBe(500)
+  })
+  it('counts recurring costs in every year', () => {
+    const recurringCosts = [recurring({ amount: 100 })]
+    expect(annualSummary(recurringCosts, [], YEAR).total).toBe(1200)
+    expect(annualSummary(recurringCosts, [], YEAR + 1).total).toBe(1200)
+  })
+  it('averages over twelve months: a monthly cost counts twelve times, a yearly cost once', () => {
+    const recurringCosts = [
+      recurring({ amount: 100 }),
+      recurring({ amount: 1200, interval: 'yearly', dueMonth: 7 })
+    ]
+    const summary = annualSummary(recurringCosts, [], YEAR)
+    expect(summary.total).toBe(2400)
+    expect(summary.averagePerMonth).toBe(200)
+  })
+  it('the average is the total divided by 12, not rounded', () => {
+    const summary = annualSummary([], [purchase({ amount: 100 })], YEAR)
+    expect(summary.averagePerMonth).toBeCloseTo(100 / 12, 10)
+  })
+  it('puts everything into household when no cost is a business cost', () => {
+    const summary = annualSummary([recurring({ amount: 50 })], [purchase({ amount: 40 })], YEAR)
+    expect(summary.business).toBe(0)
+    expect(summary.household).toBe(summary.total)
+  })
+  it('puts everything into business when every cost is a business cost', () => {
+    const summary = annualSummary([recurring({ amount: 50, business: true })], [purchase({ amount: 40, business: true })], YEAR)
+    expect(summary.household).toBe(0)
+    expect(summary.business).toBe(summary.total)
+  })
+  it('returns zeros when there are no costs', () => {
+    expect(annualSummary([], [], YEAR)).toEqual({ total: 0, household: 0, business: 0, averagePerMonth: 0 })
   })
 })

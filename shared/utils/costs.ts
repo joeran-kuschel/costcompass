@@ -1,4 +1,4 @@
-import { CATEGORIES, MONTHS, type CostItem, type Purchase, type RecurringCost, type Category, type Interval, type Month, type Cost } from '~~/shared/types/calculation'
+import { CATEGORIES, MONTHS, type CostItem, type Purchase, type RecurringCost, type Category, type Interval, type Month, type Cost, type AnnualSummary } from '~~/shared/types/calculation'
 const PERIODS_PER_YEAR: Record<Interval, number> = {
   monthly: 12,
   quarterly: 4,
@@ -60,4 +60,9 @@ export function totalsByCategory(recurring: RecurringCost[], purchases: Purchase
         if (new Date(item.date).getUTCFullYear() === year) totals[item.category] += item.amount
     })
     return totals
+}
+export function annualSummary(recurring: RecurringCost[], purchases: Purchase[], year: number): AnnualSummary {
+    const total = totalAnnualCost(recurring, purchases, year)
+    const business = totalAnnualCost(filterByBusiness(recurring, true), filterByBusiness(purchases, true), year)
+    return { total, household: total - business, business, averagePerMonth: total / 12 }
 }

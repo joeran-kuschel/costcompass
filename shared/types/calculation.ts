@@ -23,3 +23,9 @@ export interface Purchase extends CostItem {
     kind: 'purchase'
     date: string
 }
+export interface AnnualSummary {
+    total: number,
+    household: number,
+    business: number,
+    averagePerMonth: number,
+}

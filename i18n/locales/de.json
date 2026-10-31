@@ -72,6 +72,13 @@
     "error": "Die Kosten konnten nicht geladen werden.",
     "retry": "Erneut versuchen",
     "emptyTitle": "Noch keine Kosten",
-    "emptyText": "Füge eine wiederkehrende Ausgabe oder eine Anschaffung hinzu, um hier deine Summen zu sehen."
+    "emptyText": "Füge eine wiederkehrende Ausgabe oder eine Anschaffung hinzu, um hier deine Summen zu sehen.",
+    "summary": {
+      "title": "Übersicht {year}",
+      "total": "Jahressumme",
+      "household": "Haushalt",
+      "business": "Geschäftlich",
+      "averagePerMonth": "Durchschnitt pro Monat"
+    }
   }
 }
