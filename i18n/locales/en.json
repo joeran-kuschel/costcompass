@@ -17,6 +17,7 @@
   "costs": {
     "title": "Costs",
     "add": "Add cost",
+    "edit": "Edit {name}",
     "delete": "Delete {name}",
     "deleteError": "Could not delete the cost. Please try again.",
     "confirmTitle": "Delete cost?",
@@ -38,6 +39,7 @@
   "common": {
     "yes": "Yes",
     "no": "No",
+    "save": "Save",
     "cancel": "Cancel",
     "delete": "Delete"
   },

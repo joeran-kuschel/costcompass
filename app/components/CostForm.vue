@@ -2,6 +2,9 @@
 import type { FormSubmitEvent } from '@nuxt/ui'
 import type { CreatePurchase, CreateRecurringCost } from '~~/shared/utils/validation'
 
+const props = defineProps<{
+    cost?: Stored<Cost> | null        
+}>()
 const { t, locale } = useI18n()
 const kindItems = computed(() => [
     { label: t('kind.recurring'), value: 'recurring' },
@@ -17,6 +20,10 @@ const state = reactive({
     dueMonth: undefined as Month | undefined,
     date: ''
 })
+if (props.cost) {
+    kind.value = props.cost.kind
+    Object.assign(state, props.cost)
+}
 const schema = computed(() => kind.value === 'recurring' ? createRecurringCostSchema : createPurchaseSchema)
 const categoryItems = computed(() => CATEGORIES.map(c => ({label: t(`category.${c}`), value: c})))
 const intervalItems = computed(() => INTERVALS.map(i => ({ label: t(`interval.${i}`), value: i })))
@@ -25,12 +32,16 @@ const monthItems = computed(() => MONTHS.map(m => ({
         .format(new Date(Date.UTC(2000, m - 1, 1))),
     value: m,
 })))
-const emit = defineEmits<{ saved: [] }>()
+const emit = defineEmits<{ saved: [], cancel: [] }>()
 const toast = useToast()
 async function onSubmit(event: FormSubmitEvent<CreateRecurringCost | CreatePurchase>) {
-    const url = kind.value === 'recurring' ? '/api/recurring-costs' : '/api/purchases'
+    const base = kind.value === 'recurring' ? '/api/recurring-costs' : '/api/purchases'
     try {
-        await $fetch(url, { method: 'POST', body: event.data })
+        if (props.cost) {
+            await $fetch(`${base}/${props.cost.id}`, { method: 'PATCH', body: event.data })
+        } else {
+            await $fetch(base, { method: 'POST', body: event.data })
+        }
         emit('saved')
     } catch {
         toast.add({ title: t('form.error'), color: 'error'})
@@ -40,7 +51,7 @@ async function onSubmit(event: FormSubmitEvent<CreateRecurringCost | CreatePurch
 <template>
     <UForm :schema="schema" :state="state" @submit="onSubmit">
         <UFormField :label="t('form.kind')">
-            <URadioGroup v-model="kind" :items="kindItems" />
+            <URadioGroup :disabled="!!cost" v-model="kind" :items="kindItems" />
         </UFormField>
         <UFormField :label="t('form.name')" name="name">
             <UInput v-model="state.name" />
@@ -63,6 +74,7 @@ async function onSubmit(event: FormSubmitEvent<CreateRecurringCost | CreatePurch
         <UFormField v-if="kind === 'recurring' && state.interval !== 'monthly'" :label="t('form.dueMonth')" name="dueMonth">
             <USelect v-model="state.dueMonth" :items="monthItems" />
         </UFormField>
-        <UButton type="submit">{{ t('form.submit') }}</UButton>
+        <UButton type="submit">{{ cost ? t('common.save') : t('form.submit') }}</UButton>
+        <UButton color="neutral" variant="outline" :label="t('common.cancel')" @click="emit('cancel')" />
     </UForm>
 </template>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+
 const { t, n, locale } = useI18n()
 const { data: recurring, refresh: refreshRecurring } = await useFetch<Stored<RecurringCost>[]>('/api/recurring-costs')
 const { data: purchases, refresh: refreshPurchases } = await useFetch<Stored<Purchase>[]>('/api/purchases')
@@ -34,7 +35,9 @@ async function refreshAll() {
 }
 const open = ref(false)
 const toDelete = ref<Stored<Cost> | null>(null)
+const toEdit = ref<Stored<Cost> | null>(null)
 
+watch(open, (isOpen) => { if (!isOpen) toEdit.value = null })
 async function onSaved() {
     await refreshAll()
     open.value = false
@@ -56,10 +59,10 @@ async function confirmDelete() {
 </script>
 <template>
     <h1>{{ t('costs.title') }}</h1>
-    <UModal v-model:open="open" :title="t('costs.add')">
+    <UModal v-model:open="open" :title="toEdit ? t('costs.edit', { name: toEdit.name }) : t('costs.add')">
         <UButton :label="t('costs.add')" />
         <template #body>
-            <CostForm @saved="onSaved" />
+            <CostForm :cost="toEdit" @saved="onSaved" @cancel="open = false" />
         </template>
     </UModal>
     <UTable :data="costs" :columns="columns">
@@ -70,6 +73,7 @@ async function confirmDelete() {
         <template #business-cell="{ row }">{{ row.original.business ? t('common.yes') : t('common.no') }}</template>
         <template #actions-cell="{ row }">
             <UButton icon="i-lucide-trash-2" color="error" variant="ghost" @click="toDelete = row.original" :aria-label="t('costs.delete', { name: row.original.name })"/>
+            <UButton icon="i-lucide-pencil" color="neutral" variant="ghost" @click="toEdit = row.original; open=true" :aria-label="t('costs.edit', { name: row.original.name })"/>
         </template>
     </UTable>
     <UModal

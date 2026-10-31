@@ -12,11 +12,11 @@ function toPurchase(row: typeof purchases.$inferSelect): Purchase {
   return { ...row, kind: 'purchase'}
 }
 export async function listRecurringCosts(): Promise<RecurringCost[]> {
-    const rows = await db.select().from(recurringCosts)
+    const rows = await db.select().from(recurringCosts).orderBy(recurringCosts.id)
     return rows.map(toRecurringCost)
 }
 export async function listPurchases(): Promise<Purchase[]> {
-    const rows = await db.select().from(purchases)
+    const rows = await db.select().from(purchases).orderBy(purchases.id)
     return rows.map(toPurchase)
 }
 export async function createRecurringCosts(input: CreateRecurringCost): Promise<RecurringCost> {

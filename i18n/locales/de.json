@@ -17,6 +17,7 @@
   "costs": {
     "title": "Kosten",
     "add": "Kosten hinzufügen",
+    "edit": "{name} editieren",
     "delete": "{name} löschen",
     "deleteError": "Die Kosten konnten nicht gelöscht werden. Bitte versuche es erneut.",
     "confirmTitle": "Kosten löschen?",
@@ -38,6 +39,7 @@
   "common": {
     "yes": "Ja",
     "no": "Nein",
+    "save": "Speichern",
     "cancel": "Abbrechen",
     "delete": "Löschen"
   },
