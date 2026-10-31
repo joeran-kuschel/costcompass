@@ -82,6 +82,12 @@
     },
     "categories": {
       "title": "Costs by category in {year}"
+    },
+    "split": {
+      "title": "Household versus business in {year}",
+      "household": "Household",
+      "business": "Business",
+      "alt": "Household {household} percent, business {business} percent"
     }
   }
 }

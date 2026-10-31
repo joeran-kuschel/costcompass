@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { annualSummary, categoryBreakDown } from '~~/shared/utils/costs'
+import { annualSummary, categoryBreakDown, splitPercentages } from '~~/shared/utils/costs'
 
 const { t } = useI18n()
 const year = new Date().getUTCFullYear()
@@ -23,6 +23,7 @@ const tiles = computed(() => (['total', 'household', 'business', 'averagePerMont
     label: t(`dashboard.summary.${key}`),
     value: euros(summary.value[key]),
 })))
+const split = computed(() => splitPercentages(summary.value))
 
 
 useHead({ title: () => t('nav.dashboard') })
@@ -66,6 +67,25 @@ async function retry() {
                     <span class="col-span-2 h-2.5 rounded bg-accented sm:order-2 sm:col-span-1" aria-hidden="true">
                         <span class="block h-full rounded bg-primary" :style="{ width: row.width }" />
                     </span>
+                </li>
+            </ul>
+        </UCard>
+    </section>
+    <section aria-labelledby="split-title" class="mt-6">
+        <h2 id="split-title">{{ t('dashboard.split.title', { year } )}}</h2>
+        <UCard variant="subtle">
+            <div class="flex h-3 overflow-hidden rounded bg-accented" role="img" :aria-label="t('dashboard.split.alt', { household: split.household, business: split.business })">
+                <div v-if="split.household > 0" class="bg-primary" :style="{ width: `${split.household}%` }" />
+                <div v-if="split.business > 0" class="bg-secondary" :style="{ width: `${split.business}%` }" />
+            </div>
+            <ul class="mt-3 flex flex-wrap gap-x-6 gap-y-1">
+                <li class="flex items-center gap-2">
+                    <span class="size-3 rounded-sm bg-primary" aria-hidden="true" />
+                    {{ t('dashboard.split.household') }} {{ split.household }}%
+                </li>
+                <li class="flex items-center gap-2">
+                    <span class="size-3 rounded-sm bg-secondary" aria-hidden="true" />
+                    {{ t('dashboard.split.business') }} {{ split.business }}%
                 </li>
             </ul>
         </UCard>

@@ -309,3 +309,107 @@ describe('dashboard page category rows', () => {
     expect(section().exists()).toBe(false)
   })
 })
+
+describe('dashboard page household versus business split', () => {
+  const year = new Date().getUTCFullYear()
+  // total 11,100, business 1,200: 10.8% business, so 89% household and 11% business.
+  const costs = () => {
+    api.recurring.rows = [
+      rent,
+      { id: 3, kind: 'recurring', name: 'Insurance', amount: 1200, category: 'insurance', business: true, interval: 'yearly', dueMonth: 3 },
+    ]
+    api.purchases.rows = [
+      { id: 2, kind: 'purchase', name: 'Lamp', amount: 300, category: 'appliances', business: false, date: `${year}-03-15` },
+      { id: 4, kind: 'purchase', name: 'Old laptop', amount: 500, category: 'appliances', business: true, date: `${year - 1}-03-15` },
+    ]
+  }
+  const section = () => wrapper.find('section[aria-labelledby="split-title"]')
+  const bar = () => section().find('[role="img"]')
+  const widths = () => bar().findAll('div').map(segment => /width:\s*([0-9.]+%)/.exec(segment.attributes('style') ?? '')?.[1])
+  const legend = () => section().findAll('li').map(item => item.text().replace(/\s+/g, ' ').trim())
+
+  it('has a heading for the current year that labels the section', async () => {
+    costs()
+    await mountPage()
+    await vi.waitFor(() => expect(section().exists()).toBe(true))
+    expect(section().find('h2').text()).toBe(`Household versus business in ${year}`)
+    expect(section().attributes('aria-labelledby')).toBe(section().find('h2').attributes('id'))
+  })
+  it('gives the bar a text alternative with both percentages', async () => {
+    costs()
+    await mountPage()
+    await vi.waitFor(() => expect(bar().exists()).toBe(true))
+    expect(bar().attributes('aria-label')).toBe('Household 89 percent, business 11 percent')
+  })
+  it('states the shares as text in the legend, so colour is not the only carrier', async () => {
+    costs()
+    await mountPage()
+    await vi.waitFor(() => expect(legend()).toHaveLength(2))
+    expect(legend()).toEqual(['Household 89%', 'Business 11%'])
+  })
+  it('sizes the two bar segments by their percentages', async () => {
+    costs()
+    await mountPage()
+    await vi.waitFor(() => expect(bar().exists()).toBe(true))
+    expect(widths()).toEqual(['89%', '11%'])
+  })
+  it('hides the colour swatches of the legend from assistive technology', async () => {
+    costs()
+    await mountPage()
+    await vi.waitFor(() => expect(legend()).toHaveLength(2))
+    for (const item of section().findAll('li')) {
+      expect(item.find('[aria-hidden="true"]').exists()).toBe(true)
+    }
+  })
+  it('is German with German texts when the language is German', async () => {
+    await setLanguage('de')
+    costs()
+    await mountPage()
+    await vi.waitFor(() => expect(bar().exists()).toBe(true))
+    expect(section().find('h2').text()).toBe(`Haushalt und Geschäftliches ${year}`)
+    expect(bar().attributes('aria-label')).toBe('Haushalt 89 Prozent, Geschäftlich 11 Prozent')
+    expect(legend()).toEqual(['Haushalt 89%', 'Geschäftlich 11%'])
+  })
+  it('shows only a household segment when there are no business costs', async () => {
+    api.recurring.rows = [rent]
+    await mountPage()
+    await vi.waitFor(() => expect(bar().exists()).toBe(true))
+    expect(widths()).toEqual(['100%'])
+    expect(legend()).toEqual(['Household 100%', 'Business 0%'])
+  })
+  it('shows only a business segment when every cost is a business cost', async () => {
+    api.recurring.rows = [{ ...rent, business: true }]
+    await mountPage()
+    await vi.waitFor(() => expect(bar().exists()).toBe(true))
+    expect(widths()).toEqual(['100%'])
+    expect(legend()).toEqual(['Household 0%', 'Business 100%'])
+  })
+  it('shows an empty bar with 0 percent when the year has no costs', async () => {
+    // Only a purchase of last year: the lists are not empty, but this year's total is 0.
+    api.purchases.rows = [{ id: 4, kind: 'purchase', name: 'Old laptop', amount: 500, category: 'appliances', business: true, date: `${year - 1}-03-15` }]
+    await mountPage()
+    await vi.waitFor(() => expect(bar().exists()).toBe(true))
+    expect(bar().findAll('div')).toHaveLength(0)
+    expect(bar().attributes('aria-label')).toBe('Household 0 percent, business 0 percent')
+    expect(legend()).toEqual(['Household 0%', 'Business 0%'])
+  })
+  it('shows no split section while the lists are loading', async () => {
+    costs()
+    api.purchases.delay = 300
+    await mountPage()
+    expect(section().exists()).toBe(false)
+    await vi.waitFor(() => expect(section().exists()).toBe(true), { timeout: 2000 })
+  })
+  it('shows no split section when loading fails', async () => {
+    costs()
+    api.recurring.fail = true
+    await mountPage()
+    await vi.waitFor(() => expect(alert().exists()).toBe(true))
+    expect(section().exists()).toBe(false)
+  })
+  it('shows no split section when there are no costs at all', async () => {
+    await mountPage()
+    await vi.waitFor(() => expect(wrapper.text()).toContain('No costs yet'))
+    expect(section().exists()).toBe(false)
+  })
+})

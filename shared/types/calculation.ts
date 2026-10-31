@@ -34,3 +34,7 @@ export interface CategoryTotal {
     total: number,
     share: number
 }
+export interface SplitPercentages {
+    household: number,
+    business: number
+}

@@ -82,6 +82,12 @@
     },
     "categories": {
       "title": "Kosten nach Kategorie {year}"
+    },
+    "split": {
+      "title": "Haushalt und Geschäftliches {year}",
+      "household": "Haushalt",
+      "business": "Geschäftlich",
+      "alt": "Haushalt {household} Prozent, Geschäftlich {business} Prozent"
     }
   }
 }

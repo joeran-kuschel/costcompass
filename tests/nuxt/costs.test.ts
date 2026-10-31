@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import type { RecurringCost, Purchase, CostItem, Month } from '~~/shared/types/calculation'
+import type { RecurringCost, Purchase, CostItem, Month, AnnualSummary } from '~~/shared/types/calculation'
 import { CATEGORIES } from '~~/shared/types/calculation'
-import { totalAnnualRecurring, totalAnnualPurchases, totalAnnualCost, filterByBusiness, totalsByCategory, occursInMonth, totalMonthlyCost, monthlyTotals, costsInMonth, annualSummary, categoryBreakDown } from '~~/shared/utils/costs'
+import { totalAnnualRecurring, totalAnnualPurchases, totalAnnualCost, filterByBusiness, totalsByCategory, occursInMonth, totalMonthlyCost, monthlyTotals, costsInMonth, annualSummary, categoryBreakDown, splitPercentages } from '~~/shared/utils/costs'
 
 const YEAR = 2026
 
@@ -512,5 +512,54 @@ describe('categoryBreakDown', () => {
     const result = categoryBreakDown([], [], YEAR)
     expect(result).toHaveLength(CATEGORIES.length)
     expect(result.every((entry) => entry.total === 0 && entry.share === 0)).toBe(true)
+  })
+})
+
+describe('splitPercentages', () => {
+  const summary = (total: number, business: number): AnnualSummary =>
+    ({ total, household: total - business, business, averagePerMonth: total / 12 })
+
+  it('splits the total into whole percentages for household and business', () => {
+    expect(splitPercentages(summary(1000, 250))).toEqual({ household: 75, business: 25 })
+  })
+  it('rounds the business share to the nearest whole percent', () => {
+    expect(splitPercentages(summary(10000, 2425)).business).toBe(24)
+    expect(splitPercentages(summary(200, 49)).business).toBe(25)
+    expect(splitPercentages(summary(1000, 6)).business).toBe(1)
+  })
+  it('makes the two percentages add up to exactly 100 even when both would round up', () => {
+    // 1 of 8 is 12.5% business and 87.5% household: rounding both separately would give 13 + 88.
+    const result = splitPercentages(summary(8, 1))
+    expect(result.household + result.business).toBe(100)
+    expect(result).toEqual({ household: 87, business: 13 })
+  })
+  it('adds up to 100 for any share', () => {
+    for (let business = 0; business <= 1000; business += 7) {
+      const result = splitPercentages(summary(1000, business))
+      expect(result.household + result.business).toBe(100)
+      expect(result.household).toBeGreaterThanOrEqual(0)
+      expect(result.business).toBeGreaterThanOrEqual(0)
+    }
+  })
+  it('gives household 100 and business 0 when there are no business costs', () => {
+    expect(splitPercentages(summary(500, 0))).toEqual({ household: 100, business: 0 })
+  })
+  it('gives business 100 and household 0 when every cost is a business cost', () => {
+    expect(splitPercentages(summary(500, 500))).toEqual({ household: 0, business: 100 })
+  })
+  it('returns 0 and 0, not NaN, when the total is 0', () => {
+    expect(splitPercentages(summary(0, 0))).toEqual({ household: 0, business: 0 })
+  })
+  it('rounds a tiny business share down to 0 percent', () => {
+    expect(splitPercentages(summary(1000, 4))).toEqual({ household: 100, business: 0 })
+  })
+  it('works with the summary of real costs', () => {
+    const recurringCosts = [
+      recurring({ amount: 100 }),
+      recurring({ amount: 600, interval: 'yearly', dueMonth: 3, business: true })
+    ]
+    const purchases = [purchase({ amount: 300, business: true }), purchase({ amount: 200 })]
+    // total 2,300, business 900: 39.13% business
+    expect(splitPercentages(annualSummary(recurringCosts, purchases, YEAR))).toEqual({ household: 61, business: 39 })
   })
 })
