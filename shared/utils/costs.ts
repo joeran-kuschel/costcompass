@@ -1,4 +1,4 @@
-import { CATEGORIES, MONTHS, type CostItem, type Purchase, type RecurringCost, type Category, type Interval, type Month, type Cost, type AnnualSummary, type CategoryTotal, type SplitPercentages } from '~~/shared/types/calculation'
+import { CATEGORIES, MONTHS, type CostItem, type Purchase, type RecurringCost, type Category, type Interval, type Month, type Cost, type AnnualSummary, type CategoryTotal, type SplitPercentages, type MonthTotal } from '~~/shared/types/calculation'
 const PERIODS_PER_YEAR: Record<Interval, number> = {
   monthly: 12,
   quarterly: 4,
@@ -76,4 +76,9 @@ export function splitPercentages(summary: AnnualSummary): SplitPercentages {
     if (summary.total === 0) return { household: 0, business: 0 }
     const business = Math.round(summary.business / summary.total * 100)
     return { household: 100 - business, business }
+}
+export function monthBreakdown(recurring: RecurringCost[], purchases: Purchase[], year: number): MonthTotal[] {
+    const totals = monthlyTotals(recurring, purchases, year)
+    const largest = Math.max(...totals)
+    return MONTHS.map((month, index) => ({month, total: totals[index] ?? 0, share: largest > 0 ? (totals[index] ?? 0) / largest: 0}))
 }

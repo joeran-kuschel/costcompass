@@ -88,6 +88,10 @@
       "household": "Household",
       "business": "Business",
       "alt": "Household {household} percent, business {business} percent"
+    },
+    "months": {
+        "title": "Costs per month in {year}",
+        "alt": "{month}: {amount}"
     }
   }
 }

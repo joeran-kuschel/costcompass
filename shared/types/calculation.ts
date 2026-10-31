@@ -38,3 +38,8 @@ export interface SplitPercentages {
     household: number,
     business: number
 }
+export interface MonthTotal {
+    month: Month,
+    total: number,
+    share: number
+}

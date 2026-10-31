@@ -88,6 +88,11 @@
       "household": "Haushalt",
       "business": "Geschäftlich",
       "alt": "Haushalt {household} Prozent, Geschäftlich {business} Prozent"
+    },
+    "months": {
+        "title": "Kosten pro Monat {year}",
+        "alt": "{month}: {amount}"
     }
+
   }
 }

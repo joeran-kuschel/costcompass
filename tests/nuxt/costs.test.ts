@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import type { RecurringCost, Purchase, CostItem, Month, AnnualSummary } from '~~/shared/types/calculation'
 import { CATEGORIES } from '~~/shared/types/calculation'
-import { totalAnnualRecurring, totalAnnualPurchases, totalAnnualCost, filterByBusiness, totalsByCategory, occursInMonth, totalMonthlyCost, monthlyTotals, costsInMonth, annualSummary, categoryBreakDown, splitPercentages } from '~~/shared/utils/costs'
+import { totalAnnualRecurring, totalAnnualPurchases, totalAnnualCost, filterByBusiness, totalsByCategory, occursInMonth, totalMonthlyCost, monthlyTotals, costsInMonth, annualSummary, categoryBreakDown, splitPercentages, monthBreakdown } from '~~/shared/utils/costs'
 
 const YEAR = 2026
 
@@ -561,5 +561,43 @@ describe('splitPercentages', () => {
     const purchases = [purchase({ amount: 300, business: true }), purchase({ amount: 200 })]
     // total 2,300, business 900: 39.13% business
     expect(splitPercentages(annualSummary(recurringCosts, purchases, YEAR))).toEqual({ household: 61, business: 39 })
+  })
+})
+
+describe('monthBreakdown', () => {
+  const recurringCosts = [
+    recurring({ amount: 100 }),
+    recurring({ amount: 600, interval: 'yearly', dueMonth: 3 })
+  ]
+  const purchases = [purchase({ amount: 300, date: `${YEAR}-06-15` })]
+
+  it('returns 12 entries in calendar order', () => {
+    const result = monthBreakdown(recurringCosts, purchases, YEAR)
+    expect(result.map(row => row.month)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
+  })
+  it('takes the totals from monthlyTotals', () => {
+    const result = monthBreakdown(recurringCosts, purchases, YEAR)
+    expect(result.map(row => row.total)).toEqual(monthlyTotals(recurringCosts, purchases, YEAR))
+  })
+  it('gives the largest month a share of 1 and the others a share relative to it', () => {
+    const result = monthBreakdown(recurringCosts, purchases, YEAR)
+    // March 700 (largest), June 400, all other months 100
+    expect(result[2]).toEqual({ month: 3, total: 700, share: 1 })
+    expect(result[5]?.share).toBeCloseTo(400 / 700)
+    expect(result[0]?.share).toBeCloseTo(100 / 700)
+  })
+  it('gives a month without costs a share of 0', () => {
+    const result = monthBreakdown([], [purchase({ amount: 50 })], YEAR)
+    expect(result[0]).toEqual({ month: 1, total: 0, share: 0 })
+    expect(result[5]?.share).toBe(1)
+  })
+  it('returns 12 entries with share 0, not NaN, when there are no costs', () => {
+    const result = monthBreakdown([], [], YEAR)
+    expect(result).toHaveLength(12)
+    expect(result.every(row => row.total === 0 && row.share === 0)).toBe(true)
+  })
+  it('ignores purchases from other years', () => {
+    const result = monthBreakdown([], [purchase({ amount: 50, date: `${YEAR - 1}-06-15` })], YEAR)
+    expect(result.every(row => row.total === 0)).toBe(true)
   })
 })

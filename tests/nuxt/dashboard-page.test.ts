@@ -413,3 +413,105 @@ describe('dashboard page household versus business split', () => {
     expect(section().exists()).toBe(false)
   })
 })
+
+describe('dashboard page costs per month', () => {
+  const year = new Date().getUTCFullYear()
+  // 800 rent in every month, March also has the 1,200 insurance and the 300 lamp: 2,300.
+  const costs = () => {
+    api.recurring.rows = [
+      rent,
+      { id: 3, kind: 'recurring', name: 'Insurance', amount: 1200, category: 'insurance', business: true, interval: 'yearly', dueMonth: 3 },
+    ]
+    api.purchases.rows = [
+      { id: 2, kind: 'purchase', name: 'Lamp', amount: 300, category: 'appliances', business: false, date: `${year}-03-15` },
+      { id: 4, kind: 'purchase', name: 'Old laptop', amount: 500, category: 'appliances', business: true, date: `${year - 1}-03-15` },
+    ]
+  }
+  const section = () => wrapper.find('section[aria-labelledby="months-title"]')
+  const items = () => section().findAll('li')
+  const clean = (text: string) => text.replace(/\s+/g, ' ').trim()
+  const spoken = () => items().map(item => clean(item.find('.sr-only').text()))
+  const heights = () => items().map(item => /height:\s*([0-9.]+%)/.exec(item.find('[style]').attributes('style') ?? '')?.[1])
+
+  it('has a heading for the current year that labels the section', async () => {
+    costs()
+    await mountPage()
+    await vi.waitFor(() => expect(section().exists()).toBe(true))
+    expect(section().find('h2').text()).toBe(`Costs per month in ${year}`)
+  })
+  it('lists twelve months in calendar order', async () => {
+    costs()
+    await mountPage()
+    await vi.waitFor(() => expect(items()).toHaveLength(12))
+    const spokenMonths = spoken().map(text => text.split(':')[0])
+    expect(spokenMonths[0]).toBe('January')
+    expect(spokenMonths[11]).toBe('December')
+  })
+  it('gives every month its total as text for assistive technology', async () => {
+    costs()
+    await mountPage()
+    await vi.waitFor(() => expect(items()).toHaveLength(12))
+    expect(spoken()[0]).toBe('January: €800')
+    expect(spoken()[2]).toBe('March: €2,300')
+  })
+  it('sizes the bars relative to the largest month', async () => {
+    costs()
+    await mountPage()
+    await vi.waitFor(() => expect(items()).toHaveLength(12))
+    const expected = `${(800 / 2300) * 100}%`
+    expect(heights()[2]).toBe('100%')
+    expect(heights()[0]).toBe(expected)
+  })
+  it('hides the bars and the short labels from assistive technology', async () => {
+    costs()
+    await mountPage()
+    await vi.waitFor(() => expect(items()).toHaveLength(12))
+    const hidden = items()[0]!.findAll('[aria-hidden="true"]')
+    expect(hidden).toHaveLength(2)
+    expect(hidden[1]!.text()).toBe('Jan')
+  })
+  it('marks the current month in bold, not by colour alone', async () => {
+    costs()
+    await mountPage()
+    await vi.waitFor(() => expect(items()).toHaveLength(12))
+    const bold = items().flatMap((item, index) => item.find('.font-bold').exists() ? [index] : [])
+    expect(bold).toEqual([new Date().getUTCMonth()])
+  })
+  it('shows a thin baseline for a month without costs', async () => {
+    api.purchases.rows = [
+      { id: 2, kind: 'purchase', name: 'Lamp', amount: 300, category: 'appliances', business: false, date: `${year}-03-15` },
+    ]
+    await mountPage()
+    await vi.waitFor(() => expect(items()).toHaveLength(12))
+    expect(heights()[0]).toBe('0%')
+    expect(items()[0]!.find('[style]').classes()).toContain('min-h-0.5')
+  })
+  it('is German with German texts when the language is German', async () => {
+    await setLanguage('de')
+    costs()
+    await mountPage()
+    await vi.waitFor(() => expect(items()).toHaveLength(12))
+    expect(section().find('h2').text()).toBe(`Kosten pro Monat ${year}`)
+    expect(spoken()[0]).toBe('Januar: 800 €')
+    expect(spoken()[2]).toBe('März: 2.300 €')
+  })
+  it('shows no month section while the lists are loading', async () => {
+    costs()
+    api.purchases.delay = 300
+    await mountPage()
+    expect(section().exists()).toBe(false)
+    await vi.waitFor(() => expect(section().exists()).toBe(true), { timeout: 2000 })
+  })
+  it('shows no month section when loading fails', async () => {
+    costs()
+    api.recurring.fail = true
+    await mountPage()
+    await vi.waitFor(() => expect(alert().exists()).toBe(true))
+    expect(section().exists()).toBe(false)
+  })
+  it('shows no month section when there are no costs at all', async () => {
+    await mountPage()
+    await vi.waitFor(() => expect(wrapper.text()).toContain('No costs yet'))
+    expect(section().exists()).toBe(false)
+  })
+})
