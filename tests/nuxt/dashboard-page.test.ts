@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
+import type { VueWrapper } from '@vue/test-utils'
 import DashboardPage from '~/pages/index.vue'
 
 // What each fake API endpoint does; reset before every test.
@@ -18,7 +19,7 @@ registerEndpoint('/api/purchases', respond('purchases'))
 
 const rent = { id: 1, kind: 'recurring', name: 'Rent', amount: 800, category: 'housing', business: false, interval: 'monthly' }
 
-let wrapper: Awaited<ReturnType<typeof mountSuspended>>
+let wrapper: VueWrapper
 
 async function mountPage() {
   wrapper = await mountSuspended(DashboardPage)
