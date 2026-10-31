@@ -29,3 +29,8 @@ export interface AnnualSummary {
     business: number,
     averagePerMonth: number,
 }
+export interface CategoryTotal {
+    category: Category,
+    total: number,
+    share: number
+}

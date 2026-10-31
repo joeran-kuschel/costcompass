@@ -79,6 +79,9 @@
       "household": "Haushalt",
       "business": "Geschäftlich",
       "averagePerMonth": "Durchschnitt pro Monat"
+    },
+    "categories": {
+      "title": "Kosten nach Kategorie {year}"
     }
   }
 }

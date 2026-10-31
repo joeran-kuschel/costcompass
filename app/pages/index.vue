@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { annualSummary } from '~~/shared/utils/costs'
+import { annualSummary, categoryBreakDown } from '~~/shared/utils/costs'
 
 const { t } = useI18n()
 const year = new Date().getUTCFullYear()
@@ -12,6 +12,12 @@ const loading = computed(() => !failed.value && (!recurring.value || !purchases.
 const empty = computed(() => !failed.value && !loading.value && recurring.value?.length === 0 && purchases.value?.length === 0)
 const summary = computed (() => annualSummary(recurring.value ?? [], purchases.value ?? [], year))
 const euros = useMoney()
+const categoryRows = computed (() => categoryBreakDown(recurring.value ?? [], purchases.value ?? [], year).map(({ category, total, share}) => ({
+    category,
+    label: t(`category.${category}`),
+    amount: euros(total),
+    width: `${share*100}%`,
+})))
 const tiles = computed(() => (['total', 'household', 'business', 'averagePerMonth'] as const).map(key => ({
     key,
     label: t(`dashboard.summary.${key}`),
@@ -40,7 +46,8 @@ async function retry() {
         <p>{{ t('dashboard.emptyText') }}</p>
         <UButton to="/costs" :label="t('costs.add')" />
     </div>
-    <section v-else aria-labelledby="summary-title">
+    <template v-else>
+    <section aria-labelledby="summary-title">
         <h2 id="summary-title">{{ t('dashboard.summary.title', { year }) }}</h2>
         <div class="grid grid-cols-[repeat(auto-fit,minmax(10rem,1fr))] gap-3">
             <UCard v-for="tile in tiles" :key="tile.key" variant="subtle" :title="tile.label">
@@ -48,4 +55,20 @@ async function retry() {
             </UCard>
         </div>
     </section>
+    <section aria-labelledby="categories-title">
+        <h2 id="categories-title">{{ t('dashboard.categories.title', { year }) }}</h2>
+        <UCard variant="subtle">
+            <ul>
+                <li v-for="row in categoryRows" :key="row.category"
+                    class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 py-1 sm:grid-cols-[7rem_minmax(0,1fr)_5rem]">
+                    <span class="break-words">{{ row.label }}</span>
+                    <span class="text-right sm:order-3">{{ row.amount }}</span>
+                    <span class="col-span-2 h-2.5 rounded bg-accented sm:order-2 sm:col-span-1" aria-hidden="true">
+                        <span class="block h-full rounded bg-primary" :style="{ width: row.width }" />
+                    </span>
+                </li>
+            </ul>
+        </UCard>
+    </section>
+    </template>
 </template>

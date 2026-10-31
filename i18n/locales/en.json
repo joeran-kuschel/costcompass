@@ -79,6 +79,9 @@
       "household": "Household",
       "business": "Business",
       "averagePerMonth": "Average per month"
+    },
+    "categories": {
+      "title": "Costs by category in {year}"
     }
   }
 }

@@ -1,4 +1,4 @@
-import { CATEGORIES, MONTHS, type CostItem, type Purchase, type RecurringCost, type Category, type Interval, type Month, type Cost, type AnnualSummary } from '~~/shared/types/calculation'
+import { CATEGORIES, MONTHS, type CostItem, type Purchase, type RecurringCost, type Category, type Interval, type Month, type Cost, type AnnualSummary, type CategoryTotal } from '~~/shared/types/calculation'
 const PERIODS_PER_YEAR: Record<Interval, number> = {
   monthly: 12,
   quarterly: 4,
@@ -65,4 +65,10 @@ export function annualSummary(recurring: RecurringCost[], purchases: Purchase[],
     const total = totalAnnualCost(recurring, purchases, year)
     const business = totalAnnualCost(filterByBusiness(recurring, true), filterByBusiness(purchases, true), year)
     return { total, household: total - business, business, averagePerMonth: total / 12 }
+}
+export function categoryBreakDown (recurring: RecurringCost[], purchases: Purchase[], year: number): CategoryTotal[] {
+    const totals = totalsByCategory(recurring, purchases, year)
+    const largest = Math.max(...CATEGORIES.map(category => totals[category]))
+    return CATEGORIES.map(category => ({ category, total: totals[category], share: largest > 0 ? totals[category] / largest : 0}))
+        .sort((a,b) => b.total - a.total)
 }

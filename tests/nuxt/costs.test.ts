@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import type { RecurringCost, Purchase, CostItem, Month } from '~~/shared/types/calculation'
-import { totalAnnualRecurring, totalAnnualPurchases, totalAnnualCost, filterByBusiness, totalsByCategory, occursInMonth, totalMonthlyCost, monthlyTotals, costsInMonth, annualSummary } from '~~/shared/utils/costs'
+import { CATEGORIES } from '~~/shared/types/calculation'
+import { totalAnnualRecurring, totalAnnualPurchases, totalAnnualCost, filterByBusiness, totalsByCategory, occursInMonth, totalMonthlyCost, monthlyTotals, costsInMonth, annualSummary, categoryBreakDown } from '~~/shared/utils/costs'
 
 const YEAR = 2026
 
@@ -426,5 +427,90 @@ describe('annualSummary', () => {
   })
   it('returns zeros when there are no costs', () => {
     expect(annualSummary([], [], YEAR)).toEqual({ total: 0, household: 0, business: 0, averagePerMonth: 0 })
+  })
+})
+
+describe('categoryBreakDown', () => {
+  const costs = () => ({
+    recurringCosts: [
+      recurring({ amount: 100, category: 'housing' }),
+      recurring({ amount: 50, category: 'insurance', business: true })
+    ],
+    purchases: [purchase({ amount: 300, category: 'appliances' })]
+  })
+
+  it('returns one entry for every category, also those without costs', () => {
+    const { recurringCosts, purchases } = costs()
+    const result = categoryBreakDown(recurringCosts, purchases, YEAR)
+    expect(result).toHaveLength(CATEGORIES.length)
+    expect(result.map((entry) => entry.category).sort()).toEqual([...CATEGORIES].sort())
+  })
+  it('sorts the categories by total, largest first', () => {
+    const { recurringCosts, purchases } = costs()
+    const result = categoryBreakDown(recurringCosts, purchases, YEAR)
+    expect(result.map((entry) => entry.category).slice(0, 3)).toEqual(['housing', 'insurance', 'appliances'])
+    expect(result.map((entry) => entry.total).slice(0, 3)).toEqual([1200, 600, 300])
+  })
+  it('sorts by total even when the largest category comes last in the category list', () => {
+    const purchases = [
+      purchase({ amount: 100, category: 'appliances' }),
+      purchase({ amount: 300, category: 'food' }),
+      purchase({ amount: 500, category: 'mobility' })
+    ]
+    const result = categoryBreakDown([], purchases, YEAR)
+    expect(result.map((entry) => entry.category)).toEqual(['mobility', 'food', 'appliances', 'housing', 'insurance'])
+    expect(result.map((entry) => entry.share)).toEqual([1, 0.6, 0.2, 0, 0])
+  })
+  it('gives the largest category a share of 1 and the others their part of it', () => {
+    const { recurringCosts, purchases } = costs()
+    const result = categoryBreakDown(recurringCosts, purchases, YEAR)
+    expect(result.map((entry) => entry.share)).toEqual([1, 0.5, 0.25, 0, 0])
+  })
+  it('gives categories without costs a total and a share of 0', () => {
+    const { recurringCosts, purchases } = costs()
+    const result = categoryBreakDown(recurringCosts, purchases, YEAR)
+    const empty = result.filter((entry) => entry.total === 0)
+    expect(empty.map((entry) => entry.category)).toEqual(['food', 'mobility'])
+    expect(empty.every((entry) => entry.share === 0)).toBe(true)
+  })
+  it('keeps the order of the category list when totals are equal', () => {
+    const purchases = [
+      purchase({ amount: 100, category: 'mobility' }),
+      purchase({ amount: 100, category: 'food' })
+    ]
+    const result = categoryBreakDown([], purchases, YEAR)
+    expect(result.map((entry) => entry.category)).toEqual(['food', 'mobility', 'housing', 'insurance', 'appliances'])
+  })
+  it('adds recurring costs and purchases of the same category', () => {
+    const recurringCosts = [recurring({ amount: 10, category: 'food' })]
+    const purchases = [purchase({ amount: 30, category: 'food' })]
+    const food = categoryBreakDown(recurringCosts, purchases, YEAR).find((entry) => entry.category === 'food')
+    expect(food?.total).toBe(150)
+  })
+  it('counts business and household costs alike', () => {
+    const recurringCosts = [
+      recurring({ amount: 10, category: 'food', business: true }),
+      recurring({ amount: 10, category: 'food' })
+    ]
+    const food = categoryBreakDown(recurringCosts, [], YEAR).find((entry) => entry.category === 'food')
+    expect(food?.total).toBe(240)
+  })
+  it('counts only the purchases of the given year', () => {
+    const purchases = [
+      purchase({ amount: 100, category: 'food', date: `${YEAR}-02-01` }),
+      purchase({ amount: 900, category: 'food', date: `${YEAR - 1}-02-01` })
+    ]
+    const food = categoryBreakDown([], purchases, YEAR).find((entry) => entry.category === 'food')
+    expect(food?.total).toBe(100)
+  })
+  it('adds up to the annual total', () => {
+    const { recurringCosts, purchases } = costs()
+    const sum = categoryBreakDown(recurringCosts, purchases, YEAR).reduce((total, entry) => total + entry.total, 0)
+    expect(sum).toBeCloseTo(annualSummary(recurringCosts, purchases, YEAR).total, 10)
+  })
+  it('returns zeros, not NaN, when there are no costs', () => {
+    const result = categoryBreakDown([], [], YEAR)
+    expect(result).toHaveLength(CATEGORIES.length)
+    expect(result.every((entry) => entry.total === 0 && entry.share === 0)).toBe(true)
   })
 })
