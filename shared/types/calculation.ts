@@ -5,6 +5,7 @@ export type Month = (typeof MONTHS)[number]
 export const INTERVALS = ['monthly', 'quarterly', 'yearly'] as const
 export type Interval = (typeof INTERVALS)[number]
 export type Cost = RecurringCost | Purchase
+export type Stored<T> = T & { id: number }
 
 export interface CostItem {
     name: string
