@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import type { RecurringCost, Purchase, CostItem, Month, AnnualSummary } from '~~/shared/types/calculation'
 import { CATEGORIES } from '~~/shared/types/calculation'
-import { totalAnnualRecurring, totalAnnualPurchases, totalAnnualCost, filterByBusiness, totalsByCategory, occursInMonth, totalMonthlyCost, monthlyTotals, costsInMonth, annualSummary, categoryBreakDown, splitPercentages, monthBreakdown } from '~~/shared/utils/costs'
+import { totalAnnualRecurring, totalAnnualPurchases, totalAnnualCost, filterByBusiness, totalsByCategory, occursInMonth, totalMonthlyCost, monthlyTotals, costsInMonth, annualSummary, categoryBreakDown, splitPercentages, monthBreakdown, monthChange } from '~~/shared/utils/costs'
 
 const YEAR = 2026
 
@@ -599,5 +599,61 @@ describe('monthBreakdown', () => {
   it('ignores purchases from other years', () => {
     const result = monthBreakdown([], [purchase({ amount: 50, date: `${YEAR - 1}-06-15` })], YEAR)
     expect(result.every(row => row.total === 0)).toBe(true)
+  })
+})
+
+describe('monthChange', () => {
+  const rent = recurring({ amount: 100 })
+
+  it('returns the totals of both months', () => {
+    const purchases = [purchase({ amount: 300, date: `${YEAR}-06-15` }), purchase({ amount: 50, date: `${YEAR}-05-10` })]
+    const result = monthChange([rent], purchases, YEAR, 6)
+    expect(result.current).toBe(400)
+    expect(result.previous).toBe(150)
+  })
+  it('gives a positive percentage when the month costs more', () => {
+    const purchases = [purchase({ amount: 100, date: `${YEAR}-06-15` })]
+    // 200 against 100: 100 percent more
+    expect(monthChange([rent], purchases, YEAR, 6).percent).toBe(100)
+  })
+  it('gives a negative percentage when the month costs less', () => {
+    const purchases = [purchase({ amount: 100, date: `${YEAR}-05-15` })]
+    // 100 against 200: 50 percent less
+    expect(monthChange([rent], purchases, YEAR, 6).percent).toBe(-50)
+  })
+  it('gives 0 when both months cost the same', () => {
+    expect(monthChange([rent], [], YEAR, 6).percent).toBe(0)
+  })
+  it('rounds the percentage to whole numbers', () => {
+    const purchases = [purchase({ amount: 200, date: `${YEAR}-05-15` }), purchase({ amount: 210, date: `${YEAR}-06-15` })]
+    // 210 against 200: 5 percent more
+    expect(monthChange([], purchases, YEAR, 6).percent).toBe(5)
+    // 2 against 3: 33.33 percent less
+    const small = [purchase({ amount: 3, date: `${YEAR}-05-15` }), purchase({ amount: 2, date: `${YEAR}-06-15` })]
+    expect(monthChange([], small, YEAR, 6).percent).toBe(-33)
+  })
+  it('returns null, not Infinity or NaN, when the previous month cost nothing', () => {
+    const purchases = [purchase({ amount: 100, date: `${YEAR}-06-15` })]
+    const result = monthChange([], purchases, YEAR, 6)
+    expect(result.previous).toBe(0)
+    expect(result.percent).toBeNull()
+  })
+  it('returns null when both months cost nothing', () => {
+    expect(monthChange([], [], YEAR, 6).percent).toBeNull()
+  })
+  it('compares January with December of the previous year', () => {
+    const purchases = [
+      purchase({ amount: 200, date: `${YEAR - 1}-12-20` }),
+      purchase({ amount: 100, date: `${YEAR}-01-10` }),
+      // same month number in the wrong year must not count
+      purchase({ amount: 999, date: `${YEAR}-12-20` })
+    ]
+    const result = monthChange([], purchases, YEAR, 1)
+    expect(result.previous).toBe(200)
+    expect(result.percent).toBe(-50)
+  })
+  it('does not look into the previous year for other months', () => {
+    const purchases = [purchase({ amount: 999, date: `${YEAR - 1}-05-15` }), purchase({ amount: 100, date: `${YEAR}-06-15` })]
+    expect(monthChange([], purchases, YEAR, 6).previous).toBe(0)
   })
 })

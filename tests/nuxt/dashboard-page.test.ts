@@ -516,3 +516,98 @@ describe('dashboard page costs per month', () => {
     expect(section().exists()).toBe(false)
   })
 })
+
+describe('dashboard page this month card', () => {
+  const today = new Date()
+  const year = today.getUTCFullYear()
+  const month = today.getUTCMonth() + 1
+  const previousYear = month === 1 ? year - 1 : year
+  const previousMonth = month === 1 ? 12 : month - 1
+  const dateIn = (y: number, m: number) => `${y}-${String(m).padStart(2, '0')}-15`
+  const monthName = (locale: string, m: number) => new Intl.DateTimeFormat(locale, { month: 'long', timeZone: 'UTC' }).format(new Date(Date.UTC(2026, m - 1, 1)))
+  const lamp = (id: number, amount: number, date: string) => ({ id, kind: 'purchase', name: 'Lamp', amount, category: 'appliances', business: false, date })
+  const section = () => wrapper.find('section[aria-labelledby="this-month-title"]')
+  const comparison = () => section().findAll('p')[1]!.text().replace(/\s+/g, ' ').trim()
+
+  it('has a heading with the current month and year that labels the section', async () => {
+    api.recurring.rows = [rent]
+    await mountPage()
+    await vi.waitFor(() => expect(section().exists()).toBe(true))
+    expect(section().find('h2').text()).toBe(`This month, ${monthName('en', month)} ${year}`)
+  })
+  it('shows the total of the current month in whole euros', async () => {
+    api.recurring.rows = [rent]
+    api.purchases.rows = [lamp(2, 300, dateIn(year, month))]
+    await mountPage()
+    await vi.waitFor(() => expect(section().exists()).toBe(true))
+    expect(section().text()).toContain('€1,100')
+  })
+  it('says in words that the month costs more than the previous month', async () => {
+    api.recurring.rows = [rent]
+    api.purchases.rows = [lamp(2, 400, dateIn(year, month))]
+    await mountPage()
+    await vi.waitFor(() => expect(section().exists()).toBe(true))
+    // 1,200 against 800
+    expect(comparison()).toBe(`50% more than ${monthName('en', previousMonth)}`)
+  })
+  it('says in words that the month costs less than the previous month', async () => {
+    api.recurring.rows = [rent]
+    api.purchases.rows = [lamp(2, 800, dateIn(previousYear, previousMonth))]
+    await mountPage()
+    await vi.waitFor(() => expect(section().exists()).toBe(true))
+    // 800 against 1,600
+    expect(comparison()).toBe(`50% less than ${monthName('en', previousMonth)}`)
+  })
+  it('says the month is the same when both months cost the same', async () => {
+    api.recurring.rows = [rent]
+    await mountPage()
+    await vi.waitFor(() => expect(section().exists()).toBe(true))
+    expect(comparison()).toBe(`Same as ${monthName('en', previousMonth)}`)
+  })
+  it('shows a neutral text and no percentage when the previous month cost nothing', async () => {
+    api.purchases.rows = [lamp(2, 300, dateIn(year, month))]
+    await mountPage()
+    await vi.waitFor(() => expect(section().exists()).toBe(true))
+    expect(comparison()).toBe(`No costs in ${monthName('en', previousMonth)} to compare with`)
+    expect(section().text()).not.toContain('%')
+    expect(section().text()).not.toContain('NaN')
+    expect(section().text()).not.toContain('Infinity')
+  })
+  it('hides the comparison icon from assistive technology', async () => {
+    api.recurring.rows = [rent]
+    api.purchases.rows = [lamp(2, 400, dateIn(year, month))]
+    await mountPage()
+    await vi.waitFor(() => expect(section().exists()).toBe(true))
+    const icon = section().find('[aria-hidden="true"]')
+    expect(icon.exists()).toBe(true)
+    expect(icon.classes().join(' ')).toContain('trending-up')
+  })
+  it('is German with German texts when the language is German', async () => {
+    await setLanguage('de')
+    api.recurring.rows = [rent]
+    api.purchases.rows = [lamp(2, 400, dateIn(year, month))]
+    await mountPage()
+    await vi.waitFor(() => expect(section().exists()).toBe(true))
+    expect(section().find('h2').text()).toBe(`Dieser Monat, ${monthName('de', month)} ${year}`)
+    expect(comparison()).toBe(`50 % mehr als im ${monthName('de', previousMonth)}`)
+  })
+  it('shows no card while the lists are loading', async () => {
+    api.recurring.rows = [rent]
+    api.purchases.delay = 300
+    await mountPage()
+    expect(section().exists()).toBe(false)
+    await vi.waitFor(() => expect(section().exists()).toBe(true), { timeout: 2000 })
+  })
+  it('shows no card when loading fails', async () => {
+    api.recurring.rows = [rent]
+    api.recurring.fail = true
+    await mountPage()
+    await vi.waitFor(() => expect(alert().exists()).toBe(true))
+    expect(section().exists()).toBe(false)
+  })
+  it('shows no card when there are no costs at all', async () => {
+    await mountPage()
+    await vi.waitFor(() => expect(wrapper.text()).toContain('No costs yet'))
+    expect(section().exists()).toBe(false)
+  })
+})

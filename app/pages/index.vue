@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { annualSummary, categoryBreakDown, splitPercentages, monthBreakdown } from '~~/shared/utils/costs'
+import { annualSummary, categoryBreakDown, splitPercentages, monthBreakdown, monthChange } from '~~/shared/utils/costs'
 
 const { t, locale } = useI18n()
 const year = new Date().getUTCFullYear()
@@ -24,7 +24,7 @@ const tiles = computed(() => (['total', 'household', 'business', 'averagePerMont
     value: euros(summary.value[key]),
 })))
 const split = computed(() => splitPercentages(summary.value))
-const currentMonth = new Date().getUTCMonth() + 1
+const currentMonth = (new Date().getUTCMonth() + 1) as Month
 const monthRows = computed (() => monthBreakdown(recurring.value ?? [], purchases.value ?? [], year).map(({ month, total, share}) => {
     const date = new Date(Date.UTC(year, month - 1, 1))
     const format = (style: 'long' | 'short') => new Intl.DateTimeFormat(locale.value, { month: style, timeZone: 'UTC'}).format(date)
@@ -36,6 +36,18 @@ const monthRows = computed (() => monthBreakdown(recurring.value ?? [], purchase
         current: month === currentMonth
     }
 }))
+const thisMonth = computed(() => {
+    const change = monthChange(recurring.value ?? [], purchases.value ?? [], year, currentMonth)
+    const monthName = (month: number) => new Intl.DateTimeFormat(locale.value, { month: 'long', timeZone: 'UTC'}).format(new Date(Date.UTC(year, month - 1, 1)))
+    const percent = change.percent
+    const direction = percent === null ? 'none' : percent < 0 ? 'less': percent > 0 ? 'more' : 'same'
+    return {
+        title: t('dashboard.thisMonth.title', { month: monthName(currentMonth), year}),
+        total: euros(change.current),
+        comparison: t(`dashboard.thisMonth.${direction}`, { percent: Math.abs(percent ?? 0), previous: monthName (currentMonth === 1 ? 12 : currentMonth - 1) }),
+        icon: { less: 'i-lucide-trending-down', more: 'i-lucide-trending-up', same: 'i-lucide-minus', none: 'i-lucide-minus'}[direction]
+    }
+})
 
 
 useHead({ title: () => t('nav.dashboard') })
@@ -60,6 +72,16 @@ async function retry() {
         <UButton to="/costs" :label="t('costs.add')" />
     </div>
     <template v-else>
+        <section aria-labelledby="this-month-title">
+            <UCard variant="subtle">
+                <h2 id="this-month-title">{{ thisMonth.title }}</h2>
+                <p class="text-3xl font-medium">{{ thisMonth.total }}</p>
+                <p class="flex items-center gap-2">
+                    <UIcon :name="thisMonth.icon" aria-hidden="true" />
+                    {{ thisMonth.comparison }}
+                </p>
+            </UCard>
+        </section>
         <section aria-labelledby="summary-title">
             <h2 id="summary-title">{{ t('dashboard.summary.title', { year }) }}</h2>
             <div class="grid grid-cols-[repeat(auto-fit,minmax(10rem,1fr))] gap-3">

@@ -43,3 +43,8 @@ export interface MonthTotal {
     total: number,
     share: number
 }
+export interface MonthChange {
+    current: number,
+    previous: number,
+    percent: number | null
+}

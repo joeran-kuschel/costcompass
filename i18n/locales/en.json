@@ -92,6 +92,13 @@
     "months": {
         "title": "Costs per month in {year}",
         "alt": "{month}: {amount}"
+    },
+    "thisMonth": {
+      "title": "This month, {month} {year}",
+      "less": "{percent}% less than {previous}",
+      "more": "{percent}% more than {previous}",
+      "same": "Same as {previous}",
+      "none": "No costs in {previous} to compare with"
     }
   }
 }
