@@ -95,6 +95,11 @@ async function onRetry() {
                 <h2 id="month-total-title">{{ t('month.total', { month: monthName(month) }) }}</h2>
                 <p>{{ euros(groups.total) }}</p>
             </UCard>
+            <UCard v-if="sections.length === 0" variant="subtle" class="mt-6 text-center">
+                <UIcon name="i-lucide-calendar-x" class="size-8" aria-hidden="true" />
+                <h2>{{ t('month.emptyTitle', { month: monthName(month) }) }}</h2>
+                <p>{{ t('month.emptyText') }}</p>
+            </UCard>
         </template>
     </div>
     <section v-for="section in sections" :key="section.id" :aria-labelledby="`${section.id}-title`" class="mt-6">

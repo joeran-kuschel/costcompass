@@ -131,6 +131,8 @@
     "purchases": "Purchases",
     "business": "Business",
     "previous": "Previous month, {month}",
-    "next": "Next month, {month}"
+    "next": "Next month, {month}",
+    "emptyTitle": "No costs in {month}",
+    "emptyText": "Add a cost that falls in this month to see it here."
   }
 }

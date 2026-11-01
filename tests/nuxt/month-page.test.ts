@@ -297,6 +297,75 @@ describe('month page content', () => {
   })
 })
 
+describe('month page empty state', () => {
+  // Only a yearly cost in March and a purchase in September: October 2026 has nothing.
+  async function mountEmpty(path = '/months/2026/10') {
+    api.recurring.rows = [{ ...taxAdvice }]
+    api.purchases.rows = [{ ...bike }]
+    await mountPage(path)
+    await vi.waitFor(() => expect(status().exists()).toBe(false))
+  }
+  const emptyCard = () => wrapper.findAll('div').find(card => card.find('h2').exists() && card.find('h2').text() === 'No costs in October' && card.find('p').exists())
+
+  it('shows a total of zero in the money format', async () => {
+    await mountEmpty()
+    expect(totalCard().find('h2').text()).toBe('Total for October')
+    expect(textOf(totalCard())).toContain('€0.00')
+  })
+  it('names the month and explains what to do, instead of the groups', async () => {
+    await mountEmpty()
+    expect(wrapper.findAll('h2').map(heading => heading.text())).toEqual(['Total for October', 'No costs in October'])
+    expect(wrapper.text()).toContain('Add a cost that falls in this month to see it here.')
+    expect(section('recurring').exists()).toBe(false)
+    expect(section('purchases').exists()).toBe(false)
+    expect(wrapper.findAll('ul')).toHaveLength(0)
+  })
+  it('keeps the icon decorative, so the text carries the message', async () => {
+    await mountEmpty()
+    expect(emptyCard()).toBeTruthy()
+    expect(wrapper.find('[aria-hidden="true"].size-8, .size-8[aria-hidden="true"]').exists()).toBe(true)
+  })
+  it('is not shown for a month with costs', async () => {
+    await mountOctober()
+    expect(wrapper.text()).not.toContain('No costs in October')
+    expect(wrapper.text()).not.toContain('Add a cost that falls in this month')
+  })
+  it('is not shown while the lists load', async () => {
+    api.recurring.rows = [{ ...taxAdvice }]
+    api.purchases.rows = [{ ...bike }]
+    api.purchases.delay = 300
+    await mountPage()
+    expect(status().exists()).toBe(true)
+    expect(wrapper.text()).not.toContain('No costs in October')
+    await vi.waitFor(() => expect(wrapper.text()).toContain('No costs in October'), { timeout: 2000 })
+  })
+  it('is not shown after a failed load, where the error is shown instead', async () => {
+    api.purchases.fail = true
+    await mountPage()
+    await vi.waitFor(() => expect(alert().exists()).toBe(true))
+    expect(wrapper.text()).not.toContain('No costs in October')
+    expect(wrapper.text()).not.toContain('€')
+  })
+  it('is shown again when a retry loads a month without costs', async () => {
+    api.recurring.rows = [{ ...taxAdvice }]
+    api.purchases.rows = [{ ...bike }]
+    api.purchases.fail = true
+    await mountPage()
+    await vi.waitFor(() => expect(alert().exists()).toBe(true))
+    api.purchases.fail = false
+    await alert().find('button').trigger('click')
+    await vi.waitFor(() => expect(wrapper.text()).toContain('No costs in October'))
+  })
+  it('has German texts and a German zero', async () => {
+    await setLanguage('de')
+    await mountEmpty()
+    expect(totalCard().find('h2').text()).toBe('Summe für Oktober')
+    expect(textOf(totalCard())).toContain('0,00 €')
+    expect(wrapper.text()).toContain('Keine Kosten im Oktober')
+    expect(wrapper.text()).toContain('Füge Kosten hinzu, die in diesen Monat fallen, um sie hier zu sehen.')
+  })
+})
+
 describe('month page "This month" marker', () => {
   it('is shown, as text, for the real current month', async () => {
     vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-10-15T12:00:00Z') })

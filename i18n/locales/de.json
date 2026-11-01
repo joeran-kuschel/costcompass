@@ -131,6 +131,8 @@
     "purchases": "Anschaffungen",
     "business": "Geschäftlich",
     "previous": "Vorheriger Monat, {month}",
-    "next": "Nächster Monat, {month}"
+    "next": "Nächster Monat, {month}",
+    "emptyTitle": "Keine Kosten im {month}",
+    "emptyText": "Füge Kosten hinzu, die in diesen Monat fallen, um sie hier zu sehen."
   }
 }
