@@ -55,6 +55,9 @@
   "language": {
     "label": "Language"
   },
+  "year": {
+    "label": "Year"
+  },
   "form": {
     "kind": "Type",
     "name": "Name",

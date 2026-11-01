@@ -55,6 +55,9 @@
   "language": {
     "label": "Sprache"
   },
+  "year": {
+    "label": "Jahr"
+  },
   "form": {
     "kind": "Art",
     "name": "Name",

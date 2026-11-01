@@ -36,6 +36,8 @@ beforeEach(() => {
   api.purchases = { delay: 0, fail: false, rows: [] }
   // useFetch caches by URL; start every test without data from the previous one.
   clearNuxtData()
+  // The selected year is shared state: every test starts on the current year.
+  clearNuxtState(['year', 'currentYear'])
 })
 afterEach(async () => {
   wrapper.unmount()
@@ -800,5 +802,123 @@ describe('dashboard page add cost', () => {
     await mountPage()
     await vi.waitFor(() => expect(alert().exists()).toBe(true))
     expect(tile().exists()).toBe(false)
+  })
+})
+
+describe('dashboard page year selector', () => {
+  const year = new Date().getUTCFullYear()
+  const today = new Date()
+  const month = today.getUTCMonth() + 1
+  const lamp = (id: number, amount: number, date: string) => ({ id, kind: 'purchase', name: 'Lamp', amount, category: 'appliances', business: false, date })
+  // Current year: 800 x 12 + 300 = 9,900. Previous year: 800 x 12 + 500 = 10,100.
+  const costs = () => {
+    api.recurring.rows = [rent]
+    api.purchases.rows = [lamp(2, 300, `${year}-03-15`), lamp(3, 500, `${year - 1}-03-15`)]
+  }
+  const combobox = () => wrapper.find('[role="combobox"]')
+  const options = () => [...document.body.querySelectorAll('[role="option"]')]
+  const summary = () => wrapper.find('section[aria-labelledby="summary-title"]')
+  const card = () => wrapper.find('section[aria-labelledby="this-month-title"]')
+  const months = () => wrapper.find('section[aria-labelledby="months-title"]')
+  async function pickYear(value: number) {
+    await combobox().trigger('pointerdown', { button: 0, ctrlKey: false, pointerType: 'mouse' })
+    await vi.waitFor(() => expect(options().length).toBeGreaterThan(0))
+    options().find(option => option.textContent?.trim() === String(value))!
+      .dispatchEvent(new PointerEvent('pointerup', { bubbles: true, button: 0, pointerType: 'mouse' }))
+    await vi.waitFor(() => expect(summary().find('h2').text()).toContain(String(value)))
+  }
+
+  it('has a labelled year selector that starts on the current year', async () => {
+    costs()
+    await mountPage()
+    await vi.waitFor(() => expect(combobox().exists()).toBe(true))
+    expect(wrapper.find('label').text()).toBe('Year')
+    expect(combobox().text()).toBe(String(year))
+    expect(summary().find('h2').text()).toBe(`Summary for ${year}`)
+  })
+  it('offers the current year and the years of the purchases, newest first', async () => {
+    costs()
+    await mountPage()
+    await vi.waitFor(() => expect(combobox().exists()).toBe(true))
+    await combobox().trigger('pointerdown', { button: 0, ctrlKey: false, pointerType: 'mouse' })
+    await vi.waitFor(() => expect(options().length).toBeGreaterThan(0))
+    expect(options().map(option => option.textContent?.trim())).toEqual([String(year), String(year - 1)])
+  })
+  it('offers only the current year when there are no purchases of other years', async () => {
+    api.recurring.rows = [rent]
+    await mountPage()
+    await vi.waitFor(() => expect(combobox().exists()).toBe(true))
+    await combobox().trigger('pointerdown', { button: 0, ctrlKey: false, pointerType: 'mouse' })
+    await vi.waitFor(() => expect(options().length).toBeGreaterThan(0))
+    expect(options().map(option => option.textContent?.trim())).toEqual([String(year)])
+  })
+  it('updates the year sections when another year is chosen', async () => {
+    costs()
+    await mountPage()
+    await vi.waitFor(() => expect(combobox().exists()).toBe(true))
+    expect(summary().text()).toContain('€9,900')
+    await pickYear(year - 1)
+    expect(summary().find('h2').text()).toBe(`Summary for ${year - 1}`)
+    expect(summary().text()).toContain('€10,100')
+    expect(wrapper.find('section[aria-labelledby="categories-title"] h2').text()).toBe(`Costs by category in ${year - 1}`)
+    expect(wrapper.find('section[aria-labelledby="split-title"] h2').text()).toBe(`Household versus business in ${year - 1}`)
+    expect(months().find('h2').text()).toBe(`Costs per month in ${year - 1}`)
+  })
+  it('keeps the this-month card on today when another year is chosen', async () => {
+    costs()
+    await mountPage()
+    await vi.waitFor(() => expect(combobox().exists()).toBe(true))
+    const heading = card().find('h2').text()
+    const total = card().find('p').text()
+    await pickYear(year - 1)
+    expect(card().find('h2').text()).toBe(heading)
+    expect(heading).toContain(String(year))
+    expect(card().find('p').text()).toBe(total)
+  })
+  it('marks the current month in the chart only for the current year', async () => {
+    costs()
+    await mountPage()
+    await vi.waitFor(() => expect(combobox().exists()).toBe(true))
+    const boldMonths = () => months().findAll('li').flatMap((item, index) => item.find('.font-bold').exists() ? [index] : [])
+    expect(boldMonths()).toEqual([month - 1])
+    await pickYear(year - 1)
+    expect(boldMonths()).toEqual([])
+  })
+  it('keeps the chosen year when the page is opened again', async () => {
+    costs()
+    await mountPage()
+    await vi.waitFor(() => expect(combobox().exists()).toBe(true))
+    await pickYear(year - 1)
+    wrapper.unmount()
+    await mountPage()
+    await vi.waitFor(() => expect(summary().exists()).toBe(true))
+    expect(combobox().text()).toBe(String(year - 1))
+    expect(summary().find('h2').text()).toBe(`Summary for ${year - 1}`)
+  })
+  it('is German with a German label when the language is German', async () => {
+    await setLanguage('de')
+    costs()
+    await mountPage()
+    await vi.waitFor(() => expect(combobox().exists()).toBe(true))
+    expect(wrapper.find('label').text()).toBe('Jahr')
+  })
+  it('shows no selector while the lists are loading', async () => {
+    costs()
+    api.purchases.delay = 300
+    await mountPage()
+    expect(combobox().exists()).toBe(false)
+    await vi.waitFor(() => expect(combobox().exists()).toBe(true), { timeout: 2000 })
+  })
+  it('shows no selector when loading fails', async () => {
+    costs()
+    api.recurring.fail = true
+    await mountPage()
+    await vi.waitFor(() => expect(alert().exists()).toBe(true))
+    expect(combobox().exists()).toBe(false)
+  })
+  it('shows no selector when there are no costs at all', async () => {
+    await mountPage()
+    await vi.waitFor(() => expect(wrapper.text()).toContain('No costs yet'))
+    expect(combobox().exists()).toBe(false)
   })
 })

@@ -27,7 +27,7 @@ export function occursInMonth(item: RecurringCost, month: Month): boolean {
             return item.dueMonth !== undefined && (item.dueMonth - month) % 3 === 0
         case 'yearly':
             return item.dueMonth === month
-        case 'monthly': 
+        case 'monthly':
             return true;
     }
 }
@@ -86,7 +86,12 @@ export function monthChange(recurring: RecurringCost[], purchases: Purchase[], y
     const previousYear = month === 1 ? year - 1 : year
     const previousMonth = (month === 1 ? 12 : month - 1) as Month
     const current = totalMonthlyCost(recurring, purchases, year, month)
-    const previous = totalMonthlyCost(recurring, purchases, previousYear, previousMonth) 
+    const previous = totalMonthlyCost(recurring, purchases, previousYear, previousMonth)
     return { current, previous, percent: previous === 0 ? null : Math.round((current - previous) / previous * 100)}
+}
+export function availableYears(purchases: Purchase[], currentYear: number): number[] {
+    const years = new Set(purchases.map(purchase => new Date(purchase.date).getUTCFullYear()))
+    years.add(currentYear)
+    return [...years].sort((a,b) => b - a)
 }
 

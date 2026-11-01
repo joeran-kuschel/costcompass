@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import type { RecurringCost, Purchase, CostItem, Month, AnnualSummary, Stored } from '~~/shared/types/calculation'
 import { CATEGORIES } from '~~/shared/types/calculation'
-import { totalAnnualRecurring, totalAnnualPurchases, totalAnnualCost, filterByBusiness, totalsByCategory, occursInMonth, totalMonthlyCost, monthlyTotals, costsInMonth, annualSummary, categoryBreakDown, splitPercentages, monthBreakdown, monthChange } from '~~/shared/utils/costs'
+import { totalAnnualRecurring, totalAnnualPurchases, totalAnnualCost, filterByBusiness, totalsByCategory, occursInMonth, totalMonthlyCost, monthlyTotals, costsInMonth, annualSummary, categoryBreakDown, splitPercentages, monthBreakdown, monthChange, availableYears } from '~~/shared/utils/costs'
 
 const YEAR = 2026
 
@@ -669,5 +669,29 @@ describe('costsInMonth with stored items', () => {
     const recurringCosts = [recurring({ name: 'Rent', amount: 100 })]
     const purchases = [purchase({ name: 'Lamp', amount: 500, date: `${YEAR}-03-15` })]
     expect(costsInMonth(recurringCosts, purchases, YEAR, 3).map(item => item.name)).toEqual(['Rent', 'Lamp'])
+  })
+})
+
+describe('availableYears', () => {
+  it('always contains the current year, even without purchases', () => {
+    expect(availableYears([], YEAR)).toEqual([YEAR])
+  })
+  it('adds the years of the purchases, newest first', () => {
+    const purchases = [purchase({ date: '2024-02-10' }), purchase({ date: '2025-11-03' })]
+    expect(availableYears(purchases, YEAR)).toEqual([YEAR, 2025, 2024])
+  })
+  it('lists a year only once', () => {
+    const purchases = [purchase({ date: '2025-01-10' }), purchase({ date: '2025-12-31' }), purchase({ date: `${YEAR}-03-01` })]
+    expect(availableYears(purchases, YEAR)).toEqual([YEAR, 2025])
+  })
+  it('sorts by year whatever order the purchases come in', () => {
+    const purchases = [purchase({ date: '2023-06-01' }), purchase({ date: '2025-06-01' }), purchase({ date: '2024-06-01' })]
+    expect(availableYears(purchases, YEAR)).toEqual([YEAR, 2025, 2024, 2023])
+  })
+  it('includes a year after the current one when a purchase is dated then', () => {
+    expect(availableYears([purchase({ date: `${YEAR + 1}-01-05` })], YEAR)).toEqual([YEAR + 1, YEAR])
+  })
+  it('takes the year from the date in UTC, so New Year is not shifted by a time zone', () => {
+    expect(availableYears([purchase({ date: '2025-12-31' }), purchase({ date: '2026-01-01' })], 2030)).toEqual([2030, 2026, 2025])
   })
 })
