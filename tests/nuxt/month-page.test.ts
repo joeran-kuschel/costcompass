@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mockNuxtImport, mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
 import type { VueWrapper } from '@vue/test-utils'
 import MonthPage from '~/pages/months/[year]/[month].vue'
+import { monthlyTotals } from '~~/shared/utils/costs'
 
 const { showErrorMock } = vi.hoisted(() => ({ showErrorMock: vi.fn() }))
 mockNuxtImport('showError', () => showErrorMock)
@@ -168,6 +169,150 @@ describe('month page year check', () => {
     await mountPage('/months/2020/10')
     await vi.waitFor(() => expect(showErrorMock).toHaveBeenCalledTimes(1))
     expect(showErrorMock.mock.calls[0]![0]).toMatchObject({ status: 404, fatal: true, data: { reason: 'month' } })
+  })
+})
+
+// A month with both kinds of costs: October 2026. The yearly cost in March and the purchase in September do not belong to it.
+const rent = { id: 1, kind: 'recurring', name: 'Rent', amount: 800, category: 'housing', business: false, interval: 'monthly' }
+const liability = { id: 2, kind: 'recurring', name: 'Liability insurance', amount: 120.5, category: 'insurance', business: true, interval: 'yearly', dueMonth: 10 }
+const phone = { id: 3, kind: 'recurring', name: 'Phone', amount: 30.25, category: 'housing', business: false, interval: 'quarterly', dueMonth: 1 }
+const taxAdvice = { id: 4, kind: 'recurring', name: 'Tax advice', amount: 300, category: 'insurance', business: false, interval: 'yearly', dueMonth: 3 }
+const laptop = { id: 1, kind: 'purchase', name: 'Laptop', amount: 899.99, category: 'appliances', business: true, date: '2026-10-05' }
+const book = { id: 2, kind: 'purchase', name: 'Book', amount: 12.5, category: 'appliances', business: false, date: '2026-10-20' }
+const bike = { id: 3, kind: 'purchase', name: 'Bike', amount: 480, category: 'appliances', business: false, date: '2026-09-02' }
+const october = { recurring: [rent, liability, phone, taxAdvice], purchases: [laptop, book, bike] }
+
+// Reads the text of an element with all white space (also the no-break space of the German amounts) as single spaces.
+const textOf = (element: { text: () => string }) => element.text().replace(/\s+/g, ' ').trim()
+// Only for English amounts such as "€1,863.24".
+const amountOf = (text: string) => Number(text.replace(/[^\d.-]/g, ''))
+const section = (id: 'recurring' | 'purchases') => wrapper.find(`section[aria-labelledby="${id}-title"]`)
+const rowsOf = (id: 'recurring' | 'purchases') => section(id).findAll('li')
+const subtotalOf = (id: 'recurring' | 'purchases') => textOf(section(id).find('div > p'))
+const totalCard = () => wrapper.find('[aria-labelledby="month-total-title"]')
+
+async function mountOctober(path = '/months/2026/10') {
+  api.recurring.rows = october.recurring.map(row => ({ ...row }))
+  api.purchases.rows = october.purchases.map(row => ({ ...row }))
+  await mountPage(path)
+  await vi.waitFor(() => expect(status().exists()).toBe(false))
+}
+
+describe('month page content', () => {
+  it('shows the total of the month in a card named after the month', async () => {
+    await mountOctober()
+    expect(totalCard().find('h2').text()).toBe('Total for October')
+    expect(textOf(totalCard())).toContain('€1,863.24')
+  })
+  it('lists recurring costs and purchases in separate groups, each with a heading and a subtotal', async () => {
+    await mountOctober()
+    expect(section('recurring').find('h2').text()).toBe('Recurring')
+    expect(section('purchases').find('h2').text()).toBe('Purchases')
+    expect(subtotalOf('recurring')).toBe('€950.75')
+    expect(subtotalOf('purchases')).toBe('€912.49')
+  })
+  it('shows only the costs that fall in the month', async () => {
+    await mountOctober()
+    const names = (id: 'recurring' | 'purchases') => rowsOf(id).map(row => row.find('p').text())
+    expect(names('recurring').join('|')).toContain('Rent')
+    expect(names('recurring').join('|')).toContain('Liability insurance')
+    expect(names('recurring').join('|')).toContain('Phone')
+    expect(names('recurring').join('|')).not.toContain('Tax advice')
+    expect(rowsOf('recurring')).toHaveLength(3)
+    expect(rowsOf('purchases')).toHaveLength(2)
+    expect(section('purchases').text()).not.toContain('Bike')
+  })
+  it('shows the category and the interval under a recurring cost, and the category and the date under a purchase', async () => {
+    await mountOctober()
+    const rentRow = textOf(rowsOf('recurring').find(row => row.text().includes('Rent'))!)
+    expect(rentRow).toContain('Housing · Monthly')
+    expect(rentRow).toContain('€800.00')
+    const phoneRow = textOf(rowsOf('recurring').find(row => row.text().includes('Phone'))!)
+    expect(phoneRow).toContain('Housing · Quarterly')
+    expect(phoneRow).toContain('€30.25')
+    const bookRow = textOf(rowsOf('purchases').find(row => row.text().includes('Book'))!)
+    expect(bookRow).toContain('Appliances · Oct 20')
+    expect(bookRow).toContain('€12.50')
+  })
+  it('adds up: each subtotal is the sum of its rows and the total is the sum of both subtotals', async () => {
+    await mountOctober()
+    const sum = (id: 'recurring' | 'purchases') => rowsOf(id).reduce((total, row) => total + amountOf(textOf(row.findAll('p').at(-1)!)), 0)
+    expect(sum('recurring')).toBeCloseTo(amountOf(subtotalOf('recurring')), 2)
+    expect(sum('purchases')).toBeCloseTo(amountOf(subtotalOf('purchases')), 2)
+    const total = amountOf(textOf(totalCard().find('p')))
+    expect(total).toBeCloseTo(amountOf(subtotalOf('recurring')) + amountOf(subtotalOf('purchases')), 2)
+  })
+  it('shows the same total as the monthly totals of the core', async () => {
+    await mountOctober()
+    const expected = monthlyTotals(october.recurring as never, october.purchases as never, 2026)[9]!
+    expect(amountOf(textOf(totalCard().find('p')))).toBeCloseTo(expected, 2)
+  })
+  it('marks business costs with a text badge and no other row', async () => {
+    await mountOctober()
+    const badges = wrapper.findAll('li').filter(row => row.text().includes('Business'))
+    expect(badges).toHaveLength(2)
+    expect(badges.map(row => row.text()).join('|')).toContain('Liability insurance')
+    expect(badges.map(row => row.text()).join('|')).toContain('Laptop')
+    expect(rowsOf('recurring').find(row => row.text().includes('Rent'))!.text()).not.toContain('Business')
+  })
+  it('does not show a group without entries', async () => {
+    await mountOctober('/months/2026/11')
+    expect(section('purchases').exists()).toBe(false)
+    expect(section('recurring').exists()).toBe(true)
+  })
+  it('shows only the purchases group when a month has no recurring costs', async () => {
+    api.recurring.rows = []
+    api.purchases.rows = [{ ...book }]
+    await mountPage()
+    await vi.waitFor(() => expect(status().exists()).toBe(false))
+    expect(section('recurring').exists()).toBe(false)
+    expect(section('purchases').exists()).toBe(true)
+  })
+  it('has one h1, the groups as lists with a heading each, and nothing in the lists but the rows', async () => {
+    await mountOctober()
+    expect(wrapper.findAll('h1')).toHaveLength(1)
+    expect(wrapper.findAll('ul')).toHaveLength(2)
+    expect(section('recurring').find('ul').exists()).toBe(true)
+    expect(section('purchases').find('ul').exists()).toBe(true)
+    expect(wrapper.findAll('h2').map(heading => heading.text())).toEqual(['Total for October', 'Recurring', 'Purchases'])
+  })
+})
+
+describe('month page "This month" marker', () => {
+  it('is shown, as text, for the real current month', async () => {
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-10-15T12:00:00Z') })
+    clearNuxtState(['today'])
+    await mountOctober('/months/2026/10')
+    expect(wrapper.find('h1').element.parentElement!.textContent).toContain('This month')
+  })
+  it('is not shown for another month', async () => {
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-10-15T12:00:00Z') })
+    clearNuxtState(['today'])
+    await mountOctober('/months/2026/09')
+    expect(wrapper.text()).not.toContain('This month')
+  })
+  it('is not shown for the same month in another year', async () => {
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-10-15T12:00:00Z') })
+    clearNuxtState(['today'])
+    await mountOctober('/months/2025/10')
+    expect(wrapper.text()).not.toContain('This month')
+  })
+})
+
+describe('month page content in German', () => {
+  it('has German headings, labels, amounts and dates', async () => {
+    await setLanguage('de')
+    await mountOctober()
+    expect(wrapper.find('h1').text()).toBe('Oktober 2026')
+    expect(totalCard().find('h2').text()).toBe('Summe für Oktober')
+    expect(section('recurring').find('h2').text()).toBe('Wiederkehrend')
+    expect(section('purchases').find('h2').text()).toBe('Anschaffungen')
+    expect(subtotalOf('recurring')).toBe('950,75 €')
+    const rentRow = textOf(rowsOf('recurring').find(row => row.text().includes('Rent'))!)
+    expect(rentRow).toContain('Wohnen · Monatlich')
+    const bookRow = textOf(rowsOf('purchases').find(row => row.text().includes('Book'))!)
+    expect(bookRow).toContain('Geräte · 20. Okt.')
+    expect(wrapper.text()).toContain('Geschäftlich')
   })
 })
 

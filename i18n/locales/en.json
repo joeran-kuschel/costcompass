@@ -124,6 +124,11 @@
   "month": {
     "loading": "Loading the costs of {month}…",
     "error": "Couldn't load the costs of {month}",
-    "errorText": "Your data has not changed. Please try again."
+    "errorText": "Your data has not changed. Please try again.",
+    "thisMonth": "This month",
+    "total": "Total for {month}",
+    "recurring": "Recurring",
+    "purchases": "Purchases",
+    "business": "Business"
   }
 }
