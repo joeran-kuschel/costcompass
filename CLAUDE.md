@@ -9,6 +9,11 @@ A web app to track household expenses (rent, insurance, appliances, etc.) with a
 - Do not write large chunks of code or whole features unless I explicitly ask for it. Small illustrative snippets are fine.
 - When a decision is mine to make, lay out the options briefly and let me choose.
 
+### Fixed rules
+
+- **Every feature goes into its own branch.** Nothing is built or committed directly on `main`; the branch is merged through a pull request.
+- **Documentation comes before the pull request.** A pull request is only created once the documentation for its feature is written (in `documentation/`, in `frontend/` or `backend/`). The pull request text names the documentation that belongs to it.
+
 ## Scope of the first version
 
 - Cost tracking is the main feature: recurring costs (rent, insurance) and one-off purchases (appliances), with categories and an optional business flag
