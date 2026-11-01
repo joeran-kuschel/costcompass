@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import type { RecurringCost, Purchase, CostItem, Month, AnnualSummary, Stored } from '~~/shared/types/calculation'
 import { CATEGORIES } from '~~/shared/types/calculation'
-import { totalAnnualRecurring, totalAnnualPurchases, totalAnnualCost, filterByBusiness, totalsByCategory, occursInMonth, totalMonthlyCost, monthlyTotals, costsInMonth, annualSummary, categoryBreakDown, splitPercentages, monthBreakdown, monthChange, availableYears } from '~~/shared/utils/costs'
+import { totalAnnualRecurring, totalAnnualPurchases, totalAnnualCost, filterByBusiness, totalsByCategory, occursInMonth, totalMonthlyCost, monthlyTotals, costsInMonth, annualSummary, categoryBreakDown, splitPercentages, monthBreakdown, monthChange, availableYears, monthNeighbours, groupMonthCosts } from '~~/shared/utils/costs'
 
 const YEAR = 2026
 
@@ -693,5 +693,114 @@ describe('availableYears', () => {
   })
   it('takes the year from the date in UTC, so New Year is not shifted by a time zone', () => {
     expect(availableYears([purchase({ date: '2025-12-31' }), purchase({ date: '2026-01-01' })], 2030)).toEqual([2030, 2026, 2025])
+  })
+})
+
+describe('monthNeighbours', () => {
+  const years = [2025, 2026, 2027]
+
+  it('returns the months before and after in the same year for a month in the middle', () => {
+    expect(monthNeighbours({ year: 2026, month: 10 }, years)).toEqual({
+      previous: { year: 2026, month: 9 },
+      next: { year: 2026, month: 11 },
+    })
+  })
+  it('goes from January back to December of the previous year', () => {
+    expect(monthNeighbours({ year: 2026, month: 1 }, years)).toEqual({
+      previous: { year: 2025, month: 12 },
+      next: { year: 2026, month: 2 },
+    })
+  })
+  it('goes from December on to January of the next year', () => {
+    expect(monthNeighbours({ year: 2026, month: 12 }, years)).toEqual({
+      previous: { year: 2026, month: 11 },
+      next: { year: 2027, month: 1 },
+    })
+  })
+  it('has no previous month in January of the oldest valid year', () => {
+    expect(monthNeighbours({ year: 2025, month: 1 }, years).previous).toBeNull()
+    expect(monthNeighbours({ year: 2025, month: 1 }, years).next).toEqual({ year: 2025, month: 2 })
+  })
+  it('has no next month in December of the newest valid year', () => {
+    expect(monthNeighbours({ year: 2027, month: 12 }, years).next).toBeNull()
+    expect(monthNeighbours({ year: 2027, month: 12 }, years).previous).toEqual({ year: 2027, month: 11 })
+  })
+  it('keeps both neighbours inside a single valid year, except at the year boundaries', () => {
+    expect(monthNeighbours({ year: 2026, month: 6 }, [2026])).toEqual({
+      previous: { year: 2026, month: 5 },
+      next: { year: 2026, month: 7 },
+    })
+    expect(monthNeighbours({ year: 2026, month: 1 }, [2026]).previous).toBeNull()
+    expect(monthNeighbours({ year: 2026, month: 12 }, [2026]).next).toBeNull()
+  })
+  it('hides a link into a year that has a gap before it', () => {
+    // 2025 has no data: the years 2024 and 2026 are not linked to each other
+    expect(monthNeighbours({ year: 2026, month: 1 }, [2024, 2026]).previous).toBeNull()
+    expect(monthNeighbours({ year: 2024, month: 12 }, [2024, 2026]).next).toBeNull()
+  })
+  it('does not depend on the order of the valid years', () => {
+    expect(monthNeighbours({ year: 2026, month: 1 }, [2027, 2025, 2026]).previous).toEqual({ year: 2025, month: 12 })
+  })
+  it('returns no neighbours at all for a year that is not valid', () => {
+    expect(monthNeighbours({ year: 2030, month: 6 }, years)).toEqual({ previous: null, next: null })
+  })
+})
+
+describe('groupMonthCosts', () => {
+  const rent = recurring({ name: 'Rent', amount: 1200 })
+  const gym = recurring({ name: 'Gym', amount: 30 })
+  const lamp = purchase({ name: 'Lamp', amount: 90, date: `${YEAR}-03-15` })
+
+  it('splits the costs by kind and keeps their order', () => {
+    const result = groupMonthCosts([rent, lamp, gym])
+    expect(result.recurring.map(cost => cost.name)).toEqual(['Rent', 'Gym'])
+    expect(result.purchases.map(cost => cost.name)).toEqual(['Lamp'])
+  })
+  it('gives each group a subtotal that equals the sum of its rows', () => {
+    const result = groupMonthCosts([rent, gym, lamp, purchase({ name: 'Desk', amount: 210, date: `${YEAR}-03-20` })])
+    expect(result.recurringTotal).toBe(1230)
+    expect(result.purchasesTotal).toBe(300)
+  })
+  it('makes the total the sum of both subtotals', () => {
+    const result = groupMonthCosts([rent, gym, lamp])
+    expect(result.total).toBe(result.recurringTotal + result.purchasesTotal)
+    expect(result.total).toBe(1320)
+  })
+  it('returns an empty list and a subtotal of 0 for a group without entries', () => {
+    const onlyRecurring = groupMonthCosts([rent])
+    expect(onlyRecurring.purchases).toEqual([])
+    expect(onlyRecurring.purchasesTotal).toBe(0)
+    const onlyPurchases = groupMonthCosts([lamp])
+    expect(onlyPurchases.recurring).toEqual([])
+    expect(onlyPurchases.recurringTotal).toBe(0)
+  })
+  it('returns two empty groups and a total of 0 for no costs', () => {
+    expect(groupMonthCosts([])).toEqual({ recurring: [], purchases: [], recurringTotal: 0, purchasesTotal: 0, total: 0 })
+  })
+  it('keeps the id of stored items', () => {
+    const storedRent: Stored<RecurringCost> = { ...rent, id: 4 }
+    const storedLamp: Stored<Purchase> = { ...lamp, id: 4 }
+    const result = groupMonthCosts([storedRent, storedLamp])
+    expect(result.recurring[0]?.id).toBe(4)
+    expect(result.purchases[0]?.id).toBe(4)
+  })
+  it('does not change the list it is given', () => {
+    const costs = [rent, lamp, gym]
+    groupMonthCosts(costs)
+    expect(costs.map(cost => cost.name)).toEqual(['Rent', 'Lamp', 'Gym'])
+  })
+  it('adds amounts with cents the same way as the monthly total, so the two are equal', () => {
+    const recurringCosts = [recurring({ amount: 10.1 }), recurring({ amount: 20.2 })]
+    const purchases = [purchase({ amount: 0.1, date: `${YEAR}-03-15` }), purchase({ amount: 0.2, date: `${YEAR}-03-16` })]
+    const grouped = groupMonthCosts(costsInMonth(recurringCosts, purchases, YEAR, 3))
+    expect(grouped.total).toBe(monthlyTotals(recurringCosts, purchases, YEAR)[2])
+  })
+  it('equals the matching entry of monthlyTotals for a month with a yearly cost', () => {
+    const recurringCosts = [recurring({ amount: 100 }), recurring({ amount: 600, interval: 'yearly', dueMonth: 3 })]
+    const purchases = [purchase({ amount: 300, date: `${YEAR}-03-15` }), purchase({ amount: 999, date: `${YEAR}-04-15` })]
+    const grouped = groupMonthCosts(costsInMonth(recurringCosts, purchases, YEAR, 3))
+    expect(grouped.recurringTotal).toBe(700)
+    expect(grouped.purchasesTotal).toBe(300)
+    expect(grouped.total).toBe(monthlyTotals(recurringCosts, purchases, YEAR)[2])
   })
 })
