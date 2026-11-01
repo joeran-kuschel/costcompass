@@ -13,7 +13,7 @@ Reference and conventions for `app/` (pages, components, composables, texts). Wr
 
 `app/error.vue` is the error page, not a route. It shows one of three variants (`notFound`, `generic`, `month`), picked by the error. Texts come from `error.<variant>Title` and `error.<variant>Text`. The `month` variant is used when the month page throws an error with `data: { reason: 'month' }`.
 
-Links from the dashboard to month pages (the month bars and a "View month" link) are not built yet, and month pages are not in the navigation.
+Month pages are reached from the dashboard (see [Dashboard links to month pages](#dashboard-links-to-month-pages)); they are not in the navigation.
 
 ### Page states
 
@@ -27,6 +27,24 @@ The dashboard and the month page get their data with `useCostLists()` and show t
 ### Month page address
 
 The address is checked before any data is requested. `monthParamsSchema` (`shared/utils/validation.ts`) accepts a four-digit year and a month `01` to `12`. Anything else shows the not-found error. Once the lists have loaded, a year that is not in `availableYears` also shows it. Build links with `monthPath(year, month)` from `useMonth()`, which pads the month.
+
+### Dashboard links to month pages
+
+Two places on `app/pages/index.vue` link to `/months/[year]/[month]` (issues #18 and #19). Both build the address with `monthPath(year, month)`, so the month is always two digits (`/months/2026/03`).
+
+| Link | Target | Year used | Why |
+| --- | --- | --- | --- |
+| "View <month year>" at the end of the "This month" card (`dashboard.thisMonth.view`, e.g. "View March 2026") | Today's month: `monthPath(currentYear, currentMonth)` | Always `currentYear` | The card always shows today's month, so its link has to agree with it. Shown also when the month has no costs. |
+| Each of the 12 items in "Costs per month" | `monthPath(year.value, month)` | The selected `year` | The chart shows the selected year, so a bar leads to that year's month. |
+
+Notes on the months chart:
+
+- Each `li` holds a `NuxtLink` (a real `<a>`, works without JavaScript). The `li` has no layout of its own, so the link fills the grid column and the bars keep their width.
+- Link name: the `sr-only` text from `dashboard.months.alt` ("March: €1,100"). The bar and the short label are `aria-hidden`; the bar has a hover `title`.
+- Keyboard focus shows an outline (`focus-visible:outline-2 focus-visible:outline-primary`).
+- The current month's label is bold only if the selected year is the current year (`year === currentYear && month === currentMonth`).
+- The grid is `repeat(12, minmax(1.5rem, 1fr))` inside an `overflow-x-auto` wrapper. 1.5rem is 24 px, the minimum target size. Twelve columns plus gaps do not fit on very narrow screens, so the chart scrolls sideways instead of squeezing the targets below 24 px. A check on 320 px screens is still open (to verify).
+- Tests: `tests/nuxt/dashboard-page.test.ts`, the describes "dashboard page month bar links" and "dashboard page "View month" link".
 
 ## Components
 
@@ -60,7 +78,7 @@ The form validates with the Zod schemas from `shared/utils/validation.ts`, so th
 
 - Sections are labelled with `aria-labelledby`; bars and tracks are `aria-hidden` and every value is also real text.
 - The split bar is a `role="img"` with a translated `aria-label`.
-- The month chart items have visually hidden text ("January: €800"); the current month is bold, not only coloured.
+- The month chart items are links named by a visually hidden text ("January: €800"); the bar and the short label are `aria-hidden`; the focused link has an outline; the current month is bold, not only coloured.
 - The costs table sets no `aria-sort`, so the sort buttons carry the state in their `aria-label` (`costs.sort.*`).
 - After a successful retry on the month page, focus moves to the `h1`, which has `tabindex="-1"`.
 - `<NuxtRouteAnnouncer />` announces the new title after each navigation.
