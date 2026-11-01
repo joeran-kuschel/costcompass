@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mockNuxtImport, mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
 import type { VueWrapper } from '@vue/test-utils'
 import MonthPage from '~/pages/months/[year]/[month].vue'
+import CostForm from '~/components/CostForm.vue'
 import { monthlyTotals } from '~~/shared/utils/costs'
 
 const { showErrorMock } = vi.hoisted(() => ({ showErrorMock: vi.fn() }))
@@ -127,6 +128,17 @@ describe('month page error state', () => {
     expect(wrapper.find('h1').text()).toBe('October 2026')
     expect(wrapper.text()).not.toContain('€')
     expect(wrapper.text()).not.toContain('boom')
+  })
+  it('hides the costs of an earlier load when a refresh fails, so old numbers are not shown next to the error', async () => {
+    await mountOctober()
+    expect(rowsOf('recurring').length).toBeGreaterThan(0)
+    api.purchases.fail = true
+    await refreshNuxtData()
+    await vi.waitFor(() => expect(alert().exists()).toBe(true))
+    expect(section('recurring').exists()).toBe(false)
+    expect(section('purchases').exists()).toBe(false)
+    expect(totalCard().exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('€')
   })
   it('does not judge the year when the load failed', async () => {
     api.purchases.fail = true
@@ -363,6 +375,129 @@ describe('month page empty state', () => {
     expect(textOf(totalCard())).toContain('0,00 €')
     expect(wrapper.text()).toContain('Keine Kosten im Oktober')
     expect(wrapper.text()).toContain('Füge Kosten hinzu, die in diesen Monat fallen, um sie hier zu sehen.')
+  })
+})
+
+describe('month page add cost', () => {
+  // The dialog is teleported to the body, so its content is not inside the wrapper.
+  const dialog = () => document.body.querySelector('[role="dialog"]')
+  const nameInput = () => document.body.querySelector<HTMLInputElement>('input[name="name"]')
+  const dateInput = () => document.body.querySelector<HTMLInputElement>('input[name="date"]')
+  const headerButton = () => wrapper.findAll('button').find(button => button.text() === 'Add cost' && button.classes().includes('ml-auto'))
+  const cancelButton = () => [...document.body.querySelectorAll('button')].find(button => button.textContent?.trim() === 'Cancel')
+  const total = () => textOf(totalCard())
+  async function openFromHeader() {
+    await headerButton()!.trigger('click')
+    await vi.waitFor(() => expect(nameInput()).toBeTruthy())
+  }
+
+  it('has an "Add cost" button next to the heading once the month is loaded', async () => {
+    await mountOctober()
+    expect(headerButton()).toBeTruthy()
+  })
+  it('has no button while the lists load or after a failure', async () => {
+    api.purchases.delay = 300
+    await mountPage()
+    expect(wrapper.findAll('button').some(button => button.text() === 'Add cost')).toBe(false)
+    wrapper.unmount()
+    api.purchases.delay = 0
+    api.purchases.fail = true
+    clearNuxtData()
+    await mountPage()
+    await vi.waitFor(() => expect(alert().exists()).toBe(true))
+    expect(wrapper.findAll('button').some(button => button.text() === 'Add cost')).toBe(false)
+  })
+  it('does not open a dialog until the button is pressed', async () => {
+    await mountOctober()
+    expect(dialog()).toBeNull()
+  })
+  it('opens the form for the shown month: a purchase starts on the first day and is limited to the month', async () => {
+    await mountOctober()
+    await openFromHeader()
+    expect(dialog()!.textContent).toContain('Add cost')
+    expect(dateInput()!.value).toBe('2026-10-01')
+    expect(dateInput()!.min).toBe('2026-10-01')
+    expect(dateInput()!.max).toBe('2026-10-31')
+    expect(dialog()!.textContent).toContain('Pre-filled with October 2026. Pick the day.')
+  })
+  it('uses the month of the address, not the current month', async () => {
+    await mountOctober('/months/2025/02')
+    await openFromHeader()
+    expect(dateInput()!.value).toBe('2025-02-01')
+    expect(dateInput()!.max).toBe('2025-02-28')
+  })
+  it('opens the same form from the button of an empty month', async () => {
+    api.recurring.rows = []
+    api.purchases.rows = [{ ...bike }]
+    await mountPage('/months/2026/10')
+    await vi.waitFor(() => expect(wrapper.text()).toContain('No costs in October'))
+    const emptyButton = wrapper.findAll('button').find(button => button.text() === 'Add cost' && !button.classes().includes('ml-auto'))
+    await emptyButton!.trigger('click')
+    await vi.waitFor(() => expect(nameInput()).toBeTruthy())
+    expect(dateInput()!.value).toBe('2026-10-01')
+  })
+  it('closes the dialog on cancel without changing the page', async () => {
+    await mountOctober()
+    const before = total()
+    await openFromHeader()
+    cancelButton()!.click()
+    await vi.waitFor(() => expect(dialog()).toBeNull())
+    expect(total()).toBe(before)
+  })
+  it('starts fresh each time it is opened, with the defaults again', async () => {
+    await mountOctober()
+    await openFromHeader()
+    nameInput()!.value = 'Half typed'
+    nameInput()!.dispatchEvent(new Event('input'))
+    cancelButton()!.click()
+    await vi.waitFor(() => expect(dialog()).toBeNull())
+    await openFromHeader()
+    expect(nameInput()!.value).toBe('')
+    expect(dateInput()!.value).toBe('2026-10-01')
+  })
+  it('refreshes the lists, the subtotals and the total and closes the dialog after a cost was saved', async () => {
+    await mountOctober()
+    expect(total()).toContain('€1,863.24')
+    await openFromHeader()
+    // what the API will return once the form has saved a new purchase
+    api.purchases.rows = [...october.purchases, { id: 7, kind: 'purchase', name: 'Lamp', amount: 36.76, category: 'appliances', business: false, date: '2026-10-09' }]
+    wrapper.findComponent(CostForm).vm.$emit('saved')
+    await vi.waitFor(() => expect(total()).toContain('€1,900.00'))
+    expect(subtotalOf('purchases')).toBe('€949.25')
+    expect(section('purchases').text()).toContain('Lamp')
+    await vi.waitFor(() => expect(dialog()).toBeNull())
+  })
+  it('keeps the page and does not show the loading state while the lists refresh', async () => {
+    await mountOctober()
+    await openFromHeader()
+    api.purchases.delay = 200
+    wrapper.findComponent(CostForm).vm.$emit('saved')
+    await sleep(50)
+    expect(status().exists()).toBe(false)
+    expect(totalCard().exists()).toBe(true)
+    await vi.waitFor(() => expect(dialog()).toBeNull(), { timeout: 2000 })
+  })
+  it('gives the focus back to the button when the dialog is cancelled', async () => {
+    api.recurring.rows = october.recurring.map(row => ({ ...row }))
+    api.purchases.rows = october.purchases.map(row => ({ ...row }))
+    wrapper = await mountSuspended(MonthPage, { route: '/months/2026/10', attachTo: document.body })
+    await vi.waitFor(() => expect(status().exists()).toBe(false))
+    const button = headerButton()!
+    ;(button.element as HTMLElement).focus()
+    await button.trigger('click')
+    await vi.waitFor(() => expect(nameInput()).toBeTruthy())
+    cancelButton()!.click()
+    await vi.waitFor(() => expect(dialog()).toBeNull())
+    await vi.waitFor(() => expect(document.activeElement).toBe(button.element))
+  })
+  it('has German texts', async () => {
+    await setLanguage('de')
+    await mountOctober()
+    const button = wrapper.findAll('button').find(item => item.classes().includes('ml-auto'))!
+    expect(button.text()).toBe('Kosten hinzufügen')
+    await button.trigger('click')
+    await vi.waitFor(() => expect(nameInput()).toBeTruthy())
+    expect(dialog()!.textContent).toContain('Vorbelegt mit Oktober 2026. Wähle den Tag.')
   })
 })
 

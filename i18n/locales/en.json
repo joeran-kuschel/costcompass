@@ -78,7 +78,8 @@
     "dueMonth": "Due month",
     "date": "Date",
     "submit": "Add cost",
-    "error": "Could not save the cost. Please try again."
+    "error": "Could not save the cost. Please try again.",
+    "dateHint": "Pre-filled with {month}. Pick the day."
   },
   "dashboard": {
     "loading": "Loading your costs…",

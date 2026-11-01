@@ -1,12 +1,15 @@
 <script lang="ts" setup>
 import type { FormSubmitEvent } from '@nuxt/ui'
 import type { CreatePurchase, CreateRecurringCost } from '~~/shared/utils/validation'
+import { monthDateRange } from '~~/shared/utils/dates'
 
 const props = defineProps<{
-    cost?: Stored<Cost> | null        
+    cost?: Stored<Cost> | null,
+    month?: MonthRef | null
 }>()
 const emit = defineEmits<{ saved: [], cancel: [] }>()
 const { t, locale } = useI18n()
+const { monthYear } = useMonth()
 const toast = useToast()
 const kindItems = computed(() => [
     { label: t('kind.recurring'), value: 'recurring' },
@@ -30,10 +33,14 @@ const monthItems = computed(() => MONTHS.map(m => ({
         .format(new Date(Date.UTC(2000, m - 1, 1))),
     value: m,
 })))
+const range = computed(() => props.month ? monthDateRange(props.month) : null)
 
 if (props.cost) {
     kind.value = props.cost.kind
     Object.assign(state, props.cost)
+} else if (props.month) {
+    state.date = monthDateRange(props.month).first
+    state.dueMonth = props.month.month as Month
 }
 
 async function onSubmit(event: FormSubmitEvent<CreateRecurringCost | CreatePurchase>) {
@@ -67,8 +74,8 @@ async function onSubmit(event: FormSubmitEvent<CreateRecurringCost | CreatePurch
         <UFormField name="business">
             <UCheckbox v-model="state.business" :label="t('form.business')" />
         </UFormField>
-        <UFormField v-if="kind === 'purchase'" :label="t('form.date')" name="date">
-            <UInput v-model="state.date" type="date" />
+        <UFormField v-if="kind === 'purchase'" :label="t('form.date')" name="date" :hint="month ? t('form.dateHint', { month: monthYear(month.year, month.month) }) : undefined">
+            <UInput v-model="state.date" type="date" :min="range?.first" :max="range?.last" />
         </UFormField>
         <UFormField v-if="kind === 'recurring'" :label="t('form.interval')" name="interval">
             <USelect v-model="state.interval" :items="intervalItems" />

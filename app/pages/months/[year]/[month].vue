@@ -12,8 +12,10 @@ const { recurring, purchases, failed, loading, retry } = useCostLists()
 const { monthName, monthYear, monthPath } = useMonth()
 const title = computed(() => monthYear(year, month))
 const euros = useMoney({ cents: true })
+const monthRef: MonthRef = { year, month: month as Month }
+const open = ref(false)
 const isCurrentMonth = computed(() => year === currentYear.value && month === currentMonth.value)
-const neighbours = computed(() => monthNeighbours({ year, month: month as Month }, availableYears(purchases.value ?? [], currentYear.value)))
+const neighbours = computed(() => monthNeighbours(monthRef, availableYears(purchases.value ?? [], currentYear.value)))
 const groups = computed(() => groupMonthCosts<Stored<RecurringCost>, Stored<Purchase>>(costsInMonth(recurring.value ?? [], purchases.value ?? [], year, month as Month)))
 const recurringRows = computed(() => groups.value.recurring.map(toRow))
 const purchaseRows = computed(() => groups.value.purchases.map(toRow))
@@ -23,6 +25,7 @@ const sections = computed(() => [
 ].filter(section => section.rows.length > 0))
 const formatDate = (date:string) => new Intl.DateTimeFormat(locale.value, { day: 'numeric', month: 'short', timeZone: 'UTC'}).format(new Date(date))
 const heading = useTemplateRef<HTMLElement>('heading')
+
 
 useHead({ title: () => title.value })
 
@@ -50,7 +53,10 @@ async function onRetry() {
     await nextTick()
     heading.value?.focus()
 }
-
+async function onSaved() {
+    await retry()
+    open.value = false
+}
 </script>
 <template>
     <UButton to="/" :label="t('nav.dashboard')" icon="i-lucide-arrow-left" variant="link" color="neutral" class="mb-2 px-0" />
@@ -75,6 +81,7 @@ async function onRetry() {
             color="neutral"
             class="size-9 justify-center"
         />
+        <UButton v-if="!loading && !failed" :label="t('costs.add')" icon="i-lucide-plus" class="ml-auto" @click="open = true" />
     </div>
     <div :aria-busy="loading">
         <template v-if="loading">
@@ -99,26 +106,31 @@ async function onRetry() {
                 <UIcon name="i-lucide-calendar-x" class="size-8" aria-hidden="true" />
                 <h2>{{ t('month.emptyTitle', { month: monthName(month) }) }}</h2>
                 <p>{{ t('month.emptyText') }}</p>
+                <UButton :label="t('costs.add')" class="mt-4" @click="open = true" />
             </UCard>
+            <section v-for="section in sections" :key="section.id" :aria-labelledby="`${section.id}-title`" class="mt-6">
+                <div class="flex items-baseline justify-between gap-4">
+                    <h2 :id="`${section.id}-title`">{{ section.title }}</h2>
+                    <p>{{ section.total }}</p>
+                </div>
+                <ul>
+                    <li v-for="row in section.rows" :key="row.key" class="flex items-start justify-between gap-4 py-2">
+                        <div class="min-w-0">
+                            <p class="break-words">
+                                {{ row.name }}
+                                <UBadge v-if="row.business" :label="t('month.business')" variant="outline" size="sm" />
+                            </p>
+                            <p class="text-sm text-muted">{{ row.subline }}</p>
+                        </div>
+                        <p class="shrink-0 text-right tabular-nums">{{ row.amount }}</p>
+                    </li>
+                </ul>
+            </section>
         </template>
     </div>
-    <section v-for="section in sections" :key="section.id" :aria-labelledby="`${section.id}-title`" class="mt-6">
-        <div class="flex items-baseline justify-between gap-4">
-            <h2 :id="`${section.id}-title`">{{ section.title }}</h2>
-            <p>{{ section.total }}</p>
-        </div>
-        <ul>
-            <li v-for="row in section.rows" :key="row.key" class="flex items-start justify-between gap-4 py-2">
-                <div class="min-w-0">
-                    <p class="break-words">
-                        {{ row.name }}
-                        <UBadge v-if="row.business" :label="t('month.business')" variant="outline" size="sm" />
-                    </p>
-                    <p class="text-sm text-muted">{{ row.subline }}</p>
-                </div>
-                <p class="shrink-0 text-right tabular-nums">{{ row.amount }}</p>
-            </li>
-        </ul>
-    </section>
-
+    <UModal v-model:open="open" :title="t('costs.add')">
+        <template #body>
+            <CostForm :month="monthRef" @saved="onSaved" @cancel="open = false" />
+        </template>
+    </UModal>
 </template>
