@@ -58,6 +58,13 @@
   "year": {
     "label": "Year"
   },
+  "error": {
+      "notFoundTitle": "Page not found",
+      "notFoundText": "This address does not lead to a page in Budgetly.",
+      "genericTitle": "Something went wrong",
+      "genericText": "Please go back to the dashboard and try again.",
+      "back": "Back to dashboard"
+  },
   "form": {
     "kind": "Type",
     "name": "Name",
