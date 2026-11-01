@@ -102,6 +102,10 @@
         "list": "Kosten im {month}",
         "business": "Geschäftlich",
         "empty": "In diesem Monat gibt es noch keine Kosten."
+    },
+    "addCost": {
+      "title": "Kosten hinzufügen",
+      "text":  "Eine wiederkehrende Ausgabe oder eine einmalige Anschaffung."
     }
   }
 }

@@ -56,13 +56,16 @@ const thisMonth = computed(() => {
         }))
     }
 })
-
+const open = ref(false)
 
 useHead({ title: () => t('nav.dashboard') })
 async function retry() {
     await Promise.all([refreshRecurring(), refreshPurchases()])
 }
-
+async function onSaved() {
+    await retry()
+    open.value = false
+}
 </script>
 <template>
     <h1>{{ t('nav.dashboard') }}</h1>
@@ -98,8 +101,22 @@ async function retry() {
                 </ul>
                 <div v-else class="mt-4">
                     <p>{{ t('dashboard.thisMonth.empty') }}</p>
-                    <UButton to="/costs" :label="t('costs.add')" class="mt-2" />
+                    <UButton :label="t('costs.add')" class="mt-2" @click="open = true" />
                 </div>
+            </UCard>
+        </section>
+        <section aria-labelledby="add-cost-title">
+            <UCard variant="subtle">
+                <h2 id="add-cost-title">{{ t('dashboard.addCost.title') }}</h2>
+                <p class="font-medium">{{ t('dashboard.addCost.text') }}</p>
+                <p>
+                    <UModal v-model:open="open" :title="t('costs.add')">
+                        <UButton :label="t('costs.add')" />
+                        <template #body>
+                            <CostForm @saved="onSaved" @cancel="open = false" />
+                        </template>
+                    </UModal>
+                </p>
             </UCard>
         </section>
         <section aria-labelledby="summary-title">

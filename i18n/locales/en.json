@@ -102,6 +102,10 @@
       "list": "Costs in {month}",
       "business": "Business",
       "empty": "No costs this month yet."
+    },
+    "addCost": {
+      "title": "Add a cost",
+      "text": "A recurring cost or a one-off purchase."
     }
   }
 }

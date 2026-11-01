@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
 import type { VueWrapper } from '@vue/test-utils'
 import DashboardPage from '~/pages/index.vue'
+import CostForm from '~/components/CostForm.vue'
 
 // What each fake API endpoint does; reset before every test.
 const api = {
@@ -678,16 +679,14 @@ describe('dashboard page this month cost list', () => {
     await vi.waitFor(() => expect(section().exists()).toBe(true))
     expect(list().exists()).toBe(false)
     expect(section().text()).toContain('No costs this month yet.')
-    const add = section().find('a')
-    expect(add.text()).toBe('Add cost')
-    expect(add.attributes('href')).toBe('/costs')
+    expect(section().find('button').text()).toBe('Add cost')
   })
   it('shows no empty state while the month has costs', async () => {
     api.recurring.rows = [rent]
     await mountPage()
     await vi.waitFor(() => expect(list().exists()).toBe(true))
     expect(section().text()).not.toContain('No costs this month yet.')
-    expect(section().find('a').exists()).toBe(false)
+    expect(section().find('button').exists()).toBe(false)
   })
   it('is German with German texts when the language is German', async () => {
     await setLanguage('de')
@@ -705,6 +704,101 @@ describe('dashboard page this month cost list', () => {
     await mountPage()
     await vi.waitFor(() => expect(section().exists()).toBe(true))
     expect(section().text()).toContain('In diesem Monat gibt es noch keine Kosten.')
-    expect(section().find('a').text()).toBe('Kosten hinzufügen')
+    expect(section().find('button').text()).toBe('Kosten hinzufügen')
+  })
+})
+
+describe('dashboard page add cost', () => {
+  const year = new Date().getUTCFullYear()
+  const tile = () => wrapper.find('section[aria-labelledby="add-cost-title"]')
+  const tileButton = () => tile().find('button')
+  // The dialog is teleported to the body, so its content is not inside the wrapper.
+  const dialog = () => document.body.querySelector('[role="dialog"]')
+  const nameInput = () => document.body.querySelector<HTMLInputElement>('input[name="name"]')
+  const summaryTotal = () => wrapper.find('section[aria-labelledby="summary-title"]').text()
+  const openDialog = async () => {
+    await tileButton().trigger('click')
+    await vi.waitFor(() => expect(nameInput()).toBeTruthy())
+  }
+
+  it('has a heading, a hint and an "Add cost" button', async () => {
+    api.recurring.rows = [rent]
+    await mountPage()
+    await vi.waitFor(() => expect(tile().exists()).toBe(true))
+    expect(tile().find('h2').text()).toBe('Add a cost')
+    expect(tile().text()).toContain('A recurring cost or a one-off purchase.')
+    expect(tileButton().text()).toBe('Add cost')
+  })
+  it('is German with German texts when the language is German', async () => {
+    await setLanguage('de')
+    api.recurring.rows = [rent]
+    await mountPage()
+    await vi.waitFor(() => expect(tile().exists()).toBe(true))
+    expect(tile().find('h2').text()).toBe('Kosten hinzufügen')
+    expect(tile().text()).toContain('Eine wiederkehrende Ausgabe oder eine einmalige Anschaffung.')
+    expect(tileButton().text()).toBe('Kosten hinzufügen')
+  })
+  it('does not open a dialog until the button is pressed', async () => {
+    api.recurring.rows = [rent]
+    await mountPage()
+    await vi.waitFor(() => expect(tile().exists()).toBe(true))
+    expect(dialog()).toBeNull()
+  })
+  it('opens an empty add form in a dialog when the button is pressed', async () => {
+    api.recurring.rows = [rent]
+    await mountPage()
+    await vi.waitFor(() => expect(tile().exists()).toBe(true))
+    await openDialog()
+    expect(dialog()).toBeTruthy()
+    expect(dialog()!.textContent).toContain('Add cost')
+    expect(nameInput()!.value).toBe('')
+  })
+  it('closes the dialog on cancel without changing the page', async () => {
+    api.recurring.rows = [rent]
+    await mountPage()
+    await vi.waitFor(() => expect(tile().exists()).toBe(true))
+    await openDialog()
+    const cancel = [...document.body.querySelectorAll('button')].find(b => b.textContent?.trim() === 'Cancel')
+    expect(cancel).toBeTruthy()
+    cancel!.click()
+    await vi.waitFor(() => expect(dialog()).toBeNull())
+    expect(summaryTotal()).toContain('€9,600')
+  })
+  it('opens the same dialog from the button of an empty month', async () => {
+    const today = new Date()
+    const previous = today.getUTCMonth() === 0 ? `${year - 1}-12-15` : `${year}-${String(today.getUTCMonth()).padStart(2, '0')}-15`
+    api.purchases.rows = [{ id: 2, kind: 'purchase', name: 'Lamp', amount: 300, category: 'appliances', business: false, date: previous }]
+    await mountPage()
+    const card = () => wrapper.find('section[aria-labelledby="this-month-title"]')
+    await vi.waitFor(() => expect(card().find('button').exists()).toBe(true))
+    await card().find('button').trigger('click')
+    await vi.waitFor(() => expect(nameInput()).toBeTruthy())
+    expect(dialog()!.textContent).toContain('Add cost')
+  })
+  it('refreshes both lists and closes the dialog after a cost was saved', async () => {
+    api.recurring.rows = [rent]
+    await mountPage()
+    await vi.waitFor(() => expect(tile().exists()).toBe(true))
+    expect(summaryTotal()).toContain('€9,600')
+    await openDialog()
+    // what the API will return once the form has saved a new monthly cost
+    api.recurring.rows = [rent, { ...rent, id: 2, name: 'Gym', amount: 100 }]
+    wrapper.findComponent(CostForm).vm.$emit('saved')
+    await vi.waitFor(() => expect(summaryTotal()).toContain('€10,800'))
+    await vi.waitFor(() => expect(dialog()).toBeNull())
+  })
+  it('shows no add tile while the lists are loading', async () => {
+    api.recurring.rows = [rent]
+    api.purchases.delay = 300
+    await mountPage()
+    expect(tile().exists()).toBe(false)
+    await vi.waitFor(() => expect(tile().exists()).toBe(true), { timeout: 2000 })
+  })
+  it('shows no add tile when loading fails', async () => {
+    api.recurring.rows = [rent]
+    api.recurring.fail = true
+    await mountPage()
+    await vi.waitFor(() => expect(alert().exists()).toBe(true))
+    expect(tile().exists()).toBe(false)
   })
 })
