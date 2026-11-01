@@ -58,6 +58,13 @@
   "year": {
     "label": "Jahr"
   },
+  "error": {
+      "notFoundTitle": "Seite nicht gefunden",
+      "notFoundText": "Diese Adresse führt zu keiner Seite in Budgetly.",
+      "genericTitle": "Etwas ist schiefgelaufen",
+      "genericText": "Gehe zurück zum Dashboard und versuche es erneut.",
+      "back": "Zurück zum Dashboard"
+  },
   "form": {
     "kind": "Art",
     "name": "Name",
