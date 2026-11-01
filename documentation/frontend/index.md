@@ -4,5 +4,5 @@ For end users and for developers working on `app/`. For the server, database and
 
 | Page | Audience | What it covers |
 | --- | --- | --- |
-| [user-guide.md](user-guide.md) | End users | Track costs, read the dashboard and month page, change the language |
-| [app-structure.md](app-structure.md) | Developers | Pages, components, composables, i18n and accessibility conventions of `app/` |
+| [user-guide.md](user-guide.md) | End users | Track costs, read the dashboard, open a month from it, change the language |
+| [app-structure.md](app-structure.md) | Developers | Pages, dashboard links to month pages, components, composables, i18n and accessibility conventions of `app/` |

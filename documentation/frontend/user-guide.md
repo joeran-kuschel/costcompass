@@ -43,13 +43,13 @@ The table is sorted by name. Select the header of Name, Category, Kind, Amount o
 
 The Dashboard (**Dashboard** in the menu) gives you the overview. It has these parts, from top to bottom:
 
-- **This month**: the total for the current month, a comparison with the month before (for example "50% more than September"), and a list of this month's costs. Without costs it says "No costs this month yet." and offers **Add cost**.
+- **Year**: choose which year to look at. The list contains the current year and every year in which you bought something. This changes the sections from "Summary" down; "This month" always shows the current month.
+- **This month**: the total for the current month, a comparison with the month before (for example "50% more than September"), and a list of this month's costs. Without costs it says "No costs this month yet." and offers **Add cost**. At the end of the card is a link such as **View March 2026**. It opens the month page of the current month, whichever year you selected, also when the month has no costs.
 - **Add a cost**: a shortcut to the form.
-- **Year**: choose which year to look at. The list contains the current year and every year in which you bought something. This only changes the sections below it; "This month" always shows the current month.
 - **Summary for the year**: four tiles with the annual total, the household part, the business part and the average per month.
-- **Household versus business**: one bar and a text with both percentages.
 - **Costs by category**: each category with its amount and a bar, largest first.
-- **Costs per month**: twelve bars, one per month. The current month's name is bold.
+- **Household versus business**: one bar and a text with both percentages.
+- **Costs per month**: twelve bars, one per month, for the selected year. The current month's name is bold (only when you look at the current year).
 
 Amounts on the Dashboard are rounded to whole euros. The Costs page and the month page show cents. Because of the rounding, household plus business can differ from the total by one euro on the Dashboard.
 
@@ -57,11 +57,17 @@ If your costs cannot be loaded, you see "Could not load your costs." with a **Tr
 
 **Good to know:** recurring costs have no start or end date yet. When you look at a past year, Budgetly shows your current recurring costs for that year too.
 
+### Open a month from the dashboard
+
+Each of the twelve bars in "Costs per month" is a link. Select a bar (or tab to it and press Enter) to open the month page of that month in the selected year. Select 2025 in the year list, then the bar "March", and you get March 2025. If a bar shows no height, the month has no costs; the link still works. On a narrow screen the chart scrolls sideways, so every bar stays wide enough to tap.
+
+Screen readers read each bar as a link with the month and the amount, for example "March: €1,100". With the keyboard, the focused bar gets an outline.
+
 ## Look at one month
 
 The month page lists everything that falls in one month, with the month's total. It has its own address, for example `/months/2026/03` for March 2026. You can bookmark it and use the browser's back button.
 
-The month page is not linked from the Dashboard yet, and it is not in the menu. Type the address in the browser to open it. The month is always two digits: `/months/2026/03` works, `/months/2026/3` shows "Page not found".
+You reach the month page from the Dashboard (the "View" link in the "This month" card or a bar in "Costs per month"). It is not in the menu. You can also type the address in the browser. The month is always two digits: `/months/2026/03` works, `/months/2026/3` shows "Page not found".
 
 On the page you see:
 

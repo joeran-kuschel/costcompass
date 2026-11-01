@@ -22,6 +22,7 @@ A short log of what was decided and why. Written for: developers and contributor
 | Dashboard money | Whole euros on the dashboard, cents in tables and on the month page | Display is rounded, the calculation is exact; household plus business can differ from the total by 1 on screen |
 | Today | Read once in `useYear()` (UTC) and stored with `useState` | Server and browser agree around New Year |
 | Charts | Hand-built bars with real text, no chart library for now | Every value must be text, month bars must be links, works without JavaScript |
+| Dashboard links | The "This month" card links to today's month; the month bars link to the selected year; the chart scrolls sideways with columns of at least 24 px | The card ignores the selected year, so its link does too; touch targets stay big enough on phones (#18, #19) |
 | Month pages | Year and month are in the URL (`/months/2026/03`), month always two digits | Bookmarkable, back button works, one address per month |
 | Add/edit form | A modal (`UModal`) with one `CostForm` for both kinds | Better on mobile than a slide-over |
 

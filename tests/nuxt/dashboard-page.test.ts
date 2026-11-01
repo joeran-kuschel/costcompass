@@ -805,6 +805,153 @@ describe('dashboard page add cost', () => {
   })
 })
 
+describe('dashboard page month bar links', () => {
+  const year = new Date().getUTCFullYear()
+  const costs = () => {
+    api.recurring.rows = [rent]
+    api.purchases.rows = [
+      { id: 2, kind: 'purchase', name: 'Lamp', amount: 300, category: 'appliances', business: false, date: `${year}-03-15` },
+      { id: 4, kind: 'purchase', name: 'Old laptop', amount: 500, category: 'appliances', business: true, date: `${year - 1}-03-15` },
+    ]
+  }
+  const section = () => wrapper.find('section[aria-labelledby="months-title"]')
+  const items = () => section().findAll('li')
+  const links = () => section().findAll('li a')
+  const clean = (text: string) => text.replace(/\s+/g, ' ').trim()
+  const pad = (month: number) => String(month).padStart(2, '0')
+  async function mountWithCosts() {
+    costs()
+    await mountPage()
+    await vi.waitFor(() => expect(section().exists()).toBe(true))
+  }
+
+  it('makes every one of the twelve bars a link to its month page, with a two-digit month', async () => {
+    await mountWithCosts()
+    expect(links()).toHaveLength(12)
+    expect(links().map(link => link.attributes('href'))).toEqual(
+      Array.from({ length: 12 }, (_, index) => `/months/${year}/${pad(index + 1)}`),
+    )
+  })
+  it('uses real links, one in each list item', async () => {
+    await mountWithCosts()
+    expect(items()).toHaveLength(12)
+    for (const item of items()) {
+      expect(item.findAll('a')).toHaveLength(1)
+      expect(item.find('a').element.tagName).toBe('A')
+    }
+  })
+  it('names each link after the month and its amount, and hides the bar and the short label', async () => {
+    await mountWithCosts()
+    const march = links()[2]!
+    // 800 rent plus the 300 lamp
+    expect(clean(march.find('.sr-only').text())).toBe('March: €1,100')
+    expect(march.findAll('[aria-hidden="true"]').length).toBeGreaterThanOrEqual(2)
+    expect(links()[0]!.find('.sr-only').text()).toContain('January')
+  })
+  it('links to the months of the selected year', async () => {
+    await mountWithCosts()
+    const { year: selected } = useYear()
+    selected.value = year - 1
+    await vi.waitFor(() => expect(links()[0]!.attributes('href')).toBe(`/months/${year - 1}/01`))
+    expect(links()[11]!.attributes('href')).toBe(`/months/${year - 1}/12`)
+  })
+  it('names the month in German', async () => {
+    await setLanguage('de')
+    await mountWithCosts()
+    expect(clean(links()[2]!.find('.sr-only').text())).toContain('März')
+    expect(links()[2]!.attributes('href')).toBe(`/months/${year}/03`)
+  })
+  it('shows a visible focus indicator on keyboard focus', async () => {
+    await mountWithCosts()
+    for (const link of links()) expect(link.classes()).toEqual(expect.arrayContaining(['focus-visible:outline-2', 'focus-visible:outline-primary']))
+  })
+  // jsdom has no layout, so the 24 px target can only be checked through the classes that create it.
+  it('gives every column at least 24 px and lets the chart scroll sideways when they do not fit', async () => {
+    await mountWithCosts()
+    const list = section().find('ol')
+    expect(list.classes()).toContain('grid-cols-[repeat(12,minmax(1.5rem,1fr))]')
+    expect(list.element.parentElement!.classList.contains('overflow-x-auto')).toBe(true)
+  })
+  it('lets the link fill its column, so the bars keep their width', async () => {
+    await mountWithCosts()
+    for (const item of items()) {
+      expect(item.classes()).not.toContain('flex')
+      expect(item.find('a').classes()).toContain('flex')
+    }
+  })
+})
+
+describe('dashboard page "View month" link', () => {
+  // A fixed "today" in a month with one digit, so the padding of the address is checked too.
+  async function mountOn(date: string) {
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date(`${date}T12:00:00Z`) })
+    clearNuxtState(['today', 'year'])
+    await mountPage()
+    await vi.waitFor(() => expect(card().exists()).toBe(true))
+  }
+  const card = () => wrapper.find('section[aria-labelledby="this-month-title"]')
+  const link = () => card().findAll('a').find(anchor => anchor.attributes('href')?.startsWith('/months/'))
+  const lamp = (id: number, date: string) => ({ id, kind: 'purchase', name: 'Lamp', amount: 300, category: 'appliances', business: false, date })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('links the card to the month page of the current month, with a two-digit month', async () => {
+    api.recurring.rows = [rent]
+    await mountOn('2026-03-15')
+    expect(link()!.attributes('href')).toBe('/months/2026/03')
+  })
+  it('names the month in the link', async () => {
+    api.recurring.rows = [rent]
+    await mountOn('2026-03-15')
+    expect(link()!.text()).toBe('View March 2026')
+  })
+  it('has a German link text', async () => {
+    await setLanguage('de')
+    api.recurring.rows = [rent]
+    await mountOn('2026-03-15')
+    expect(link()!.text()).toBe('März 2026 ansehen')
+  })
+  it('is a real link, so it works with the keyboard and without JavaScript', async () => {
+    api.recurring.rows = [rent]
+    await mountOn('2026-03-15')
+    expect(link()!.element.tagName).toBe('A')
+  })
+  it('keeps leading to today\'s month when another year is selected', async () => {
+    api.recurring.rows = [rent]
+    api.purchases.rows = [lamp(2, '2025-03-15')]
+    await mountOn('2026-03-15')
+    const { year } = useYear()
+    year.value = 2025
+    await vi.waitFor(() => expect(wrapper.find('section[aria-labelledby="summary-title"]').text()).toContain('2025'))
+    expect(link()!.attributes('href')).toBe('/months/2026/03')
+    expect(link()!.text()).toBe('View March 2026')
+  })
+  it('is also there when the month has no costs, next to the add button', async () => {
+    api.purchases.rows = [lamp(2, '2026-01-15')]
+    await mountOn('2026-03-15')
+    expect(card().text()).toContain('No costs this month yet.')
+    expect(link()!.attributes('href')).toBe('/months/2026/03')
+    expect(card().find('button').text()).toBe('Add cost')
+  })
+  it('is not shown while the lists load or when loading fails', async () => {
+    api.recurring.rows = [rent]
+    api.purchases.delay = 300
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-03-15T12:00:00Z') })
+    clearNuxtState(['today', 'year'])
+    await mountPage()
+    expect(card().exists()).toBe(false)
+    wrapper.unmount()
+    api.purchases.delay = 0
+    api.recurring.fail = true
+    clearNuxtData()
+    await mountPage()
+    await vi.waitFor(() => expect(alert().exists()).toBe(true))
+    expect(card().exists()).toBe(false)
+  })
+})
+
 describe('dashboard page year selector', () => {
   const year = new Date().getUTCFullYear()
   const today = new Date()
