@@ -805,6 +805,77 @@ describe('dashboard page add cost', () => {
   })
 })
 
+describe('dashboard page "View month" link', () => {
+  // A fixed "today" in a month with one digit, so the padding of the address is checked too.
+  async function mountOn(date: string) {
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date(`${date}T12:00:00Z`) })
+    clearNuxtState(['today', 'year'])
+    await mountPage()
+    await vi.waitFor(() => expect(card().exists()).toBe(true))
+  }
+  const card = () => wrapper.find('section[aria-labelledby="this-month-title"]')
+  const link = () => card().findAll('a').find(anchor => anchor.attributes('href')?.startsWith('/months/'))
+  const lamp = (id: number, date: string) => ({ id, kind: 'purchase', name: 'Lamp', amount: 300, category: 'appliances', business: false, date })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('links the card to the month page of the current month, with a two-digit month', async () => {
+    api.recurring.rows = [rent]
+    await mountOn('2026-03-15')
+    expect(link()!.attributes('href')).toBe('/months/2026/03')
+  })
+  it('names the month in the link', async () => {
+    api.recurring.rows = [rent]
+    await mountOn('2026-03-15')
+    expect(link()!.text()).toBe('View March 2026')
+  })
+  it('has a German link text', async () => {
+    await setLanguage('de')
+    api.recurring.rows = [rent]
+    await mountOn('2026-03-15')
+    expect(link()!.text()).toBe('März 2026 ansehen')
+  })
+  it('is a real link, so it works with the keyboard and without JavaScript', async () => {
+    api.recurring.rows = [rent]
+    await mountOn('2026-03-15')
+    expect(link()!.element.tagName).toBe('A')
+  })
+  it('keeps leading to today\'s month when another year is selected', async () => {
+    api.recurring.rows = [rent]
+    api.purchases.rows = [lamp(2, '2025-03-15')]
+    await mountOn('2026-03-15')
+    const { year } = useYear()
+    year.value = 2025
+    await vi.waitFor(() => expect(wrapper.find('section[aria-labelledby="summary-title"]').text()).toContain('2025'))
+    expect(link()!.attributes('href')).toBe('/months/2026/03')
+    expect(link()!.text()).toBe('View March 2026')
+  })
+  it('is also there when the month has no costs, next to the add button', async () => {
+    api.purchases.rows = [lamp(2, '2026-01-15')]
+    await mountOn('2026-03-15')
+    expect(card().text()).toContain('No costs this month yet.')
+    expect(link()!.attributes('href')).toBe('/months/2026/03')
+    expect(card().find('button').text()).toBe('Add cost')
+  })
+  it('is not shown while the lists load or when loading fails', async () => {
+    api.recurring.rows = [rent]
+    api.purchases.delay = 300
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-03-15T12:00:00Z') })
+    clearNuxtState(['today', 'year'])
+    await mountPage()
+    expect(card().exists()).toBe(false)
+    wrapper.unmount()
+    api.purchases.delay = 0
+    api.recurring.fail = true
+    clearNuxtData()
+    await mountPage()
+    await vi.waitFor(() => expect(alert().exists()).toBe(true))
+    expect(card().exists()).toBe(false)
+  })
+})
+
 describe('dashboard page year selector', () => {
   const year = new Date().getUTCFullYear()
   const today = new Date()

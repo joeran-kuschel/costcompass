@@ -115,7 +115,8 @@
       "none": "No costs in {previous} to compare with",
       "list": "Costs in {month}",
       "business": "Business",
-      "empty": "No costs this month yet."
+      "empty": "No costs this month yet.",
+      "view": "View {month}"
     },
     "addCost": {
       "title": "Add a cost",

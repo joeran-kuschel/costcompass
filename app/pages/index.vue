@@ -3,7 +3,7 @@ import { annualSummary, categoryBreakDown, splitPercentages, monthBreakdown, mon
 
 const { t } = useI18n()
 const { year, currentYear, currentMonth } = useYear()
-const { monthName } = useMonth()
+const { monthName, monthYear, monthPath } = useMonth()
 const { recurring, purchases, failed, loading, retry } = useCostLists()
 const years = computed(() => availableYears(purchases.value ?? [], currentYear.value))
 const empty = computed(() => !failed.value && !loading.value && recurring.value?.length === 0 && purchases.value?.length === 0)
@@ -94,6 +94,13 @@ async function onSaved() {
                     <p>{{ t('dashboard.thisMonth.empty') }}</p>
                     <UButton :label="t('costs.add')" class="mt-2" @click="open = true" />
                 </div>
+                <UButton
+                    :to="monthPath(currentYear, currentMonth)"
+                    :label="t('dashboard.thisMonth.view', { month: monthYear(currentYear, currentMonth) })"
+                    trailing-icon="i-lucide-arrow-right"
+                    variant="link"
+                    class="mt-4 px-0"
+                />
             </UCard>
         </section>
         <section aria-labelledby="add-cost-title">
