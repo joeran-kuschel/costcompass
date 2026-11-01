@@ -9,10 +9,11 @@ const { year, month } = parsed.data
 const { t, locale } = useI18n()
 const { currentYear, currentMonth } = useYear()
 const { recurring, purchases, failed, loading, retry } = useCostLists()
-const { monthName, monthYear } = useMonth()
+const { monthName, monthYear, monthPath } = useMonth()
 const title = computed(() => monthYear(year, month))
 const euros = useMoney({ cents: true })
 const isCurrentMonth = computed(() => year === currentYear.value && month === currentMonth.value)
+const neighbours = computed(() => monthNeighbours({ year, month: month as Month }, availableYears(purchases.value ?? [], currentYear.value)))
 const groups = computed(() => groupMonthCosts<Stored<RecurringCost>, Stored<Purchase>>(costsInMonth(recurring.value ?? [], purchases.value ?? [], year, month as Month)))
 const recurringRows = computed(() => groups.value.recurring.map(toRow))
 const purchaseRows = computed(() => groups.value.purchases.map(toRow))
@@ -52,9 +53,28 @@ async function onRetry() {
 
 </script>
 <template>
+    <UButton to="/" :label="t('nav.dashboard')" icon="i-lucide-arrow-left" variant="link" color="neutral" class="mb-2 px-0" />
     <div class="flex items-center gap-2">
+        <UButton
+            v-if="neighbours.previous"
+            :to="monthPath(neighbours.previous.year, neighbours.previous.month)"
+            :aria-label="t('month.previous', { month: monthYear(neighbours.previous.year, neighbours.previous.month) })"
+            icon="i-lucide-chevron-left"
+            variant="ghost"
+            color="neutral"
+            class="size-9 justify-center"
+        />
         <h1 ref="heading" tabindex="-1">{{ title }}</h1>
         <UBadge v-if="isCurrentMonth" :label="t('month.thisMonth')" variant="outline" />
+        <UButton
+            v-if="neighbours.next"
+            :to="monthPath(neighbours.next.year, neighbours.next.month)"
+            :aria-label="t('month.next', { month: monthYear(neighbours.next.year, neighbours.next.month) })"
+            icon="i-lucide-chevron-right"
+            variant="ghost"
+            color="neutral"
+            class="size-9 justify-center"
+        />
     </div>
     <div :aria-busy="loading">
         <template v-if="loading">

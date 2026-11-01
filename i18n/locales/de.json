@@ -129,6 +129,8 @@
     "total": "Summe für {month}",
     "recurring": "Wiederkehrend",
     "purchases": "Anschaffungen",
-    "business": "Geschäftlich"
+    "business": "Geschäftlich",
+    "previous": "Vorheriger Monat, {month}",
+    "next": "Nächster Monat, {month}"
   }
 }

@@ -129,6 +129,8 @@
     "total": "Total for {month}",
     "recurring": "Recurring",
     "purchases": "Purchases",
-    "business": "Business"
+    "business": "Business",
+    "previous": "Previous month, {month}",
+    "next": "Next month, {month}"
   }
 }

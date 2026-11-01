@@ -335,6 +335,90 @@ describe('month page content in German', () => {
   })
 })
 
+describe('month page navigation', () => {
+  // Valid years: 2025 and 2026 (purchases) and the current year, which is fixed to 2026 here.
+  const oldBike = { ...bike, id: 9, date: '2025-09-02' }
+  const link = (label: 'Previous month' | 'Next month' | 'Vorheriger Monat' | 'Nächster Monat') =>
+    wrapper.findAll('a').find(anchor => (anchor.attributes('aria-label') ?? '').startsWith(label))
+  async function mountAt(path: string) {
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-10-15T12:00:00Z') })
+    clearNuxtState(['today'])
+    api.purchases.rows = [{ ...laptop }, { ...oldBike }]
+    await mountPage(path)
+    await vi.waitFor(() => expect(status().exists()).toBe(false))
+  }
+
+  it('links to the previous and the next month in the middle of a year', async () => {
+    await mountAt('/months/2026/06')
+    expect(link('Previous month')!.attributes('href')).toBe('/months/2026/05')
+    expect(link('Next month')!.attributes('href')).toBe('/months/2026/07')
+  })
+  it('names the target month, with the year, in the link', async () => {
+    await mountAt('/months/2026/06')
+    expect(link('Previous month')!.attributes('aria-label')).toBe('Previous month, May 2026')
+    expect(link('Next month')!.attributes('aria-label')).toBe('Next month, July 2026')
+  })
+  it('pads the month in the link target', async () => {
+    await mountAt('/months/2026/03')
+    expect(link('Previous month')!.attributes('href')).toBe('/months/2026/02')
+    expect(link('Next month')!.attributes('href')).toBe('/months/2026/04')
+  })
+  it('goes back to December of the previous year from January', async () => {
+    await mountAt('/months/2026/01')
+    expect(link('Previous month')!.attributes('href')).toBe('/months/2025/12')
+    expect(link('Previous month')!.attributes('aria-label')).toBe('Previous month, December 2025')
+    expect(link('Next month')!.attributes('href')).toBe('/months/2026/02')
+  })
+  it('goes on to January of the next year from December', async () => {
+    await mountAt('/months/2025/12')
+    expect(link('Next month')!.attributes('href')).toBe('/months/2026/01')
+    expect(link('Next month')!.attributes('aria-label')).toBe('Next month, January 2026')
+  })
+  it('hides the next link where the next year has no data', async () => {
+    await mountAt('/months/2026/12')
+    expect(link('Next month')).toBeUndefined()
+    expect(link('Previous month')!.attributes('href')).toBe('/months/2026/11')
+  })
+  it('hides the previous link where the previous year has no data', async () => {
+    await mountAt('/months/2025/01')
+    expect(link('Previous month')).toBeUndefined()
+    expect(link('Next month')!.attributes('href')).toBe('/months/2025/02')
+  })
+  it('uses real links that are big enough to hit', async () => {
+    await mountAt('/months/2026/06')
+    for (const label of ['Previous month', 'Next month'] as const) {
+      expect(link(label)!.element.tagName).toBe('A')
+      expect(link(label)!.classes()).toContain('size-9')
+    }
+  })
+  it('leads back to the dashboard with a link', async () => {
+    await mountAt('/months/2026/06')
+    const back = wrapper.findAll('a').find(anchor => anchor.attributes('href') === '/')
+    expect(back).toBeTruthy()
+    expect(back!.text()).toBe('Dashboard')
+  })
+  it('puts the links in a sensible keyboard order: dashboard, previous, next', async () => {
+    await mountAt('/months/2026/06')
+    const hrefs = wrapper.findAll('a').map(anchor => anchor.attributes('href'))
+    expect(hrefs.slice(0, 3)).toEqual(['/', '/months/2026/05', '/months/2026/07'])
+  })
+  it('shows the links inside the year while the lists are still loading', async () => {
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-10-15T12:00:00Z') })
+    clearNuxtState(['today'])
+    api.purchases.delay = 300
+    await mountPage('/months/2026/06')
+    expect(status().exists()).toBe(true)
+    expect(link('Previous month')!.attributes('href')).toBe('/months/2026/05')
+    expect(link('Next month')!.attributes('href')).toBe('/months/2026/07')
+  })
+  it('has German link names', async () => {
+    await setLanguage('de')
+    await mountAt('/months/2026/06')
+    expect(link('Vorheriger Monat')!.attributes('aria-label')).toBe('Vorheriger Monat, Mai 2026')
+    expect(link('Nächster Monat')!.attributes('aria-label')).toBe('Nächster Monat, Juli 2026')
+  })
+})
+
 describe('month page in German', () => {
   it('has the German loading text', async () => {
     await setLanguage('de')
