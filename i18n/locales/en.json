@@ -55,6 +55,9 @@
   "language": {
     "label": "Language"
   },
+  "year": {
+    "label": "Year"
+  },
   "form": {
     "kind": "Type",
     "name": "Name",
@@ -66,5 +69,46 @@
     "date": "Date",
     "submit": "Add cost",
     "error": "Could not save the cost. Please try again."
+  },
+  "dashboard": {
+    "loading": "Loading your costs…",
+    "error": "Could not load your costs.",
+    "retry": "Try again",
+    "emptyTitle": "No costs yet",
+    "emptyText": "Add a recurring cost or a purchase to see your totals here.",
+    "summary": {
+      "title": "Summary for {year}",
+      "total": "Annual total",
+      "household": "Household",
+      "business": "Business",
+      "averagePerMonth": "Average per month"
+    },
+    "categories": {
+      "title": "Costs by category in {year}"
+    },
+    "split": {
+      "title": "Household versus business in {year}",
+      "household": "Household",
+      "business": "Business",
+      "alt": "Household {household} percent, business {business} percent"
+    },
+    "months": {
+        "title": "Costs per month in {year}",
+        "alt": "{month}: {amount}"
+    },
+    "thisMonth": {
+      "title": "This month, {month} {year}",
+      "less": "{percent}% less than {previous}",
+      "more": "{percent}% more than {previous}",
+      "same": "Same as {previous}",
+      "none": "No costs in {previous} to compare with",
+      "list": "Costs in {month}",
+      "business": "Business",
+      "empty": "No costs this month yet."
+    },
+    "addCost": {
+      "title": "Add a cost",
+      "text": "A recurring cost or a one-off purchase."
+    }
   }
 }

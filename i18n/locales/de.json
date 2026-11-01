@@ -55,6 +55,9 @@
   "language": {
     "label": "Sprache"
   },
+  "year": {
+    "label": "Jahr"
+  },
   "form": {
     "kind": "Art",
     "name": "Name",
@@ -66,5 +69,46 @@
     "date": "Datum",
     "submit": "Kosten hinzufügen",
     "error": "Die Kosten konnten nicht gespeichert werden. Bitte versuche es erneut."
+  },
+  "dashboard": {
+    "loading": "Kosten werden geladen …",
+    "error": "Die Kosten konnten nicht geladen werden.",
+    "retry": "Erneut versuchen",
+    "emptyTitle": "Noch keine Kosten",
+    "emptyText": "Füge eine wiederkehrende Ausgabe oder eine Anschaffung hinzu, um hier deine Summen zu sehen.",
+    "summary": {
+      "title": "Übersicht {year}",
+      "total": "Jahressumme",
+      "household": "Haushalt",
+      "business": "Geschäftlich",
+      "averagePerMonth": "Durchschnitt pro Monat"
+    },
+    "categories": {
+      "title": "Kosten nach Kategorie {year}"
+    },
+    "split": {
+      "title": "Haushalt und Geschäftliches {year}",
+      "household": "Haushalt",
+      "business": "Geschäftlich",
+      "alt": "Haushalt {household} Prozent, Geschäftlich {business} Prozent"
+    },
+    "months": {
+        "title": "Kosten pro Monat {year}",
+        "alt": "{month}: {amount}"
+    },
+    "thisMonth": {
+        "title": "Dieser Monat, {month} {year}",
+        "less": "{percent} % weniger als im {previous}",
+        "more": "{percent} % mehr als im {previous}",
+        "same": "Genauso viel wie im {previous}",
+        "none": "Keine Kosten im {previous} zum Vergleichen",
+        "list": "Kosten im {month}",
+        "business": "Geschäftlich",
+        "empty": "In diesem Monat gibt es noch keine Kosten."
+    },
+    "addCost": {
+      "title": "Kosten hinzufügen",
+      "text":  "Eine wiederkehrende Ausgabe oder eine einmalige Anschaffung."
+    }
   }
 }
