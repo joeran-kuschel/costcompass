@@ -143,6 +143,25 @@ describe('month page error state', () => {
     await vi.waitFor(() => expect(alert().exists()).toBe(false))
     expect(busy()).toBe('false')
   })
+  it('moves the focus to the heading after a successful retry, so it is not lost', async () => {
+    api.purchases.fail = true
+    // The page has to be in the document, otherwise nothing can have the focus.
+    wrapper = await mountSuspended(MonthPage, { route: '/months/2026/10', attachTo: document.body })
+    await vi.waitFor(() => expect(alert().exists()).toBe(true))
+    api.purchases.fail = false
+    await alert().find('button').trigger('click')
+    await vi.waitFor(() => expect(alert().exists()).toBe(false))
+    await vi.waitFor(() => expect(document.activeElement).toBe(wrapper.find('h1').element))
+  })
+  it('does not move the focus when the retry fails again', async () => {
+    api.purchases.fail = true
+    wrapper = await mountSuspended(MonthPage, { route: '/months/2026/10', attachTo: document.body })
+    await vi.waitFor(() => expect(alert().exists()).toBe(true))
+    await alert().find('button').trigger('click')
+    await sleep(100)
+    expect(alert().exists()).toBe(true)
+    expect(document.activeElement).not.toBe(wrapper.find('h1').element)
+  })
   it('stays in the error state while the retry fails again', async () => {
     api.purchases.fail = true
     await mountPage()

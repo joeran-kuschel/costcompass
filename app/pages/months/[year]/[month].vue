@@ -21,6 +21,7 @@ const sections = computed(() => [
     { id: 'purchases', title: t('month.purchases'), total: euros(groups.value.purchasesTotal), rows: purchaseRows.value },
 ].filter(section => section.rows.length > 0))
 const formatDate = (date:string) => new Intl.DateTimeFormat(locale.value, { day: 'numeric', month: 'short', timeZone: 'UTC'}).format(new Date(date))
+const heading = useTemplateRef<HTMLElement>('heading')
 
 useHead({ title: () => title.value })
 
@@ -42,10 +43,17 @@ function toRow(cost: Stored<RecurringCost> | Stored<Purchase>) {
     }
 }
 
+async function onRetry() {
+    await retry()
+    if (failed.value) return
+    await nextTick()
+    heading.value?.focus()
+}
+
 </script>
 <template>
     <div class="flex items-center gap-2">
-        <h1>{{ title }}</h1>
+        <h1 ref="heading" tabindex="-1">{{ title }}</h1>
         <UBadge v-if="isCurrentMonth" :label="t('month.thisMonth')" variant="outline" />
     </div>
     <div :aria-busy="loading">
@@ -60,7 +68,7 @@ function toRow(cost: Stored<RecurringCost> | Stored<Purchase>) {
             color="error"
             :title="t('month.error', { month: monthName(month) })"
             :description="t('month.errorText')"
-            :actions="[{ label: t('dashboard.retry'), onClick: retry }]"
+            :actions="[{ label: t('dashboard.retry'), onClick: onRetry }]"
         />
         <template v-else>
             <UCard variant="subtle" class="mt-4" aria-labelledby="month-total-title">
