@@ -1,4 +1,4 @@
-import { CATEGORIES, MONTHS, type CostItem, type Purchase, type RecurringCost, type Category, type Interval, type Month, type AnnualSummary, type CategoryTotal, type SplitPercentages, type MonthTotal, type MonthChange } from '~~/shared/types/calculation'
+import { CATEGORIES, MONTHS, type CostItem, type Purchase, type RecurringCost, type Category, type Interval, type Month, type AnnualSummary, type CategoryTotal, type SplitPercentages, type MonthTotal, type MonthChange, type MonthRef, type MonthNeighbours, type MonthGroups } from '~~/shared/types/calculation'
 const PERIODS_PER_YEAR: Record<Interval, number> = {
   monthly: 12,
   quarterly: 4,
@@ -51,6 +51,7 @@ export function costsInMonth<R extends RecurringCost, P extends Purchase>(recurr
 export function filterByBusiness<T extends CostItem>(items: T[], business: boolean): T[] {
     return items.filter((item) => item.business === business)
 }
+// Dashboard functions
 export function totalsByCategory(recurring: RecurringCost[], purchases: Purchase[], year: number): Record<Category, number> {
     const totals = Object.fromEntries(CATEGORIES.map((c) => [c, 0])) as Record<Category, number>
     recurring.forEach((item) => {
@@ -94,4 +95,19 @@ export function availableYears(purchases: Purchase[], currentYear: number): numb
     years.add(currentYear)
     return [...years].sort((a,b) => b - a)
 }
-
+// Month page functions
+export function monthNeighbours(current: MonthRef, validYears: number[]): MonthNeighbours {
+    const previous: MonthRef = current.month === 1 ? { year: current.year - 1, month: 12} : { year: current.year, month: (current.month - 1) as Month }
+    const next: MonthRef = current.month === 12 ? { year: current.year + 1, month: 1} : { year: current.year, month: (current.month + 1) as Month }
+    return {
+        previous: validYears.includes(previous.year) ? previous : null,
+        next: validYears.includes(next.year) ? next : null
+    }
+}
+export function groupMonthCosts<R extends RecurringCost, P extends Purchase>(costs: (R | P)[]): MonthGroups<R,P> {
+    const recurring = costs.filter((cost): cost is R => cost.kind === 'recurring')
+    const purchases = costs.filter((cost): cost is P => cost.kind === 'purchase')
+    const recurringTotal = recurring.reduce((sum, cost) => sum + cost.amount, 0)
+    const purchasesTotal = purchases.reduce((sum, cost) => sum + cost.amount, 0)
+    return { recurring, purchases, recurringTotal, purchasesTotal, total: recurringTotal + purchasesTotal }
+}

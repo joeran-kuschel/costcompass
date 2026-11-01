@@ -48,3 +48,18 @@ export interface MonthChange {
     previous: number,
     percent: number | null
 }
+export interface MonthRef {
+    year: number,
+    month: Month
+}
+export interface MonthNeighbours {
+    previous: MonthRef | null,
+    next: MonthRef | null
+}
+export interface MonthGroups<R, P> {
+    recurring: R[],
+    purchases: P[],
+    recurringTotal: number,
+    purchasesTotal: number,
+    total: number
+}

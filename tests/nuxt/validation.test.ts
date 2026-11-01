@@ -3,6 +3,7 @@ import {
   createRecurringCostSchema,
   createPurchaseSchema,
   idParamsSchema,
+  monthParamsSchema,
   patchRecurringCostSchema,
   patchPurchaseSchema,
 } from '~~/shared/utils/validation'
@@ -134,5 +135,38 @@ describe('patchPurchaseSchema', () => {
   it('rejects invalid values', () => {
     expect(patchPurchaseSchema.safeParse({ date: '2026-13-01' }).success).toBe(false)
     expect(patchPurchaseSchema.safeParse({ amount: 0 }).success).toBe(false)
+  })
+})
+
+describe('monthParamsSchema', () => {
+  it('accepts a valid month and year and returns them as numbers', () => {
+    expect(monthParamsSchema.parse({ year: '2026', month: '03' })).toEqual({ year: 2026, month: 3 })
+    expect(monthParamsSchema.parse({ year: '2026', month: '10' })).toEqual({ year: 2026, month: 10 })
+  })
+  it('accepts the first and the last month', () => {
+    expect(monthParamsSchema.safeParse({ year: '2026', month: '01' }).success).toBe(true)
+    expect(monthParamsSchema.safeParse({ year: '2026', month: '12' }).success).toBe(true)
+  })
+  it('rejects a month outside 1 to 12', () => {
+    expect(monthParamsSchema.safeParse({ year: '2026', month: '00' }).success).toBe(false)
+    expect(monthParamsSchema.safeParse({ year: '2026', month: '13' }).success).toBe(false)
+  })
+  it('rejects a month without the leading zero, so each month has one address', () => {
+    expect(monthParamsSchema.safeParse({ year: '2026', month: '0' }).success).toBe(false)
+    expect(monthParamsSchema.safeParse({ year: '2026', month: '3' }).success).toBe(false)
+  })
+  it('rejects a month that is not a plain number', () => {
+    for (const month of ['abc', '', ' 3', '3.5', '-1', '1e0', '003']) {
+      expect(monthParamsSchema.safeParse({ year: '2026', month }).success).toBe(false)
+    }
+  })
+  it('rejects a year that is not four digits', () => {
+    for (const year of ['abc', '', '26', '20266', '-2026', '2026.5', ' 2026']) {
+      expect(monthParamsSchema.safeParse({ year, month: '03' }).success).toBe(false)
+    }
+  })
+  it('rejects missing params', () => {
+    expect(monthParamsSchema.safeParse({ year: '2026' }).success).toBe(false)
+    expect(monthParamsSchema.safeParse({ month: '03' }).success).toBe(false)
   })
 })

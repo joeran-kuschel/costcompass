@@ -3,9 +3,11 @@ import { mountSuspended } from '@nuxt/test-utils/runtime'
 
 // useMoney needs the i18n context of a component, so it is called from the setup of a small probe component.
 let euros: (value: number) => string
+let exact: (value: number) => string
 const Probe = defineComponent({
   setup() {
     euros = useMoney()
+    exact = useMoney({ cents: true })
     return () => null
   },
 })
@@ -58,5 +60,38 @@ describe('useMoney in German', () => {
     expect(plain(euros(5000))).toBe('5.000 €')
     await useNuxtApp().$i18n.setLocale('en')
     expect(euros(5000)).toBe('€5,000')
+  })
+})
+
+describe('useMoney with cents in English', () => {
+  it('always shows two decimals', () => {
+    expect(exact(89.99)).toBe('€89.99')
+    expect(exact(2300)).toBe('€2,300.00')
+    expect(exact(1234.5)).toBe('€1,234.50')
+    expect(exact(0)).toBe('€0.00')
+  })
+  it('rounds to the nearest cent', () => {
+    expect(exact(10.126)).toBe('€10.13')
+    expect(exact(10.124)).toBe('€10.12')
+  })
+  it('uses a thousands separator for large amounts', () => {
+    expect(exact(1234567.89)).toBe('€1,234,567.89')
+  })
+  it('does not change the whole-euro formatter that was created next to it', () => {
+    expect(euros(89.99)).toBe('€90')
+    expect(exact(89.99)).toBe('€89.99')
+  })
+})
+
+describe('useMoney with cents in German', () => {
+  it('shows a comma before the cents, a dot as thousands separator and the sign behind', async () => {
+    await useNuxtApp().$i18n.setLocale('de')
+    expect(plain(exact(89.99))).toBe('89,99 €')
+    expect(plain(exact(2300))).toBe('2.300,00 €')
+  })
+  it('follows the language when it is switched after the formatter was created', async () => {
+    expect(exact(5000)).toBe('€5,000.00')
+    await useNuxtApp().$i18n.setLocale('de')
+    expect(plain(exact(5000))).toBe('5.000,00 €')
   })
 })

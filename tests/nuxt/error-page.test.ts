@@ -12,9 +12,13 @@ async function mountError(error: Record<string, unknown>) {
 }
 const notFound = { status: 404, statusText: 'Not Found', message: 'Page not found: /foo' }
 const failure = { status: 500, statusText: 'Server Error', message: 'ECONNREFUSED 10.0.0.5:5432 secret detail' }
+const invalidMonth = { status: 404, statusText: 'Not Found', message: 'Page not found: /months/2026/13', data: { reason: 'month' } }
+const goToLink = () => wrapper.findAll('a').find(link => link.attributes('href')?.startsWith('/months/'))
 const backButton = () => wrapper.findAll('button').find(button => ['Back to dashboard', 'Zurück zum Dashboard'].includes(button.text()))
 
 afterEach(async () => {
+  vi.useRealTimers()
+  clearNuxtState(['today'])
   wrapper.unmount()
   clearErrorMock.mockReset()
   await useNuxtApp().$i18n.setLocale('en')
@@ -54,6 +58,53 @@ describe('error page for a page that does not exist', () => {
   })
 })
 
+describe('error page for a month that does not exist', () => {
+  it('has its own heading as the only h1, a hint and both ways out', async () => {
+    await mountError(invalidMonth)
+    expect(wrapper.findAll('h1')).toHaveLength(1)
+    expect(wrapper.find('h1').text()).toBe("That month doesn't exist")
+    expect(wrapper.text()).toContain('The address has a month outside 1 to 12 or a year that is not valid.')
+    expect(goToLink()).toBeTruthy()
+    expect(backButton()).toBeTruthy()
+  })
+  it('has its own title and announces it', async () => {
+    await mountError(invalidMonth)
+    await vi.waitFor(() => expect(document.title).toBe("That month doesn't exist – Budgetly"))
+    expect(wrapper.find('.nuxt-route-announcer [aria-live="polite"]').text()).toBe("That month doesn't exist – Budgetly")
+  })
+  it('links to the real current month with a padded path', async () => {
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-03-15T12:00:00Z') })
+    clearNuxtState(['today'])
+    await mountError(invalidMonth)
+    expect(goToLink()!.text()).toBe('Go to March 2026')
+    expect(goToLink()!.attributes('href')).toBe('/months/2026/03')
+  })
+  it('keeps a two-digit month as it is', async () => {
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-11-01T12:00:00Z') })
+    clearNuxtState(['today'])
+    await mountError(invalidMonth)
+    expect(goToLink()!.attributes('href')).toBe('/months/2026/11')
+  })
+  it('still clears the error and goes to the dashboard from the way back', async () => {
+    await mountError(invalidMonth)
+    await backButton()!.trigger('click')
+    expect(clearErrorMock).toHaveBeenCalledWith({ redirect: '/' })
+  })
+  it('has German texts', async () => {
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-03-15T12:00:00Z') })
+    clearNuxtState(['today'])
+    await useNuxtApp().$i18n.setLocale('de')
+    await mountError(invalidMonth)
+    expect(wrapper.find('h1').text()).toBe('Diesen Monat gibt es nicht')
+    expect(goToLink()!.text()).toBe('Weiter zu März 2026')
+  })
+  it('does not show the month texts for another reason or none', async () => {
+    await mountError({ ...notFound, data: { reason: 'other' } })
+    expect(wrapper.find('h1').text()).toBe('Page not found')
+    expect(goToLink()).toBeUndefined()
+  })
+})
+
 describe('error page for any other error', () => {
   it('shows a generic message and no technical details', async () => {
     await mountError(failure)
@@ -62,6 +113,7 @@ describe('error page for any other error', () => {
     expect(wrapper.text()).not.toContain('ECONNREFUSED')
     expect(wrapper.text()).not.toContain('secret detail')
     expect(wrapper.text()).not.toContain('500')
+    expect(goToLink()).toBeUndefined()
   })
   it('has its own title', async () => {
     await mountError(failure)

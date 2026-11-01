@@ -1,15 +1,11 @@
 <script lang="ts" setup>
 import { annualSummary, categoryBreakDown, splitPercentages, monthBreakdown, monthChange, costsInMonth} from '~~/shared/utils/costs'
 
-const { t, locale } = useI18n()
-const { year, currentYear } = useYear()
-const { data: recurring, status: recurringStatus, error: recurringError, refresh: refreshRecurring }
-    = useFetch<Stored<RecurringCost>[]>('/api/recurring-costs', { lazy: true })
-const { data: purchases, status: purchasesStatus, error: purchasesError, refresh: refreshPurchases }
-    = useFetch<Stored<Purchase>[]>('/api/purchases', { lazy: true })
+const { t } = useI18n()
+const { year, currentYear, currentMonth } = useYear()
+const { monthName } = useMonth()
+const { recurring, purchases, failed, loading, retry } = useCostLists()
 const years = computed(() => availableYears(purchases.value ?? [], currentYear.value))
-const failed = computed(() => !!recurringError.value || !!purchasesError.value)
-const loading = computed(() => !failed.value && (!recurring.value || !purchases.value))
 const empty = computed(() => !failed.value && !loading.value && recurring.value?.length === 0 && purchases.value?.length === 0)
 const summary = computed (() => annualSummary(recurring.value ?? [], purchases.value ?? [], year.value))
 const euros = useMoney()
@@ -25,30 +21,26 @@ const tiles = computed(() => (['total', 'household', 'business', 'averagePerMont
     value: euros(summary.value[key]),
 })))
 const split = computed(() => splitPercentages(summary.value))
-const currentMonth = (new Date().getUTCMonth() + 1) as Month
 const monthRows = computed (() => monthBreakdown(recurring.value ?? [], purchases.value ?? [], year.value).map(({ month, total, share}) => {
-    const date = new Date(Date.UTC(year.value, month - 1, 1))
-    const format = (style: 'long' | 'short') => new Intl.DateTimeFormat(locale.value, { month: style, timeZone: 'UTC'}).format(date)
     return {
         month,
-        short: format('short'),
-        text: t('dashboard.months.alt', { month: format('long'), amount: euros(total)}),
+        short: monthName(month, 'short'),
+        text: t('dashboard.months.alt', { month: monthName(month, 'long'), amount: euros(total)}),
         height: `${share * 100}%`,
-        current: year.value === currentYear.value && month === currentMonth
+        current: year.value === currentYear.value && month === currentMonth.value
     }
 }))
 const thisMonth = computed(() => {
-    const change = monthChange(recurring.value ?? [], purchases.value ?? [], currentYear.value, currentMonth)
-    const monthName = (month: number) => new Intl.DateTimeFormat(locale.value, { month: 'long', timeZone: 'UTC'}).format(new Date(Date.UTC(currentYear.value, month - 1, 1)))
+    const change = monthChange(recurring.value ?? [], purchases.value ?? [], currentYear.value, currentMonth.value)
     const percent = change.percent
     const direction = percent === null ? 'none' : percent < 0 ? 'less': percent > 0 ? 'more' : 'same'
     return {
-        title: t('dashboard.thisMonth.title', { month: monthName(currentMonth), year: currentYear.value}),
+        title: t('dashboard.thisMonth.title', { month: monthName(currentMonth.value), year: currentYear.value}),
         total: euros(change.current),
-        comparison: t(`dashboard.thisMonth.${direction}`, { percent: Math.abs(percent ?? 0), previous: monthName (currentMonth === 1 ? 12 : currentMonth - 1) }),
+        comparison: t(`dashboard.thisMonth.${direction}`, { percent: Math.abs(percent ?? 0), previous: monthName (currentMonth.value === 1 ? 12 : currentMonth.value - 1) }),
         icon: { less: 'i-lucide-trending-down', more: 'i-lucide-trending-up', same: 'i-lucide-minus', none: 'i-lucide-minus'}[direction],
-                listLabel: t('dashboard.thisMonth.list', { month: monthName(currentMonth) }),
-        rows: costsInMonth(recurring.value ?? [], purchases.value ?? [], currentYear.value, currentMonth).map(cost => ({
+                listLabel: t('dashboard.thisMonth.list', { month: monthName(currentMonth.value) }),
+        rows: costsInMonth(recurring.value ?? [], purchases.value ?? [], currentYear.value, currentMonth.value).map(cost => ({
             key: `${cost.kind}-${cost.id}`,
             name: cost.name,
             kind: t(`kind.${cost.kind}`),
@@ -60,9 +52,6 @@ const thisMonth = computed(() => {
 const open = ref(false)
 
 useHead({ title: () => t('nav.dashboard') })
-async function retry() {
-    await Promise.all([refreshRecurring(), refreshPurchases()])
-}
 async function onSaved() {
     await retry()
     open.value = false
