@@ -1,5 +1,11 @@
 # Budgetly
 
+A web app to track household and business costs. Documentation:
+
+- [User guide](documentation/frontend/user-guide.md)
+- [Frontend documentation](documentation/frontend/index.md)
+- [Backend and developer documentation](documentation/backend/index.md), start with [getting started](documentation/backend/getting-started.md)
+
 Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
 
 ## Setup
