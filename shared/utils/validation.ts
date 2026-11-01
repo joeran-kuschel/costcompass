@@ -35,3 +35,7 @@ export const patchPurchaseSchema = createPurchaseSchema.partial().refine(notEmpt
 export type PatchRecurringCost = z.infer<typeof patchRecurringCostSchema>
 export type PatchPurchase = z.infer<typeof patchPurchaseSchema>
 
+export const monthParamsSchema = z.object({
+    year: z.string().regex(/^\d{4}$/).transform(Number),
+    month: z.string().regex(/^(0[1-9]|1[0-2])$/).transform(Number)
+})

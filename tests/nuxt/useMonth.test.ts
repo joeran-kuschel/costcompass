@@ -1,12 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 
-// useMonthName needs the i18n context of a component, so it is called from the setup of a small probe component.
-let monthName: ReturnType<typeof useMonthName>['monthName']
-let monthYear: ReturnType<typeof useMonthName>['monthYear']
+// useMonth needs the i18n context of a component, so it is called from the setup of a small probe component.
+let monthName: ReturnType<typeof useMonth>['monthName']
+let monthYear: ReturnType<typeof useMonth>['monthYear']
+let monthPath: ReturnType<typeof useMonth>['monthPath']
 const Probe = defineComponent({
   setup() {
-    ({ monthName, monthYear } = useMonthName())
+    ({ monthName, monthYear, monthPath } = useMonth())
     return () => null
   },
 })
@@ -69,5 +70,19 @@ describe('monthYear', () => {
   it('uses the given year', () => {
     expect(monthYear(2025, 12)).toBe('December 2025')
     expect(monthYear(2027, 1)).toBe('January 2027')
+  })
+})
+
+describe('monthPath', () => {
+  it('pads a single-digit month to two digits', () => {
+    expect(monthPath(2026, 3)).toBe('/months/2026/03')
+    expect(monthPath(2026, 1)).toBe('/months/2026/01')
+  })
+  it('keeps a two-digit month as it is', () => {
+    expect(monthPath(2026, 11)).toBe('/months/2026/11')
+    expect(monthPath(2026, 12)).toBe('/months/2026/12')
+  })
+  it('uses the given year', () => {
+    expect(monthPath(2025, 9)).toBe('/months/2025/09')
   })
 })

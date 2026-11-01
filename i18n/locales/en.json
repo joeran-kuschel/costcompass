@@ -63,7 +63,10 @@
       "notFoundText": "This address does not lead to a page in Budgetly.",
       "genericTitle": "Something went wrong",
       "genericText": "Please go back to the dashboard and try again.",
-      "back": "Back to dashboard"
+      "back": "Back to dashboard",
+      "monthTitle": "That month doesn't exist",
+      "monthText": "The address has a month outside 1 to 12 or a year that is not valid.",
+      "goToMonth": "Go to {month}"
   },
   "form": {
     "kind": "Type",

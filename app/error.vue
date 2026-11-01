@@ -3,10 +3,18 @@ import type { NuxtError } from '#app'
 
 const props = defineProps<{ error: NuxtError }>()
 const { t } = useI18n()
+const { currentYear, currentMonth } = useYear()
+const { monthYear, monthPath } = useMonth()
 useAppHead()
 const notFound = computed(() => props.error.status === 404)
-const title = computed(() => t(notFound.value ? 'error.notFoundTitle' : 'error.genericTitle'))
-const text = computed(() => t(notFound.value ? 'error.notFoundText' : 'error.genericText'))
+const monthMissing = computed(() => (props.error.data as { reason?: string } | undefined)?.reason === 'month')
+const variant = computed(() => {
+    if (monthMissing.value) return 'month'
+    if (notFound.value) return 'notFound'
+    return 'generic'
+})
+const title = computed(() => t(`error.${variant.value}Title`))
+const text = computed(() => t(`error.${variant.value}Text`))
 
 useHead({ title: () => title.value })
 function back() {
@@ -22,6 +30,7 @@ function back() {
                 <h1>{{ title }}</h1>
                 <p>{{ text }}</p>
                 <UButton :label="t('error.back')" class="mt-4" @click="back" />
+                <UButton v-if="monthMissing" :to="monthPath(currentYear, currentMonth)" :label="t('error.goToMonth', { month: monthYear(currentYear, currentMonth) })" />
             </UCard>
         </NuxtLayout>
     </UApp>

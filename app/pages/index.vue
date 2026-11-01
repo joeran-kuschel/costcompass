@@ -3,7 +3,7 @@ import { annualSummary, categoryBreakDown, splitPercentages, monthBreakdown, mon
 
 const { t } = useI18n()
 const { year, currentYear, currentMonth } = useYear()
-const { monthName } = useMonthName()
+const { monthName } = useMonth()
 const { data: recurring, status: recurringStatus, error: recurringError, refresh: refreshRecurring }
     = useFetch<Stored<RecurringCost>[]>('/api/recurring-costs', { lazy: true })
 const { data: purchases, status: purchasesStatus, error: purchasesError, refresh: refreshPurchases }

@@ -63,7 +63,10 @@
       "notFoundText": "Diese Adresse führt zu keiner Seite in Budgetly.",
       "genericTitle": "Etwas ist schiefgelaufen",
       "genericText": "Gehe zurück zum Dashboard und versuche es erneut.",
-      "back": "Zurück zum Dashboard"
+      "back": "Zurück zum Dashboard",
+      "monthTitle": "Diesen Monat gibt es nicht",
+      "monthText": "Die Adresse enthält einen Monat außerhalb von 1 bis 12 oder ein ungültiges Jahr.",
+      "goToMonth": "Weiter zu {month}"
   },
   "form": {
     "kind": "Art",
