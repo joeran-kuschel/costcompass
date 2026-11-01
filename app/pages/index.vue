@@ -4,13 +4,8 @@ import { annualSummary, categoryBreakDown, splitPercentages, monthBreakdown, mon
 const { t } = useI18n()
 const { year, currentYear, currentMonth } = useYear()
 const { monthName } = useMonth()
-const { data: recurring, status: recurringStatus, error: recurringError, refresh: refreshRecurring }
-    = useFetch<Stored<RecurringCost>[]>('/api/recurring-costs', { lazy: true })
-const { data: purchases, status: purchasesStatus, error: purchasesError, refresh: refreshPurchases }
-    = useFetch<Stored<Purchase>[]>('/api/purchases', { lazy: true })
+const { recurring, purchases, failed, loading, retry } = useCostLists()
 const years = computed(() => availableYears(purchases.value ?? [], currentYear.value))
-const failed = computed(() => !!recurringError.value || !!purchasesError.value)
-const loading = computed(() => !failed.value && (!recurring.value || !purchases.value))
 const empty = computed(() => !failed.value && !loading.value && recurring.value?.length === 0 && purchases.value?.length === 0)
 const summary = computed (() => annualSummary(recurring.value ?? [], purchases.value ?? [], year.value))
 const euros = useMoney()
@@ -57,9 +52,6 @@ const thisMonth = computed(() => {
 const open = ref(false)
 
 useHead({ title: () => t('nav.dashboard') })
-async function retry() {
-    await Promise.all([refreshRecurring(), refreshPurchases()])
-}
 async function onSaved() {
     await retry()
     open.value = false

@@ -120,5 +120,10 @@
       "title": "Add a cost",
       "text": "A recurring cost or a one-off purchase."
     }
+  },
+  "month": {
+    "loading": "Loading the costs of {month}…",
+    "error": "Couldn't load the costs of {month}",
+    "errorText": "Your data has not changed. Please try again."
   }
 }

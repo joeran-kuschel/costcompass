@@ -120,5 +120,10 @@
       "title": "Kosten hinzufügen",
       "text":  "Eine wiederkehrende Ausgabe oder eine einmalige Anschaffung."
     }
+  },
+  "month": {
+    "loading": "Kosten für {month} werden geladen …",
+    "error": "Die Kosten für {month} konnten nicht geladen werden",
+    "errorText": "Deine Daten haben sich nicht geändert. Bitte versuche es erneut."
   }
 }
