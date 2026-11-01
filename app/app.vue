@@ -3,6 +3,7 @@ useAppHead()
 </script>
 <template>
   <UApp>
+    <NuxtRouteAnnouncer />
     <NuxtLayout>
       <NuxtPage />
     </NuxtLayout>
