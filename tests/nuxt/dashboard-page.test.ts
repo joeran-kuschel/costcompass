@@ -37,7 +37,7 @@ beforeEach(() => {
   // useFetch caches by URL; start every test without data from the previous one.
   clearNuxtData()
   // The selected year is shared state: every test starts on the current year.
-  clearNuxtState(['year', 'currentYear'])
+  clearNuxtState(['year', 'today'])
 })
 afterEach(async () => {
   wrapper.unmount()
