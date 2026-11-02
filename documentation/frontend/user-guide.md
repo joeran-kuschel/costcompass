@@ -81,6 +81,17 @@ If the month cannot be loaded you see "Couldn't load the costs of <month>" and "
 
 If you open a month in a year that has no data and is not the current year, or a month outside 01 to 12, you see "That month doesn't exist" with a link to the current month and a **Back to dashboard** button.
 
+## Use Budgetly on a phone
+
+On a narrow screen (below about 1024 pixels wide, which covers phones and most tablets held upright) the top bar shows the app name, the language list and a menu button. The links to **Dashboard** and **Costs** are inside the menu.
+
+1. Select the menu button, named **Open menu** (in German **Menü öffnen**).
+2. Select **Dashboard** or **Costs**.
+
+The page opens and the menu closes by itself. To close the menu without choosing a page, select the same button again; it is then named **Close menu** (**Menü schließen**).
+
+The language list stays in the top bar at every screen width, so you can switch the language without opening the menu (see [Change the language](#change-the-language)). On a wide screen the menu button is gone and the links sit in the top bar.
+
 ## Change the language
 
 Use the language list in the top bar. English and Deutsch are available. The page changes at once and Budgetly remembers your choice. On your first visit it uses your browser's language, or English if it does not support yours.

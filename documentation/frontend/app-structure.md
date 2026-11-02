@@ -46,13 +46,42 @@ Notes on the months chart:
 - The grid is `repeat(12, minmax(1.5rem, 1fr))` inside an `overflow-x-auto` wrapper. 1.5rem is 24 px, the minimum target size. Twelve columns plus gaps do not fit on very narrow screens, so the chart scrolls sideways instead of squeezing the targets below 24 px. A check on 320 px screens is still open (to verify).
 - Tests: `tests/nuxt/dashboard-page.test.ts`, the describes "dashboard page month bar links" and "dashboard page "View month" link".
 
+## Header and navigation on small screens
+
+Issue #21. The layout is `app/layouts/default.vue`. Nuxt UI's `UHeader` hides its default slot below the `lg` breakpoint (1024 px; the theme sets `hidden lg:flex` on it) and shows a toggle button instead. A navigation in the default slot alone would vanish on a phone, so the layout uses three slots:
+
+| Slot | Content | Visible |
+| --- | --- | --- |
+| default | `UNavigationMenu` with `navItems` | From `lg` up |
+| `#body` | The same `navItems`, `orientation="vertical"` | In the mobile menu, opened by the toggle |
+| `#right` | `LanguageSwitcher` | At every width |
+
+Both menus read the one `navItems` computed (labels from `nav.dashboard` and `nav.costs`, wrapped in `computed` so they follow a language switch), so they cannot drift apart. The language switcher is outside the menu on purpose: it stays reachable with one tap and the menu holds only pages.
+
+- The toggle's accessible name is a Nuxt UI text, not one of ours: "Open menu" / "Close menu" (German "Menü öffnen" / "Menü schließen"), taken from the Nuxt UI locale, which follows the i18n locale.
+- The menu closes after a navigation: `UHeader` watches `route.fullPath` and sets `open` to false (prop `autoClose`, default `true`).
+- Add a new page to `navItems` once; it then appears in both places. Month pages stay out of the navigation (see [Pages](#pages)).
+
+### How to check it
+
+There is no automated test, because jsdom has no layout and cannot tell a wide from a narrow screen. Check by hand:
+
+1. Run `pnpm dev` and open the app.
+2. Set the browser window or the device toolbar to 320 px wide.
+3. The top bar shows the title, the language list and the menu button. The links are not visible.
+4. Open the menu, choose **Costs**: the page changes and the menu closes.
+5. Switch the language in the top bar and repeat. The toggle name and the links change language.
+6. Widen the window to 1024 px or more: the toggle disappears and the links sit in the top bar.
+
+Checked so far at 320 px in English and German. Dark mode is not checked yet *(to verify)*. Whether the whole bar fits at 320 px with a long German label is covered by that check only for the current texts.
+
 ## Components
 
 | Component | Purpose |
 | --- | --- |
 | `CostForm.vue` | Add and edit form for both kinds, in a `UModal`. Props: optional `cost` (`Stored<Cost>`; set means edit, the kind is locked and submit sends `PATCH`) and optional `month` (`{ year, month }`; starts a purchase on the first day of that month and limits the date field to it). Emits `saved` and `cancel`. Failed saves show a toast. |
 | `YearSelect.vue` | `v-model` year select with a visible label; takes a `years` list |
-| `LanguageSwitcher.vue` | `USelect` that calls `setLocale()`; accessible name from `language.label` |
+| `LanguageSwitcher.vue` | `USelect` that calls `setLocale()`; accessible name from `language.label`. Sits in the `#right` slot of the header, see [Header and navigation on small screens](#header-and-navigation-on-small-screens) |
 
 The form validates with the Zod schemas from `shared/utils/validation.ts`, so the browser and the API apply the same rules, except that the date field limit of the `month` prop is a browser limit only.
 

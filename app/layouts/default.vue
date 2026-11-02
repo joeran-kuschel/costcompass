@@ -8,7 +8,12 @@
 <template>
     <UHeader :title="t('app.name')">
         <UNavigationMenu :items="navItems" />
-        <LanguageSwitcher />
+        <template #right>
+            <LanguageSwitcher />
+        </template>
+        <template #body>
+            <UNavigationMenu :items="navItems" orientation="vertical" />
+        </template>
     </UHeader>
     <UMain>
         <UContainer>
