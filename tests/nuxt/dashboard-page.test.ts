@@ -1068,4 +1068,31 @@ describe('dashboard page year selector', () => {
     await vi.waitFor(() => expect(wrapper.text()).toContain('No costs yet'))
     expect(combobox().exists()).toBe(false)
   })
+  it('falls back to the current year when the stored year has no purchases', async () => {
+    costs()
+    useState('year').value = year - 5
+    await mountPage()
+    await vi.waitFor(() => expect(combobox().exists()).toBe(true))
+    expect(combobox().text()).toBe(String(year))
+    expect(summary().find('h2').text()).toBe(`Summary for ${year}`)
+    expect(summary().text()).toContain('€9,900')
+  })
+  it('keeps a stored year that is in the list', async () => {
+      costs()
+      useState('year').value = year - 1
+      await mountPage()
+      await vi.waitFor(() => expect(combobox().exists()).toBe(true))
+      expect(combobox().text()).toBe(String(year - 1))
+      expect(summary().text()).toContain('€10,100')
+  })
+  it('falls back to the current year when the purchases of the selected year are deleted', async () => {
+      costs()
+      await mountPage()
+      await vi.waitFor(() => expect(combobox().exists()).toBe(true))
+      await pickYear(year - 1)
+      api.purchases.rows = [lamp(2, 300, `${year}-03-15`)]
+      await refreshNuxtData()
+      await vi.waitFor(() => expect(combobox().text()).toBe(String(year)))
+      expect(summary().find('h2').text()).toBe(`Summary for ${year}`)
+  })
 })
