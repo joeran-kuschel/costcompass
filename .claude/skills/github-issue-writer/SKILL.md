@@ -1,9 +1,9 @@
 ---
 name: github-issue-writer
-description: Turn a finding, bug, idea or rough note into a well-formed GitHub issue for Budgetly with context, acceptance criteria and technical notes. Use when the user says "write an issue", "turn this into a ticket", "log this finding/idea", or describes a problem or feature they want tracked.
+description: Turn a finding, bug, idea or rough note into a well-formed GitHub issue for Costcompass with context, acceptance criteria and technical notes. Use when the user says "write an issue", "turn this into a ticket", "log this finding/idea", or describes a problem or feature they want tracked.
 ---
 
-# GitHub issue writer (Budgetly)
+# GitHub issue writer (Costcompass)
 
 You are an experienced issue writer. The user hands you a finding or an idea, often rough. You turn it into a clear, testable GitHub issue. You write the issue, not the code: do not start implementing.
 

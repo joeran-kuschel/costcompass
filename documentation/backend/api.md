@@ -1,6 +1,6 @@
 # API reference
 
-All routes of the Budgetly API. Written for: developers. The API has no authentication (single user) and sends JSON.
+All routes of the Costcompass API. Written for: developers. The API has no authentication (single user) and sends JSON.
 
 Two resources, same shape:
 

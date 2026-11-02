@@ -1,6 +1,6 @@
-# Budgetly user guide
+# Costcompass user guide
 
-Budgetly helps you keep track of what your household (and, if you want, your business) spends. You enter your regular costs and your one-off purchases, and Budgetly shows what they add up to. Written for: people using the app, no technical knowledge needed.
+Costcompass helps you keep track of what your household (and, if you want, your business) spends. You enter your regular costs and your one-off purchases, and Costcompass shows what they add up to. Written for: people using the app, no technical knowledge needed.
 
 Developers: see [app structure](app-structure.md).
 
@@ -11,7 +11,7 @@ Developers: see [app structure](app-structure.md).
 | Recurring | Rent, insurance, subscriptions | Repeats every month, quarter or year |
 | Purchase | A washing machine, a laptop | Counts once, on the day you bought it |
 
-Every cost has a name, an amount in euros, and a category: Housing, Insurance, Appliances, Food or Mobility. You can also mark a cost as Business, so Budgetly can show household and business costs apart.
+Every cost has a name, an amount in euros, and a category: Housing, Insurance, Appliances, Food or Mobility. You can also mark a cost as Business, so Costcompass can show household and business costs apart.
 
 ## Add a cost
 
@@ -43,7 +43,7 @@ The table is sorted by name. Select the header of Name, Category, Kind, Amount o
 
 The Dashboard (**Dashboard** in the menu) gives you the overview. It has these parts, from top to bottom:
 
-- **Year**: choose which year to look at. The list contains the current year and every year in which you bought something. If the year you chose has no purchases any more (for example because you deleted the last one), Budgetly shows the current year instead. This changes the sections from "Summary" down; "This month" always shows the current month.
+- **Year**: choose which year to look at. The list contains the current year and every year in which you bought something. If the year you chose has no purchases any more (for example because you deleted the last one), Costcompass shows the current year instead. This changes the sections from "Summary" down; "This month" always shows the current month.
 - **This month**: the total for the current month, a comparison with the month before (for example "50% more than September"), and a list of this month's costs. Without costs it says "No costs this month yet." and offers **Add cost**. At the end of the card is a link such as **View March 2026**. It opens the month page of the current month, whichever year you selected, also when the month has no costs.
 - **Add a cost**: a shortcut to the form.
 - **Summary for the year**: four tiles with the annual total, the household part, the business part and the average per month.
@@ -55,7 +55,7 @@ Amounts on the Dashboard are rounded to whole euros. The Costs page and the mont
 
 If your costs cannot be loaded, you see "Could not load your costs." with a **Try again** button. Your data has not changed. If you have not added anything yet, you see "No costs yet" and a link to the Costs page.
 
-**Good to know:** recurring costs have no start or end date yet. When you look at a past year, Budgetly shows your current recurring costs for that year too.
+**Good to know:** recurring costs have no start or end date yet. When you look at a past year, Costcompass shows your current recurring costs for that year too.
 
 ### Open a month from the dashboard
 
@@ -81,7 +81,7 @@ If the month cannot be loaded you see "Couldn't load the costs of <month>" and "
 
 If you open a month in a year that has no data and is not the current year, or a month outside 01 to 12, you see "That month doesn't exist" with a link to the current month and a **Back to dashboard** button.
 
-## Use Budgetly on a phone
+## Use Costcompass on a phone
 
 On a narrow screen (below about 1024 pixels wide, which covers phones and most tablets held upright) the top bar shows the app name, the language list and a menu button. The links to **Dashboard** and **Costs** are inside the menu.
 
@@ -94,7 +94,7 @@ The language list stays in the top bar at every screen width, so you can switch 
 
 ## Change the language
 
-Use the language list in the top bar. English and Deutsch are available. The page changes at once and Budgetly remembers your choice. On your first visit it uses your browser's language, or English if it does not support yours.
+Use the language list in the top bar. English and Deutsch are available. The page changes at once and Costcompass remembers your choice. On your first visit it uses your browser's language, or English if it does not support yours.
 
 ## Use it with a keyboard or screen reader
 

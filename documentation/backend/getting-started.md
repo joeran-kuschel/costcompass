@@ -1,6 +1,6 @@
 # Get started
 
-Goal: run Budgetly locally with a database, and run the tests. Written for: developers.
+Goal: run Costcompass locally with a database, and run the tests. Written for: developers.
 
 ## Prerequisites
 
@@ -20,8 +20,8 @@ The `postinstall` script runs `nuxt prepare`, which generates the types in `.nux
 Example with Docker (adjust name, password and port as you like):
 
 ```bash
-docker run -d --name budgetly-db \
-  -e POSTGRES_USER=budgetly -e POSTGRES_PASSWORD=budgetly -e POSTGRES_DB=budgetly \
+docker run -d --name costcompass-db \
+  -e POSTGRES_USER=costcompass -e POSTGRES_PASSWORD=costcompass -e POSTGRES_DB=costcompass \
   -p 5432:5432 postgres:17
 ```
 
@@ -32,7 +32,7 @@ docker run -d --name budgetly-db \
 Create a file named `.env` in the project root (it is git-ignored):
 
 ```bash
-NUXT_DATABASE_URL=postgres://budgetly:budgetly@localhost:5432/budgetly
+NUXT_DATABASE_URL=postgres://costcompass:costcompass@localhost:5432/costcompass
 ```
 
 One variable serves three readers:

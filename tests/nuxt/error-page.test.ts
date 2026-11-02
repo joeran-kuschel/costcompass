@@ -29,12 +29,12 @@ describe('error page for a page that does not exist', () => {
     await mountError(notFound)
     expect(wrapper.findAll('h1')).toHaveLength(1)
     expect(wrapper.find('h1').text()).toBe('Page not found')
-    expect(wrapper.text()).toContain('This address does not lead to a page in Budgetly.')
+    expect(wrapper.text()).toContain('This address does not lead to a page in Costcompass.')
     expect(backButton()).toBeTruthy()
   })
   it('has its own title, with the app name', async () => {
     await mountError(notFound)
-    await vi.waitFor(() => expect(document.title).toBe('Page not found – Budgetly'))
+    await vi.waitFor(() => expect(document.title).toBe('Page not found – Costcompass'))
   })
   it('is shown inside the layout, with the header and the language switcher', async () => {
     await mountError(notFound)
@@ -43,7 +43,7 @@ describe('error page for a page that does not exist', () => {
   })
   it('announces the page to screen readers', async () => {
     await mountError(notFound)
-    expect(wrapper.find('.nuxt-route-announcer [aria-live="polite"]').text()).toBe('Page not found – Budgetly')
+    expect(wrapper.find('.nuxt-route-announcer [aria-live="polite"]').text()).toBe('Page not found – Costcompass')
   })
   it('sets the language of the document', async () => {
     await mountError(notFound)
@@ -69,8 +69,8 @@ describe('error page for a month that does not exist', () => {
   })
   it('has its own title and announces it', async () => {
     await mountError(invalidMonth)
-    await vi.waitFor(() => expect(document.title).toBe("That month doesn't exist – Budgetly"))
-    expect(wrapper.find('.nuxt-route-announcer [aria-live="polite"]').text()).toBe("That month doesn't exist – Budgetly")
+    await vi.waitFor(() => expect(document.title).toBe("That month doesn't exist – Costcompass"))
+    expect(wrapper.find('.nuxt-route-announcer [aria-live="polite"]').text()).toBe("That month doesn't exist – Costcompass")
   })
   it('links to the real current month with a padded path', async () => {
     vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-03-15T12:00:00Z') })
@@ -117,7 +117,7 @@ describe('error page for any other error', () => {
   })
   it('has its own title', async () => {
     await mountError(failure)
-    await vi.waitFor(() => expect(document.title).toBe('Something went wrong – Budgetly'))
+    await vi.waitFor(() => expect(document.title).toBe('Something went wrong – Costcompass'))
   })
   it('treats an error without a status as a generic error', async () => {
     await mountError({ message: 'boom' })
@@ -135,9 +135,9 @@ describe('error page in German', () => {
     await useNuxtApp().$i18n.setLocale('de')
     await mountError(notFound)
     expect(wrapper.find('h1').text()).toBe('Seite nicht gefunden')
-    expect(wrapper.text()).toContain('Diese Adresse führt zu keiner Seite in Budgetly.')
+    expect(wrapper.text()).toContain('Diese Adresse führt zu keiner Seite in Costcompass.')
     expect(backButton()!.text()).toBe('Zurück zum Dashboard')
-    await vi.waitFor(() => expect(document.title).toBe('Seite nicht gefunden – Budgetly'))
+    await vi.waitFor(() => expect(document.title).toBe('Seite nicht gefunden – Costcompass'))
     expect(document.documentElement.lang).toBe('de')
   })
   it('has the German generic message', async () => {

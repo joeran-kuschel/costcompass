@@ -26,14 +26,14 @@ describe('route announcer', () => {
   it('announces the title of the new page after a navigation', async () => {
     wrapper = await mountSuspended(App, { route: '/' })
     await navigateTo('/costs')
-    await vi.waitFor(() => expect(announced()).toBe('Costs – Budgetly'))
+    await vi.waitFor(() => expect(announced()).toBe('Costs – Costcompass'))
     await navigateTo('/')
-    await vi.waitFor(() => expect(announced()).toBe('Dashboard – Budgetly'))
+    await vi.waitFor(() => expect(announced()).toBe('Dashboard – Costcompass'))
   })
   it('announces the title in German when the language is German', async () => {
     await useNuxtApp().$i18n.setLocale('de')
     wrapper = await mountSuspended(App, { route: '/' })
     await navigateTo('/costs')
-    await vi.waitFor(() => expect(announced()).toBe('Kosten – Budgetly'))
+    await vi.waitFor(() => expect(announced()).toBe('Kosten – Costcompass'))
   })
 })

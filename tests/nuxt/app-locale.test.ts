@@ -71,22 +71,22 @@ describe('html lang and dir', () => {
 describe('page titles', () => {
   it('differ per page and end with the app name', async () => {
     await mountApp('/costs')
-    await vi.waitFor(() => expect(document.title).toBe('Costs – Budgetly'))
+    await vi.waitFor(() => expect(document.title).toBe('Costs – Costcompass'))
     wrapper.unmount()
     await mountApp('/')
-    await vi.waitFor(() => expect(document.title).toBe('Dashboard – Budgetly'))
+    await vi.waitFor(() => expect(document.title).toBe('Dashboard – Costcompass'))
   })
   it('are translated', async () => {
     await setLanguage('de')
     await mountApp('/costs')
-    await vi.waitFor(() => expect(document.title).toBe('Kosten – Budgetly'))
+    await vi.waitFor(() => expect(document.title).toBe('Kosten – Costcompass'))
   })
   it('change when the language is switched, without a reload', async () => {
     await mountApp('/costs')
-    await vi.waitFor(() => expect(document.title).toBe('Costs – Budgetly'))
+    await vi.waitFor(() => expect(document.title).toBe('Costs – Costcompass'))
     await setLanguage('de')
-    await vi.waitFor(() => expect(document.title).toBe('Kosten – Budgetly'))
+    await vi.waitFor(() => expect(document.title).toBe('Kosten – Costcompass'))
     await setLanguage('en')
-    await vi.waitFor(() => expect(document.title).toBe('Costs – Budgetly'))
+    await vi.waitFor(() => expect(document.title).toBe('Costs – Costcompass'))
   })
 })

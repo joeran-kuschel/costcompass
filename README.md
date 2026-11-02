@@ -1,4 +1,4 @@
-# Budgetly
+# Costcompass
 
 A web app to track household and business costs. Documentation:
 
