@@ -35,16 +35,37 @@ Two places on `app/pages/index.vue` link to `/months/[year]/[month]` (issues #18
 | Link | Target | Year used | Why |
 | --- | --- | --- | --- |
 | "View <month year>" at the end of the "This month" card (`dashboard.thisMonth.view`, e.g. "View March 2026") | Today's month: `monthPath(currentYear, currentMonth)` | Always `currentYear` | The card always shows today's month, so its link has to agree with it. Shown also when the month has no costs. |
-| Each of the 12 items in "Costs per month" | `monthPath(year.value, month)` | The selected `year` | The chart shows the selected year, so a bar leads to that year's month. |
+| Each of the 12 items in "Costs per month" | `monthPath(shownYear.value, month)` | The shown year (`shownYear`, see below) | The chart shows that year, so a bar leads to that year's month. |
 
 Notes on the months chart:
 
 - Each `li` holds a `NuxtLink` (a real `<a>`, works without JavaScript). The `li` has no layout of its own, so the link fills the grid column and the bars keep their width.
 - Link name: the `sr-only` text from `dashboard.months.alt` ("March: €1,100"). The bar and the short label are `aria-hidden`; the bar has a hover `title`.
 - Keyboard focus shows an outline (`focus-visible:outline-2 focus-visible:outline-primary`).
-- The current month's label is bold only if the selected year is the current year (`year === currentYear && month === currentMonth`).
+- The current month's label is bold only if the shown year is the current year (`shownYear === currentYear && month === currentMonth`).
 - The grid is `repeat(12, minmax(1.5rem, 1fr))` inside an `overflow-x-auto` wrapper. 1.5rem is 24 px, the minimum target size. Twelve columns plus gaps do not fit on very narrow screens, so the chart scrolls sideways instead of squeezing the targets below 24 px. A check on 320 px screens is still open (to verify).
 - Tests: `tests/nuxt/dashboard-page.test.ts`, the describes "dashboard page month bar links" and "dashboard page "View month" link".
+
+### Year fallback on the dashboard
+
+Issue #30. The selected year lives in `useYear()` (`year`, a `useState('year')`). The year select offers `availableYears(purchases, currentYear)`: the current year plus the years of all purchases. If the stored year is not in that list (for example after the last purchase of that year is deleted), the dashboard shows the current year instead. Before, the select was empty and the sections showed that year with recurring costs only.
+
+`app/pages/index.vue` has a computed value for this:
+
+```ts
+const shownYear = computed(() => years.value.includes(year.value) ? year.value : currentYear.value)
+```
+
+`shownYear` feeds the `YearSelect` (`:model-value`), the four section headings, `annualSummary`, `categoryBreakDown`, `monthBreakdown`, the month bar links and the current-month marker. The "This month" card still uses `currentYear`. Choosing a year in the select (`update:model-value`) writes the stored `year`.
+
+Why a computed value and not a reset of the stored year:
+
+- The stored year stays untouched, so it is only a display rule. If purchases of that year exist again, for example after the lists finish loading or refresh, that year is shown again.
+- A reset would need a `watch` that writes shared state. While the lists are still loading, `purchases` is empty and `years` holds only the current year, so such a watch, which runs whether or not the select is visible yet, could throw away a valid choice. It would have to wait for the lists first.
+
+The month page and the costs page do not use the stored year.
+
+Tests: `tests/nuxt/dashboard-page.test.ts`, describe "dashboard page year selector" (falls back when the stored year has no purchases; keeps a stored year that is in the list; falls back after the purchases of the selected year are deleted).
 
 ## Header and navigation on small screens
 

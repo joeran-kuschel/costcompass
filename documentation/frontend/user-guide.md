@@ -43,7 +43,7 @@ The table is sorted by name. Select the header of Name, Category, Kind, Amount o
 
 The Dashboard (**Dashboard** in the menu) gives you the overview. It has these parts, from top to bottom:
 
-- **Year**: choose which year to look at. The list contains the current year and every year in which you bought something. This changes the sections from "Summary" down; "This month" always shows the current month.
+- **Year**: choose which year to look at. The list contains the current year and every year in which you bought something. If the year you chose has no purchases any more (for example because you deleted the last one), Budgetly shows the current year instead. This changes the sections from "Summary" down; "This month" always shows the current month.
 - **This month**: the total for the current month, a comparison with the month before (for example "50% more than September"), and a list of this month's costs. Without costs it says "No costs this month yet." and offers **Add cost**. At the end of the card is a link such as **View March 2026**. It opens the month page of the current month, whichever year you selected, also when the month has no costs.
 - **Add a cost**: a shortcut to the form.
 - **Summary for the year**: four tiles with the annual total, the household part, the business part and the average per month.

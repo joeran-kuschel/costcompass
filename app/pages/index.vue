@@ -6,10 +6,11 @@ const { year, currentYear, currentMonth } = useYear()
 const { monthName, monthYear, monthPath } = useMonth()
 const { recurring, purchases, failed, loading, retry } = useCostLists()
 const years = computed(() => availableYears(purchases.value ?? [], currentYear.value))
+const shownYear = computed(() => years.value.includes(year.value) ? year.value : currentYear.value)
 const empty = computed(() => !failed.value && !loading.value && recurring.value?.length === 0 && purchases.value?.length === 0)
-const summary = computed (() => annualSummary(recurring.value ?? [], purchases.value ?? [], year.value))
+const summary = computed (() => annualSummary(recurring.value ?? [], purchases.value ?? [], shownYear.value))
 const euros = useMoney()
-const categoryRows = computed (() => categoryBreakDown(recurring.value ?? [], purchases.value ?? [], year.value).map(({ category, total, share}) => ({
+const categoryRows = computed (() => categoryBreakDown(recurring.value ?? [], purchases.value ?? [], shownYear.value).map(({ category, total, share}) => ({
     category,
     label: t(`category.${category}`),
     amount: euros(total),
@@ -21,14 +22,14 @@ const tiles = computed(() => (['total', 'household', 'business', 'averagePerMont
     value: euros(summary.value[key]),
 })))
 const split = computed(() => splitPercentages(summary.value))
-const monthRows = computed (() => monthBreakdown(recurring.value ?? [], purchases.value ?? [], year.value).map(({ month, total, share}) => {
+const monthRows = computed (() => monthBreakdown(recurring.value ?? [], purchases.value ?? [], shownYear.value).map(({ month, total, share}) => {
     return {
         month,
         short: monthName(month, 'short'),
         text: t('dashboard.months.alt', { month: monthName(month, 'long'), amount: euros(total)}),
         height: `${share * 100}%`,
-        to: monthPath(year.value, month),
-        current: year.value === currentYear.value && month === currentMonth.value
+        to: monthPath(shownYear.value, month),
+        current: shownYear.value === currentYear.value && month === currentMonth.value
     }
 }))
 const thisMonth = computed(() => {
@@ -74,7 +75,7 @@ async function onSaved() {
         <UButton to="/costs" :label="t('costs.add')" />
     </div>
     <template v-else>
-        <YearSelect v-model="year" :years="years"/>
+        <YearSelect :model-value="shownYear" @update:model-value="year = $event" :years="years"/>
         <section aria-labelledby="this-month-title">
             <UCard variant="subtle">
                 <h2 id="this-month-title">{{ thisMonth.title }}</h2>
@@ -119,7 +120,7 @@ async function onSaved() {
             </UCard>
         </section>
         <section aria-labelledby="summary-title">
-            <h2 id="summary-title">{{ t('dashboard.summary.title', { year }) }}</h2>
+            <h2 id="summary-title">{{ t('dashboard.summary.title', { year: shownYear }) }}</h2>
             <div class="grid grid-cols-[repeat(auto-fit,minmax(10rem,1fr))] gap-3">
                 <UCard v-for="tile in tiles" :key="tile.key" variant="subtle" :title="tile.label">
                     <p class="text-2xl font-medium">{{ tile.value }}</p>
@@ -127,7 +128,7 @@ async function onSaved() {
             </div>
         </section>
         <section aria-labelledby="categories-title">
-            <h2 id="categories-title">{{ t('dashboard.categories.title', { year }) }}</h2>
+            <h2 id="categories-title">{{ t('dashboard.categories.title', { year: shownYear }) }}</h2>
             <UCard variant="subtle">
                 <ul>
                     <li v-for="row in categoryRows" :key="row.category"
@@ -142,7 +143,7 @@ async function onSaved() {
             </UCard>
         </section>
         <section aria-labelledby="split-title" class="mt-6">
-            <h2 id="split-title">{{ t('dashboard.split.title', { year } )}}</h2>
+            <h2 id="split-title">{{ t('dashboard.split.title', { year: shownYear } )}}</h2>
             <UCard variant="subtle">
                 <div class="flex h-3 overflow-hidden rounded bg-accented" role="img" :aria-label="t('dashboard.split.alt', { household: split.household, business: split.business })">
                     <div v-if="split.household > 0" class="bg-primary" :style="{ width: `${split.household}%` }" />
@@ -161,7 +162,7 @@ async function onSaved() {
             </UCard>
         </section>
         <section aria-labelledby="months-title" class="mt-6">
-            <h2 id="months-title">{{ t('dashboard.months.title', { year }) }}</h2>
+            <h2 id="months-title">{{ t('dashboard.months.title', { year: shownYear }) }}</h2>
             <UCard variant="subtle">
                 <div class="overflow-x-auto p-1">
                     <ol class="grid grid-cols-[repeat(12,minmax(1.5rem,1fr))] gap-1">
