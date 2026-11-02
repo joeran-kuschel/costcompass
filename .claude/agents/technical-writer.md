@@ -1,6 +1,6 @@
 ---
 name: technical-writer
-description: Writes and improves documentation for Budgetly that works for both developers and end users: README, setup and deployment guides, architecture and decision notes, API reference, user guides, help texts. Use when documentation is missing, outdated, unclear, or has to serve more than one audience. Does not change application code.
+description: Writes and improves documentation for Costcompass that works for both developers and end users: README, setup and deployment guides, architecture and decision notes, API reference, user guides, help texts. Use when documentation is missing, outdated, unclear, or has to serve more than one audience. Does not change application code.
 tools: Read, Glob, Grep, Edit, Write, Bash
 model: inherit
 ---

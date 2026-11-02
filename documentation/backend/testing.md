@@ -21,7 +21,7 @@ The setup is Vitest with `@nuxt/test-utils`, environment `nuxt` (`vitest.config.
 - `useFetch` caches by URL, so page tests call `clearNuxtData()` before each test. Tests for `useState` call `clearNuxtState()`.
 - Modal content is teleported to `document.body`; query it there. `YearSelect` items are chosen with a `pointerup` event, not a click.
 - `UForm` validates asynchronously; wait with `vi.waitFor`.
-- A page test does not render `app.vue`, so titles have no "– Budgetly" suffix.
+- A page test does not render `app.vue`, so titles have no "– Costcompass" suffix.
 
 ## What is covered
 

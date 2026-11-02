@@ -94,7 +94,7 @@ describe('month page loading state', () => {
   })
   it('sets the page title to the month', async () => {
     await mountPage()
-    // The page test does not render app.vue, so the title template ("– Budgetly") is not applied here.
+    // The page test does not render app.vue, so the title template ("– Costcompass") is not applied here.
     await vi.waitFor(() => expect(document.title).toBe('October 2026'))
   })
   it('does not decide about the year before the lists have arrived', async () => {

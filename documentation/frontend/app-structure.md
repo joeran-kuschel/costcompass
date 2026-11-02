@@ -122,7 +122,7 @@ The form validates with the Zod schemas from `shared/utils/validation.ts`, so th
 - Categories and intervals are keyed by id: `category.housing`, `interval.monthly`.
 - Labels that go through `t()` and live in script code must be wrapped in `computed` so they update when the language changes.
 - Month names and dates come from `Intl` through `useMonth()`, in UTC, in the active language.
-- Page titles: each page sets `useHead({ title: () => t('...') })`. `app.vue` adds the suffix: "<page> – Budgetly".
+- Page titles: each page sets `useHead({ title: () => t('...') })`. `app.vue` adds the suffix: "<page> – Costcompass".
 
 ## Accessibility conventions
 
