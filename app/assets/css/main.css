@@ -2,9 +2,10 @@
 @import "@nuxt/ui";
 
 /*
- * Cobalt colour scheme (mockups/cobalt, BFoundations and BDarkFoundations).
- * Only Nuxt UI's colour variables are set here, so the templates stay as they are:
- * primary is cobalt, secondary is the business orange, the greys are navy-tinted.
+ * Cobalt colour scheme (mockups/cobalt).
+ * Only Nuxt UI's variables are set here, so the templates stay as they are:
+ * primary is cobalt, secondary is the business orange, the greys are navy-tinted,
+ * error and warning follow the states of the mocks.
  * Unlayered rules win over Nuxt UI's `@layer theme` defaults.
  */
 :root {
@@ -22,9 +23,14 @@
 
   --ui-primary: var(--ui-color-primary-500);
   --ui-secondary: #b54708;
+  --ui-error: #b42318;
+  --ui-warning: #dc6803;
+
+  /* Rounder corners: Nuxt UI's `md` (fields, buttons) is 1.5x and `lg` (cards) 2x this value, so 18 px and 24 px (the mocks use 16 and 28). */
+  --ui-radius: 0.75rem;
 
   --ui-bg: #f7f7fb;
-  --ui-bg-muted: #f0f1f8;
+  --ui-bg-muted: #f2f3f8;
   --ui-bg-elevated: #ffffff;
   --ui-bg-accented: #edf0fd;
   --ui-bg-inverted: #14162b;
@@ -36,8 +42,8 @@
   --ui-text-highlighted: #14162b;
   --ui-text-inverted: #ffffff;
 
-  --ui-border: #e2e4f0;
-  --ui-border-muted: #e2e4f0;
+  --ui-border: #ecedf3;
+  --ui-border-muted: #ecedf3;
   --ui-border-accented: #c9cde0;
   --ui-border-inverted: #14162b;
 }
@@ -46,6 +52,8 @@
 .dark {
   --ui-primary: var(--ui-color-primary-400);
   --ui-secondary: #fdba74;
+  --ui-error: #f97066;
+  --ui-warning: #f59e0b;
 
   --ui-bg: #0b0c14;
   --ui-bg-muted: #15172a;
@@ -60,16 +68,23 @@
   --ui-text-highlighted: #ffffff;
   --ui-text-inverted: #ffffff;
 
-  --ui-border: #1e2340;
-  --ui-border-muted: #1e2340;
+  --ui-border: #24273d;
+  --ui-border-muted: #24273d;
   --ui-border-accented: #666d9c;
   --ui-border-inverted: #ecedf7;
 }
 
-/* On navy the action cobalt is too dark for text, so links and the active menu item use the light cobalt. */
+/* On navy the action colours are too dark for text, so links, the active menu item and error text use lighter tones. */
 .dark .text-primary {
   color: #afc0ff;
 }
 .dark .text-primary:is(:hover, :active, :focus-visible) {
   color: #dce3fb;
+}
+.dark .text-error {
+  color: #fca5a5;
+}
+/* A solid error button (delete) keeps the deep red with white text, as in the mocks. */
+.dark .bg-error {
+  background-color: #b42318;
 }
