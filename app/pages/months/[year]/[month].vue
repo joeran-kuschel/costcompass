@@ -60,7 +60,7 @@ async function onSaved() {
 </script>
 <template>
     <UButton to="/" :label="t('nav.dashboard')" icon="i-lucide-arrow-left" variant="link" color="neutral" class="mb-2 px-0" />
-    <div class="flex items-center gap-2">
+    <div class="flex flex-wrap items-center gap-2">
         <UButton
             v-if="neighbours.previous"
             :to="monthPath(neighbours.previous.year, neighbours.previous.month)"
@@ -98,7 +98,7 @@ async function onSaved() {
             :actions="[{ label: t('dashboard.retry'), onClick: onRetry }]"
         />
         <template v-else>
-            <UCard variant="subtle" class="card mt-4" aria-labelledby="month-total-title">
+            <UCard variant="subtle" class="card card-hero mt-4" aria-labelledby="month-total-title">
                 <h2 id="month-total-title">{{ t('month.total', { month: monthName(month) }) }}</h2>
                 <p>{{ euros(groups.total) }}</p>
             </UCard>
@@ -108,21 +108,21 @@ async function onSaved() {
                 <p>{{ t('month.emptyText') }}</p>
                 <UButton :label="t('costs.add')" class="pill mt-4" @click="open = true" />
             </UCard>
-            <section v-for="section in sections" :key="section.id" :aria-labelledby="`${section.id}-title`" class="mt-6">
+            <section v-for="section in sections" :key="section.id" :aria-labelledby="`${section.id}-title`" class="card mt-6 px-6 py-5">
                 <div class="flex items-baseline justify-between gap-4">
                     <h2 :id="`${section.id}-title`">{{ section.title }}</h2>
-                    <p>{{ section.total }}</p>
+                    <p class="font-extrabold tabular-nums">{{ section.total }}</p>
                 </div>
-                <ul>
-                    <li v-for="row in section.rows" :key="row.key" class="flex items-start justify-between gap-4 py-2">
+                <ul class="mt-3 flex flex-col gap-1.5">
+                    <li v-for="row in section.rows" :key="row.key" class="flex items-center justify-between gap-4 rounded-[18px] bg-muted px-3 py-2.5">
                         <div class="min-w-0">
-                            <p class="break-words">
+                            <p class="break-words font-bold">
                                 {{ row.name }}
                                 <UBadge v-if="row.business" :label="t('month.business')" variant="outline" size="sm" />
                             </p>
                             <p class="text-sm text-muted">{{ row.subline }}</p>
                         </div>
-                        <p class="shrink-0 text-right tabular-nums">{{ row.amount }}</p>
+                        <p class="shrink-0 text-right font-extrabold tabular-nums">{{ row.amount }}</p>
                     </li>
                 </ul>
             </section>
