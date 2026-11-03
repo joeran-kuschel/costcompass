@@ -1,2 +1,75 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
+
+/*
+ * Cobalt colour scheme (mockups/cobalt, BFoundations and BDarkFoundations).
+ * Only Nuxt UI's colour variables are set here, so the templates stay as they are:
+ * primary is cobalt, secondary is the business orange, the greys are navy-tinted.
+ * Unlayered rules win over Nuxt UI's `@layer theme` defaults.
+ */
+:root {
+  --ui-color-primary-50: #edf0fd;
+  --ui-color-primary-100: #dce3fb;
+  --ui-color-primary-200: #b9c5f6;
+  --ui-color-primary-300: #8ea2f0;
+  --ui-color-primary-400: #3b5beb;
+  --ui-color-primary-500: #2d4bd8;
+  --ui-color-primary-600: #2238b0;
+  --ui-color-primary-700: #1b2c8c;
+  --ui-color-primary-800: #162369;
+  --ui-color-primary-900: #111b4f;
+  --ui-color-primary-950: #0b1136;
+
+  --ui-primary: var(--ui-color-primary-500);
+  --ui-secondary: #b54708;
+
+  --ui-bg: #f7f7fb;
+  --ui-bg-muted: #f0f1f8;
+  --ui-bg-elevated: #ffffff;
+  --ui-bg-accented: #edf0fd;
+  --ui-bg-inverted: #14162b;
+
+  --ui-text-dimmed: #6b6f8c;
+  --ui-text-muted: #4a4e69;
+  --ui-text-toned: #4a4e69;
+  --ui-text: #14162b;
+  --ui-text-highlighted: #14162b;
+  --ui-text-inverted: #ffffff;
+
+  --ui-border: #e2e4f0;
+  --ui-border-muted: #e2e4f0;
+  --ui-border-accented: #c9cde0;
+  --ui-border-inverted: #14162b;
+}
+
+/* Cobalt midnight: navy surfaces, brighter cobalt, lighter business orange. */
+.dark {
+  --ui-primary: var(--ui-color-primary-400);
+  --ui-secondary: #fdba74;
+
+  --ui-bg: #0b0c14;
+  --ui-bg-muted: #15172a;
+  --ui-bg-elevated: #15172a;
+  --ui-bg-accented: #1e2340;
+  --ui-bg-inverted: #ecedf7;
+
+  --ui-text-dimmed: #8387a6;
+  --ui-text-muted: #a3a7c2;
+  --ui-text-toned: #a3a7c2;
+  --ui-text: #ecedf7;
+  --ui-text-highlighted: #ffffff;
+  --ui-text-inverted: #ffffff;
+
+  --ui-border: #1e2340;
+  --ui-border-muted: #1e2340;
+  --ui-border-accented: #666d9c;
+  --ui-border-inverted: #ecedf7;
+}
+
+/* On navy the action cobalt is too dark for text, so links and the active menu item use the light cobalt. */
+.dark .text-primary {
+  color: #afc0ff;
+}
+.dark .text-primary:is(:hover, :active, :focus-visible) {
+  color: #dce3fb;
+}
