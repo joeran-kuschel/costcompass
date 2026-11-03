@@ -5,7 +5,7 @@ defineProps<{ years: number []}>()
 </script>
 <template>
     <UFormField :label="t('year.label')">
-        <USelect
+        <USelect :ui="{ base: 'min-h-12 rounded-[1rem] font-semibold bg-muted ring-transparent dark:bg-accented dark:ring-accented' }"
             v-model="year"
             :items="years"
         />

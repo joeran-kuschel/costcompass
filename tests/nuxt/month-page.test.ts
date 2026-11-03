@@ -592,7 +592,8 @@ describe('month page navigation', () => {
     await mountAt('/months/2026/06')
     for (const label of ['Previous month', 'Next month'] as const) {
       expect(link(label)!.element.tagName).toBe('A')
-      expect(link(label)!.classes()).toContain('size-9')
+      // `pill-icon` (main.css) makes the link 44 px square; jsdom has no layout, so the class is what we can check.
+      expect(link(label)!.classes()).toContain('pill-icon')
     }
   })
   it('leads back to the dashboard with a link', async () => {

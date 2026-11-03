@@ -68,7 +68,7 @@ async function onSaved() {
             icon="i-lucide-chevron-left"
             variant="ghost"
             color="neutral"
-            class="size-9 justify-center"
+            class="pill-icon"
         />
         <h1 ref="heading" tabindex="-1">{{ title }}</h1>
         <UBadge v-if="isCurrentMonth" :label="t('month.thisMonth')" variant="outline" />
@@ -79,9 +79,9 @@ async function onSaved() {
             icon="i-lucide-chevron-right"
             variant="ghost"
             color="neutral"
-            class="size-9 justify-center"
+            class="pill-icon"
         />
-        <UButton v-if="!loading && !failed" :label="t('costs.add')" icon="i-lucide-plus" class="ml-auto" @click="open = true" />
+        <UButton v-if="!loading && !failed" :label="t('costs.add')" icon="i-lucide-plus" class="pill ml-auto" @click="open = true" />
     </div>
     <div :aria-busy="loading">
         <template v-if="loading">
@@ -98,15 +98,15 @@ async function onSaved() {
             :actions="[{ label: t('dashboard.retry'), onClick: onRetry }]"
         />
         <template v-else>
-            <UCard variant="subtle" class="mt-4" aria-labelledby="month-total-title">
+            <UCard variant="subtle" class="card mt-4" aria-labelledby="month-total-title">
                 <h2 id="month-total-title">{{ t('month.total', { month: monthName(month) }) }}</h2>
                 <p>{{ euros(groups.total) }}</p>
             </UCard>
-            <UCard v-if="sections.length === 0" variant="subtle" class="mt-6 text-center">
+            <UCard v-if="sections.length === 0" variant="subtle" class="card mt-6 text-center">
                 <UIcon name="i-lucide-calendar-x" class="size-8" aria-hidden="true" />
                 <h2>{{ t('month.emptyTitle', { month: monthName(month) }) }}</h2>
                 <p>{{ t('month.emptyText') }}</p>
-                <UButton :label="t('costs.add')" class="mt-4" @click="open = true" />
+                <UButton :label="t('costs.add')" class="pill mt-4" @click="open = true" />
             </UCard>
             <section v-for="section in sections" :key="section.id" :aria-labelledby="`${section.id}-title`" class="mt-6">
                 <div class="flex items-baseline justify-between gap-4">
@@ -128,7 +128,7 @@ async function onSaved() {
             </section>
         </template>
     </div>
-    <UModal v-model:open="open" :title="t('costs.add')">
+    <UModal :ui="{ content: 'rounded-[2rem] bg-elevated' }" v-model:open="open" :title="t('costs.add')">
         <template #body>
             <CostForm :month="monthRef" @saved="onSaved" @cancel="open = false" />
         </template>

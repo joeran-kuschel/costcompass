@@ -86,8 +86,8 @@ function sortableHeader(label: string) {
 </script>
 <template>
     <h1>{{ t('costs.title') }}</h1>
-    <UModal v-model:open="open" :title="toEdit ? t('costs.edit', { name: toEdit.name }) : t('costs.add')">
-        <UButton :label="t('costs.add')" />
+    <UModal :ui="{ content: 'rounded-[2rem] bg-elevated' }" v-model:open="open" :title="toEdit ? t('costs.edit', { name: toEdit.name }) : t('costs.add')">
+        <UButton :label="t('costs.add')" class="pill" />
         <template #body>
             <CostForm :cost="toEdit" @saved="onSaved" @cancel="open = false" />
         </template>
@@ -99,19 +99,19 @@ function sortableHeader(label: string) {
         <template #when-cell="{ row }">{{ whenLabel(row.original) }}</template>
         <template #business-cell="{ row }">{{ row.original.business ? t('common.yes') : t('common.no') }}</template>
         <template #actions-cell="{ row }">
-            <UButton icon="i-lucide-trash-2" color="error" variant="ghost" @click="toDelete = row.original" :aria-label="t('costs.delete', { name: row.original.name })"/>
-            <UButton icon="i-lucide-pencil" color="neutral" variant="ghost" @click="toEdit = row.original; open=true" :aria-label="t('costs.edit', { name: row.original.name })"/>
+            <UButton icon="i-lucide-trash-2" color="error" variant="ghost" class="pill-icon" @click="toDelete = row.original" :aria-label="t('costs.delete', { name: row.original.name })"/>
+            <UButton icon="i-lucide-pencil" color="neutral" variant="ghost" class="pill-icon" @click="toEdit = row.original; open=true" :aria-label="t('costs.edit', { name: row.original.name })"/>
         </template>
     </UTable>
-    <UModal
+    <UModal :ui="{ content: 'rounded-[2rem] bg-elevated' }"
         :open="toDelete !== null"
         :title="t('costs.confirmTitle')"
         :description="t('costs.confirmText', { name: toDelete?.name ?? '' })"
         @update:open="(isOpen: boolean) => { if (!isOpen) toDelete = null }"
     >
         <template #footer>
-            <UButton color="neutral" variant="outline" :label="t('common.cancel')" @click="toDelete = null" />
-            <UButton color="error" :label="t('common.delete')" @click="confirmDelete" />
+            <UButton color="neutral" variant="outline" :label="t('common.cancel')" class="pill" @click="toDelete = null" />
+            <UButton color="error" :label="t('common.delete')" class="pill" @click="confirmDelete" />
         </template>
     </UModal>
 

@@ -1,6 +1,11 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
 
+/* Manrope, as in the mocks. Nuxt UI's font module downloads it at build time and serves it from our own server. */
+@theme {
+  --font-sans: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+}
+
 /*
  * Cobalt colour scheme (mockups/cobalt).
  * Only Nuxt UI's variables are set here, so the templates stay as they are:
@@ -72,6 +77,109 @@
   --ui-border-muted: #24273d;
   --ui-border-accented: #666d9c;
   --ui-border-inverted: #ecedf7;
+}
+
+/* Type scale of the mocks: headings in weight 800 with tight tracking. */
+h1 {
+  font-size: 1.875rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+h2 {
+  font-size: 1.125rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+}
+[data-slot="labelWrapper"] [data-slot="label"] {
+  font-size: 0.8125rem;
+  font-weight: 800;
+  color: var(--ui-text-muted);
+}
+
+/* Page spacing: 32 px above, 64 px below, 24 px between sections; the container is 1160 px wide. */
+:root {
+  --ui-container: 72.5rem;
+}
+main {
+  padding-block: 2rem 4rem;
+}
+main > div > h1 {
+  margin-bottom: 1rem;
+}
+main section {
+  margin-top: 1.5rem;
+}
+/* Space below headings: 16 px between a section heading and its card, 8 px inside a card. */
+main section > h2 {
+  margin-bottom: 1rem;
+}
+.card h2 {
+  margin-bottom: 0.5rem;
+}
+
+/* Cards: solid surface, soft shadow, no ring, 28 px corners and padding. */
+.card {
+  border-radius: 1.75rem;
+  background-color: var(--ui-bg-elevated);
+  box-shadow: 0 1px 2px rgb(20 22 43 / 0.05), 0 8px 24px -12px rgb(20 22 43 / 0.12);
+}
+.card > [data-slot="body"] {
+  padding: 1.25rem;
+}
+@media (min-width: 40rem) {
+  .card > [data-slot="body"] {
+    padding: 1.75rem;
+  }
+}
+
+/*
+ * Dashboard as flex rows, like the desktop mock: "This month" next to the add tile and the
+ * categories next to the split, wrapping on narrow screens. The sections sit directly in the
+ * layout's container, so the rows are made with :has() on the sections' own ids.
+ */
+main > div:has(#this-month-title) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 1.5rem;
+}
+main > div:has(#this-month-title) > * {
+  flex: 1 1 100%;
+  min-width: 0;
+  margin-top: 0;
+}
+/* The heading and the year picker share the first row, the picker floated to the right. */
+main > div:has(#this-month-title) > h1 {
+  /* Everything but the room for the picker, so the picker fits beside it and the cards wrap below. */
+  flex: 1 1 calc(100% - 8rem);
+  margin-bottom: 0;
+}
+main > div:has(#this-month-title) > div {
+  flex: 0 0 auto;
+}
+main > div:has(#this-month-title) > section[aria-labelledby="this-month-title"],
+main > div:has(#this-month-title) > section[aria-labelledby="categories-title"] {
+  flex: 3 1 27.5rem;
+}
+main > div:has(#this-month-title) > section[aria-labelledby="add-cost-title"],
+main > div:has(#this-month-title) > section[aria-labelledby="split-title"] {
+  flex: 2 1 18.75rem;
+}
+
+/* Pill-shaped buttons with a 44 px target, as in the mocks: `pill` for buttons with a label, `pill-icon` for icon buttons. */
+.pill {
+  border-radius: 9999px;
+  min-height: 2.75rem;
+  padding-inline: 1.25rem;
+  font-weight: 700;
+}
+.pill-icon {
+  border-radius: 9999px;
+  width: 2.75rem;
+  height: 2.75rem;
+  justify-content: center;
 }
 
 /* On navy the action colours are too dark for text, so links, the active menu item and error text use lighter tones. */

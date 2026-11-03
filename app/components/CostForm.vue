@@ -58,32 +58,32 @@ async function onSubmit(event: FormSubmitEvent<CreateRecurringCost | CreatePurch
 }
 </script>
 <template>
-    <UForm :schema="schema" :state="state" @submit="onSubmit">
+    <UForm :schema="schema" :state="state" class="grid grid-cols-[auto_auto_1fr] gap-x-3 gap-y-[18px] [&>[data-slot=root]]:col-span-full" @submit="onSubmit">
         <UFormField :label="t('form.kind')">
             <URadioGroup :disabled="!!cost" v-model="kind" :items="kindItems" />
         </UFormField>
         <UFormField :label="t('form.name')" name="name">
-            <UInput v-model="state.name" />
+            <UInput class="w-full" :ui="{ base: 'min-h-12 rounded-[1rem] font-semibold bg-muted ring-transparent dark:bg-accented dark:ring-accented' }" v-model="state.name" />
         </UFormField>
         <UFormField :label="t('form.amount')" name="amount">
-            <UInput v-model="state.amount" type="number" step="0.01" />
+            <UInput class="w-full" :ui="{ base: 'min-h-12 rounded-[1rem] font-semibold bg-muted ring-transparent dark:bg-accented dark:ring-accented' }" v-model="state.amount" type="number" step="0.01" />
         </UFormField>
         <UFormField :label="t('form.category')" name="category">
-            <USelect v-model="state.category" :items="categoryItems" />
+            <USelect class="w-full" :ui="{ base: 'min-h-12 rounded-[1rem] font-semibold bg-muted ring-transparent dark:bg-accented dark:ring-accented' }" v-model="state.category" :items="categoryItems" />
         </UFormField>
         <UFormField name="business">
             <UCheckbox v-model="state.business" :label="t('form.business')" />
         </UFormField>
         <UFormField v-if="kind === 'purchase'" :label="t('form.date')" name="date" :hint="month ? t('form.dateHint', { month: monthYear(month.year, month.month) }) : undefined">
-            <UInput v-model="state.date" type="date" :min="range?.first" :max="range?.last" />
+            <UInput class="w-full" :ui="{ base: 'min-h-12 rounded-[1rem] font-semibold bg-muted ring-transparent dark:bg-accented dark:ring-accented' }" v-model="state.date" type="date" :min="range?.first" :max="range?.last" />
         </UFormField>
         <UFormField v-if="kind === 'recurring'" :label="t('form.interval')" name="interval">
-            <USelect v-model="state.interval" :items="intervalItems" />
+            <USelect class="w-full" :ui="{ base: 'min-h-12 rounded-[1rem] font-semibold bg-muted ring-transparent dark:bg-accented dark:ring-accented' }" v-model="state.interval" :items="intervalItems" />
         </UFormField>
         <UFormField v-if="kind === 'recurring' && state.interval !== 'monthly'" :label="t('form.dueMonth')" name="dueMonth">
-            <USelect v-model="state.dueMonth" :items="monthItems" />
+            <USelect class="w-full" :ui="{ base: 'min-h-12 rounded-[1rem] font-semibold bg-muted ring-transparent dark:bg-accented dark:ring-accented' }" v-model="state.dueMonth" :items="monthItems" />
         </UFormField>
-        <UButton type="submit">{{ cost ? t('common.save') : t('form.submit') }}</UButton>
-        <UButton color="neutral" variant="outline" :label="t('common.cancel')" @click="emit('cancel')" />
+        <UButton type="submit" class="pill">{{ cost ? t('common.save') : t('form.submit') }}</UButton>
+        <UButton color="neutral" variant="outline" :label="t('common.cancel')" class="pill" @click="emit('cancel')" />
     </UForm>
 </template>

@@ -25,12 +25,12 @@ function back() {
     <UApp>
         <NuxtRouteAnnouncer />
         <NuxtLayout>
-            <UCard variant="subtle" class="mt-6 text-center">
+            <UCard variant="subtle" class="card mt-6 text-center">
                 <UIcon :name="notFound ? 'i-lucide-search-x' : 'i-lucide-triangle-alert'" class="size-8" aria-hidden="true" />
                 <h1>{{ title }}</h1>
                 <p>{{ text }}</p>
-                <UButton :label="t('error.back')" class="mt-4" @click="back" />
-                <UButton v-if="monthMissing" :to="monthPath(currentYear, currentMonth)" :label="t('error.goToMonth', { month: monthYear(currentYear, currentMonth) })" />
+                <UButton :label="t('error.back')" class="pill mt-4" @click="back" />
+                <UButton v-if="monthMissing" :to="monthPath(currentYear, currentMonth)" :label="t('error.goToMonth', { month: monthYear(currentYear, currentMonth) })" class="pill" />
             </UCard>
         </NuxtLayout>
     </UApp>
