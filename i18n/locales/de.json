@@ -49,7 +49,8 @@
   },
   "nav": {
     "dashboard": "Dashboard",
-    "costs": "Kosten"
+    "costs": "Kosten",
+    "thisMonth": "Dieser Monat"
   },
   "language": {
     "label": "Sprache"

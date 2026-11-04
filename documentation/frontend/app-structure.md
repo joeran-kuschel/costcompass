@@ -13,7 +13,7 @@ Reference and conventions for `app/` (pages, components, composables, texts). Wr
 
 `app/error.vue` is the error page, not a route. It shows one of three variants (`notFound`, `generic`, `month`), picked by the error. Texts come from `error.<variant>Title` and `error.<variant>Text`. The `month` variant is used when the month page throws an error with `data: { reason: 'month' }`.
 
-Month pages are reached from the dashboard (see [Dashboard links to month pages](#dashboard-links-to-month-pages)); they are not in the navigation.
+Month pages are reached from the dashboard (see [Dashboard links to month pages](#dashboard-links-to-month-pages)) and, for today's month, from the "This month" entry in the navigation (see [The "This month" navigation entry](#the-this-month-navigation-entry)). Other months have no navigation entry.
 
 ### Page states
 
@@ -78,11 +78,26 @@ Issue #21. The layout is `app/layouts/default.vue`. Nuxt UI's `UHeader` hides it
 | `#body` | The same `navItems`, `orientation="vertical"` | In the mobile menu, opened by the toggle |
 | `#right` | `LanguageSwitcher` | At every width |
 
-Both menus read the one `navItems` computed (labels from `nav.dashboard` and `nav.costs`, wrapped in `computed` so they follow a language switch), so they cannot drift apart. The language switcher is outside the menu on purpose: it stays reachable with one tap and the menu holds only pages.
+Both menus read the one `navItems` computed (labels from `nav.dashboard`, `nav.costs` and `nav.thisMonth`, wrapped in `computed` so they follow a language switch), so they cannot drift apart. The language switcher is outside the menu on purpose: it stays reachable with one tap and the menu holds only pages.
 
 - The toggle's accessible name is a Nuxt UI text, not one of ours: "Open menu" / "Close menu" (German "Menü öffnen" / "Menü schließen"), taken from the Nuxt UI locale, which follows the i18n locale.
 - The menu closes after a navigation: `UHeader` watches `route.fullPath` and sets `open` to false (prop `autoClose`, default `true`).
-- Add a new page to `navItems` once; it then appears in both places. Month pages stay out of the navigation (see [Pages](#pages)).
+- Add a new page to `navItems` once; it then appears in both places. Only today's month page is in the navigation (see below); other month pages stay out of it.
+
+### The "This month" navigation entry
+
+Issue #56. `navItems` has a third entry after Dashboard and Costs: "This month" (German "Dieser Monat", key `nav.thisMonth`). It links to `monthPath(currentYear, currentMonth)`, with `currentYear` and `currentMonth` from `useYear()` and `monthPath` from `useMonth()`. The address has a two-digit month, for example `/months/2026/11`. The desktop menu and the vertical mobile menu share the entry, like the other two.
+
+Decision for #56: the entry is the current item (`aria-current="page"`) only on the page of today's month. It is not marked on other month pages, and not on the same month of another year. On those pages no navigation item is current.
+
+Known limits:
+
+- "Today" is read once per app load (see `useYear()` under [Composables](#composables)). A tab that stays open past midnight into a new month keeps the old month in the link until the page is reloaded. This follows from the existing `useYear` decision.
+- The shorter phone label "Month" named in the issue belongs to the bottom tab bar (#54), which does not exist yet.
+
+Tests: `tests/nuxt/DefaultLayout.test.ts` checks the order (Dashboard, Costs, This month), the path with a two-digit month computed from `useYear()`, the current state on today's month page but not on another month page or the same month of another year, Dashboard and Costs on their own pages, and the German names. In `tests/nuxt/error-page.test.ts` the link finder now ignores links inside the header, because the header has a second link to a month page.
+
+Checked by hand against the dev server: the link is `/months/2026/11` on `/` and on month pages, and `aria-current` is only set on `/months/2026/11`. Not checked: the mobile menu on a phone, 320 px, and the sidebar (#53, does not exist yet) *(to verify)*.
 
 ### How to check it
 

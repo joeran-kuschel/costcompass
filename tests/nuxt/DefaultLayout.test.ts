@@ -35,3 +35,47 @@ describe('default layout header title', () => {
     expect(link.find('svg').attributes('aria-hidden')).toBe('true')
   })
 })
+
+describe('default layout navigation', () => {
+  // The links of the header navigation (the desktop one; the mobile menu is not open).
+  const navLinks = (wrapper: Awaited<ReturnType<typeof mountSuspended>>) => wrapper.findAll('header nav a')
+  const thisMonthPath = () => {
+    const { currentYear, currentMonth } = useYear()
+    return `/months/${currentYear.value}/${String(currentMonth.value).padStart(2, '0')}`
+  }
+  it('has Dashboard, Costs and This month, in that order', async () => {
+    const wrapper = await mountSuspended(DefaultLayout)
+    expect(navLinks(wrapper).map(link => link.text())).toEqual(['Dashboard', 'Costs', 'This month'])
+  })
+  it('links "This month" to the month page of today, with a two-digit month', async () => {
+    const wrapper = await mountSuspended(DefaultLayout)
+    const link = navLinks(wrapper).find(item => item.text() === 'This month')!
+    expect(link.attributes('href')).toBe(thisMonthPath())
+    expect(link.attributes('href')).toMatch(/^\/months\/\d{4}\/\d{2}$/)
+  })
+  // Decision for #56: "This month" is the current item only on the page of today's month, not on every month page.
+  const currentLinks = async (route: string) => {
+    const wrapper = await mountSuspended(DefaultLayout, { route })
+    return navLinks(wrapper).filter(link => link.attributes('aria-current') === 'page').map(link => link.text())
+  }
+  it('marks "This month" as the current item on the month page of today', async () => {
+    expect(await currentLinks(thisMonthPath())).toEqual(['This month'])
+  })
+  it('does not mark "This month" on another month page, and then no item is current', async () => {
+    expect(await currentLinks('/months/2020/01')).toEqual([])
+  })
+  it('does not mark "This month" on the same month of another year', async () => {
+    const { currentMonth } = useYear()
+    expect(await currentLinks(`/months/2020/${String(currentMonth.value).padStart(2, '0')}`)).toEqual([])
+  })
+  it('marks Dashboard and Costs on their own pages and not "This month"', async () => {
+    expect(await currentLinks('/')).toEqual(['Dashboard'])
+    expect(await currentLinks('/costs')).toEqual(['Costs'])
+  })
+  it('has German names', async () => {
+    await useNuxtApp().$i18n.setLocale('de')
+    const wrapper = await mountSuspended(DefaultLayout)
+    expect(navLinks(wrapper).map(link => link.text())).toEqual(['Dashboard', 'Kosten', 'Dieser Monat'])
+    await useNuxtApp().$i18n.setLocale('en')
+  })
+})

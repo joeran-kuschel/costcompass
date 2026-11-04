@@ -2,9 +2,12 @@
     const { t } = useI18n()
     const { open, cost, month, close } = useCostDialog()
     const { retry } = useCostLists()
+    const { currentYear, currentMonth} = useYear()
+    const { monthPath } = useMonth()
     const navItems = computed(() => [
         {'label': t('nav.dashboard'), to: '/'},
-        {'label': t('nav.costs'), to: '/costs'}
+        {'label': t('nav.costs'), to: '/costs'},
+        {'label': t('nav.thisMonth'), to: monthPath(currentYear.value, currentMonth.value)}
     ])
 
     async function onSaved() {

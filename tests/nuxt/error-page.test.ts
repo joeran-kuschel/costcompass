@@ -13,7 +13,8 @@ async function mountError(error: Record<string, unknown>) {
 const notFound = { status: 404, statusText: 'Not Found', message: 'Page not found: /foo' }
 const failure = { status: 500, statusText: 'Server Error', message: 'ECONNREFUSED 10.0.0.5:5432 secret detail' }
 const invalidMonth = { status: 404, statusText: 'Not Found', message: 'Page not found: /months/2026/13', data: { reason: 'month' } }
-const goToLink = () => wrapper.findAll('a').find(link => link.attributes('href')?.startsWith('/months/'))
+// The header's "This month" entry also leads to a month page; the link of the error itself is the one outside the header.
+const goToLink = () => wrapper.findAll('a').find(link => link.attributes('href')?.startsWith('/months/') && !link.element.closest('header'))
 const backButton = () => wrapper.findAll('button').find(button => ['Back to dashboard', 'Zurück zum Dashboard'].includes(button.text()))
 
 afterEach(async () => {
