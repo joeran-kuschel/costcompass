@@ -6,7 +6,7 @@ Reference and conventions for `app/` (pages, components, composables, texts). Wr
 
 | Route | File | State | What it does |
 | --- | --- | --- | --- |
-| `/` | `app/pages/index.vue` | Exists | Dashboard: "This month" hero card with the recurring and purchases subtotals, "Largest this month" card, year select, summary tiles, household versus business bar, costs by category, costs per month |
+| `/` | `app/pages/index.vue` | Exists | Dashboard: "This month" hero card with the recurring and purchases subtotals, "Largest this month" card, summary card with the year select in its header, household versus business bar, costs by category, costs per month |
 | `/costs` | `app/pages/costs.vue` | Exists | One sortable table of both kinds, add, edit and delete |
 | `/months/[year]/[month]` | `app/pages/months/[year]/[month].vue` | Exists | Costs of one month, total, previous and next links, add cost in the empty month (pre-filled for the month) |
 | `/calculator` | - | Planned | Rate calculator |
@@ -51,16 +51,37 @@ Tests: `tests/nuxt/dashboard-page.test.ts`: the heading with the middle dot, the
 
 ### "Largest this month" card
 
-Issue #63. Written for developers. The card replaces the "Add a cost" tile and sits next to the "This month" card (the weight-2 flex row in `main.css` now selects `largest-title`). It is a `section` with `aria-labelledby="largest-title"`; its `ul` is named by the same heading ("Largest this month", `dashboard.largest.title`), with a hint (`dashboard.largest.text`).
+Issue #63. Written for developers. The card replaces the "Add a cost" tile and sits next to the "This month" card (the weight-2 flex row in `main.css` now selects `largest-title`). It is a `section` with `aria-labelledby="largest-title"`; its `ul` is named by the same heading ("Largest this month", `dashboard.largest.title`). The hint line (`dashboard.largest.text`) was removed with the restyle.
 
 - The rows come from `largestCosts(costsInMonth(...))` for today's month and year, so, like the "This month" card, they ignore the year selector. They are mapped with `toRow` from `useMonth()`.
-- Each row has a `CategoryBadge` (40 px), the name, the `BusinessBadge` for business costs, a sub line ("Housing · Monthly", "Appliances · 8 Nov") and the amount with cents.
+- Each row is its own soft tile (`bg-muted`, 18 px radius, `gap-1.5` between rows, no divider lines) with a `CategoryBadge` (40 px), the bold name with the `BusinessBadge` next to it in a wrapping row, a sub line in 13 px ("Housing · Monthly", "Appliances · 8 Nov") and the amount with cents. The exact tint of the mock was approximated with `bg-muted`.
 - A month without costs shows "No costs this month yet." (`dashboard.thisMonth.empty`) and no button.
 - The full list of the month is no longer on the dashboard (this also removed the list from the "This month" card; its "Add cost" button came back in an empty month with #60). The "View <month year>" link of that card leads to it on the month page.
 - The dashboard has no add entry point of its own. The sidebar button and the phone's round button remain.
 - On narrow screens the card wraps below the "This month" card. This was not decided from a mock (the phone mock has no such card).
 
 Tests: `tests/nuxt/dashboard-page.test.ts`, `describe('dashboard page largest this month')`; `describe('largestCosts')` in `tests/nuxt/costs.test.ts`. Not checked in the browser (light and dark mode, German, 320 px); text contrast not measured.
+
+### Summary card
+
+Issue #64. The section `aria-labelledby="summary-title"` has a header row (`flex flex-wrap items-center justify-between`) with the `h2` "Your year <year>" (`dashboard.summary.title`, 26 px, weight 800) and, to its right, the `YearSelect`. Before, the select sat above the sections and the heading was "Summary for <year>". Both are inside the loaded content, so neither shows while loading, on an error or on the empty screen.
+
+Below the header is one `UCard` (`card card-flush overflow-hidden`) with a `dl` of four tiles, in the order Annual total, Average, Household, Business:
+
+| Tile | Label key | Value | Sub line | Dot |
+| --- | --- | --- | --- | --- |
+| Annual total | `dashboard.summary.total` | `summary.total` | "per year" (`perYear`) | `bg-inverted` |
+| Average | `dashboard.summary.average` | `summary.averagePerMonth` | "per month" (`perMonth`) | `bg-accented` |
+| Household | `dashboard.summary.household` | `summary.household` | "<n>% of the year" (`ofYear`) | `bg-primary` (cobalt) |
+| Business | `business.label` | `summary.business` | "<n>% of the year" (`ofYear`) | `bg-secondary` (orange) |
+
+- Each tile has the label as `dt` with an `aria-hidden` colour dot, the value as `dd` (30 px, bold, whole euros) and the sub line as a second `dd`. The percentages come from `splitPercentages`, so they add up to 100.
+- Layout: a 2x2 grid on phones, four in a row from `lg`. The dividers are 1 px gaps (`gap-px`) that show the grid's background (`bg-default`); the tiles have an opaque `bg-elevated` fill, so no border elements are needed.
+- `card-flush` (in `main.css`) removes the body padding of the card (`.card.card-flush > [data-slot="body"]`), so the dividers run to the card's edge; the tiles bring their own padding (`p-5 sm:p-6`). `overflow-hidden` clips the tiles to the card's rounded corners.
+- `YearSelect.vue` now shows its visible label "Year" to the left of the select (`UFormField` with `orientation="horizontal"`), and the select is a pill (`rounded-full`, 44 px high). The two first-row rules in `main.css` for the floated picker were removed; the `h1` rule only sets `margin-bottom: 0`.
+- Locale keys: `dashboard.summary.average`, `perYear`, `perMonth`, `ofYear`, `business` are new; `averagePerMonth` was removed.
+
+Tests: `tests/nuxt/dashboard-page.test.ts`: one card, order, whole-euro values, sub lines, shares add up to 100, dots hidden, the year select next to the heading with its label, German. The year-select tests use the heading "Your year". Checked by the author in the browser: light and dark mode, German, 320 px. Not checked: a real phone, a screen reader; the contrast of the muted labels and sub lines is not measured; the horizontal label layout was adjusted by sight.
 
 ### Dashboard links to month pages
 
@@ -90,7 +111,7 @@ Issue #30. The selected year lives in `useYear()` (`year`, a `useState('year')`)
 const shownYear = computed(() => years.value.includes(year.value) ? year.value : currentYear.value)
 ```
 
-`shownYear` feeds the `YearSelect` (`:model-value`), the four section headings, `annualSummary`, `categoryBreakDown`, `monthBreakdown`, the month bar links and the current-month marker. The "This month" card still uses `currentYear`. Choosing a year in the select (`update:model-value`) writes the stored `year`.
+`shownYear` feeds the `YearSelect` (`:model-value`), the section headings, `annualSummary`, `categoryBreakDown`, `monthBreakdown`, the month bar links and the current-month marker. The "This month" card still uses `currentYear`. Choosing a year in the select (`update:model-value`) writes the stored `year`.
 
 Why a computed value and not a reset of the stored year:
 
@@ -333,7 +354,7 @@ Checked by hand in the browser: the dashboard and month page buttons open the di
 | Component | Purpose |
 | --- | --- |
 | `CostForm.vue` | Add and edit form for both kinds. It sits in the layout's one dialog, see [Add and edit dialog](#add-and-edit-dialog). Props: optional `cost` (`Stored<Cost>`; set means edit, the kind is locked and submit sends `PATCH`) and optional `month` (`{ year, month }`; starts a purchase on the first day of that month and limits the date field to it). Emits `saved` and `cancel`. Failed saves show a toast. |
-| `YearSelect.vue` | `v-model` year select with a visible label; takes a `years` list |
+| `YearSelect.vue` | `v-model` year select with a visible label to its left (horizontal field, pill-shaped select); takes a `years` list |
 | `BusinessBadge.vue` | The "Business" badge with a briefcase icon, no props. See [Business badge](colour-scheme.md#business-badge) |
 | `CategoryBadge.vue` | Round disc with a white category icon; props `category` and `size` (28, 32, 36, 40, 44, 56). Decoration only (`aria-hidden`), the name is text in the parent. See [Category badge](colour-scheme.md#category-badge) |
 | `LogoMark.vue` | The Costcompass mark (disc, ring, compass needle) as an inline SVG, no props. Decoration only (`aria-hidden`), sized by the parent. Used in the sidebar title. See [Logo mark](colour-scheme.md#logo-mark) |

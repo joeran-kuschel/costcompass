@@ -160,48 +160,92 @@ describe('dashboard page summary tiles', () => {
       { id: 4, kind: 'purchase', name: 'Old laptop', amount: 500, category: 'appliances', business: true, date: `${year - 1}-03-15` },
     ]
   }
-  const cards = () => wrapper.findAll('section[aria-labelledby="summary-title"] [data-slot="root"]').map(card => card.text().replace(/\u00A0/g, ' '))
-  const tile = (label: string) => cards().find(text => text.startsWith(label))
+  const summarySection = () => wrapper.find('section[aria-labelledby="summary-title"]')
+  // label, value and sub line of each tile (spaces normalised: German puts a no-break space before the euro sign and the percent sign)
+  const tiles = () => cards().map(item => ({
+    label: item.find('dt').text().replace(/\s/g, ' '),
+    value: item.findAll('dd')[0]?.text().replace(/\s/g, ' '),
+    sub: item.findAll('dd')[1]?.text().replace(/\s/g, ' '),
+  }))
+  const cards = () => wrapper.findAll('section[aria-labelledby="summary-title"] dl > div')
 
-  it('shows a summary heading for the current year', async () => {
+  it('shows a heading "Your year" for the current year', async () => {
     costs()
     await mountPage()
-    await vi.waitFor(() => expect(wrapper.find('section[aria-labelledby="summary-title"] h2').exists()).toBe(true))
-    expect(wrapper.find('section[aria-labelledby="summary-title"] h2').text()).toBe(`Summary for ${year}`)
+    await vi.waitFor(() => expect(summarySection().find('h2').exists()).toBe(true))
+    expect(summarySection().find('h2').text()).toBe(`Your year ${year}`)
   })
   it('labels the summary section with its heading', async () => {
     costs()
     await mountPage()
-    await vi.waitFor(() => expect(wrapper.find('section[aria-labelledby="summary-title"] h2').exists()).toBe(true))
-    const section = wrapper.find('section[aria-labelledby="summary-title"]')
-    expect(section.attributes('aria-labelledby')).toBe(wrapper.find('section[aria-labelledby="summary-title"] h2').attributes('id'))
+    await vi.waitFor(() => expect(summarySection().find('h2').exists()).toBe(true))
+    expect(summarySection().attributes('aria-labelledby')).toBe(summarySection().find('h2').attributes('id'))
   })
-  it('shows the four tiles with the right values in whole euros', async () => {
+  it('puts the four figures in one card, in the order total, average, household, business', async () => {
     costs()
     await mountPage()
     await vi.waitFor(() => expect(cards()).toHaveLength(4))
-    expect(tile('Annual total')).toContain('€11,100')
-    expect(tile('Household')).toContain('€9,900')
-    expect(tile('Business')).toContain('€1,200')
-    expect(tile('Average per month')).toContain('€925')
+    expect(summarySection().findAll('.card')).toHaveLength(1)
+    expect(tiles().map(item => item.label)).toEqual(['Annual total', 'Average', 'Household', 'Business'])
+  })
+  it('shows the values in whole euros', async () => {
+    costs()
+    await mountPage()
+    await vi.waitFor(() => expect(cards()).toHaveLength(4))
+    expect(tiles().map(item => item.value)).toEqual(['€11,100', '€925', '€9,900', '€1,200'])
+  })
+  it('shows a sub line under each figure, with the shares of household and business', async () => {
+    costs()
+    await mountPage()
+    await vi.waitFor(() => expect(cards()).toHaveLength(4))
+    // 1,200 of 11,100 is 10.8%, so business 11% and household 89%.
+    expect(tiles().map(item => item.sub)).toEqual(['per year', 'per month', '89% of the year', '11% of the year'])
+  })
+  it('makes the two shares add up to 100', async () => {
+    costs()
+    await mountPage()
+    await vi.waitFor(() => expect(cards()).toHaveLength(4))
+    const [household, business] = tiles().slice(2).map(item => Number(item.sub?.match(/\d+/)?.[0]))
+    expect(household! + business!).toBe(100)
+  })
+  it('hides the coloured dots from assistive technology', async () => {
+    costs()
+    await mountPage()
+    await vi.waitFor(() => expect(cards()).toHaveLength(4))
+    const dots = summarySection().findAll('dt span')
+    expect(dots).toHaveLength(4)
+    for (const dot of dots) {
+      expect(dot.attributes('aria-hidden')).toBe('true')
+      expect(dot.text()).toBe('')
+    }
   })
   it('counts only the purchases of the current year', async () => {
     costs()
     await mountPage()
     await vi.waitFor(() => expect(cards()).toHaveLength(4))
     // The 500 from last year would make the total 11,600.
-    expect(tile('Annual total')).not.toContain('11,600')
+    expect(tiles()[0]!.value).not.toContain('11,600')
   })
-  it('is German with German number formatting when the language is German', async () => {
+  it('has the year select next to the heading, with its visible label', async () => {
+    costs()
+    await mountPage()
+    await vi.waitFor(() => expect(cards()).toHaveLength(4))
+    const row = summarySection().find('h2').element.parentElement!
+    expect(row.querySelector('label')?.textContent).toBe('Year')
+    expect(row.querySelector('button, select, [role="combobox"]')).not.toBeNull()
+  })
+  it('is German with German texts and number formatting when the language is German', async () => {
     await setLanguage('de')
     costs()
     await mountPage()
     await vi.waitFor(() => expect(cards()).toHaveLength(4))
-    expect(wrapper.find('section[aria-labelledby="summary-title"] h2').text()).toBe(`Übersicht ${year}`)
-    expect(tile('Jahressumme')).toContain('11.100 €')
-    expect(tile('Haushalt')).toContain('9.900 €')
-    expect(tile('Geschäftlich')).toContain('1.200 €')
-    expect(tile('Durchschnitt pro Monat')).toContain('925 €')
+    expect(summarySection().find('h2').text()).toBe(`Dein Jahr ${year}`)
+    expect(tiles()).toEqual([
+      { label: 'Jahressumme', value: '11.100 €', sub: 'pro Jahr' },
+      { label: 'Durchschnitt', value: '925 €', sub: 'pro Monat' },
+      { label: 'Haushalt', value: '9.900 €', sub: '89 % vom Jahr' },
+      { label: 'Geschäftlich', value: '1.200 €', sub: '11 % vom Jahr' },
+    ])
   })
   it('shows no tiles while the lists are loading', async () => {
     costs()
@@ -1075,7 +1119,7 @@ describe('dashboard page year selector', () => {
     await vi.waitFor(() => expect(combobox().exists()).toBe(true))
     expect(wrapper.find('label').text()).toBe('Year')
     expect(combobox().text()).toBe(String(year))
-    expect(summary().find('h2').text()).toBe(`Summary for ${year}`)
+    expect(summary().find('h2').text()).toBe(`Your year ${year}`)
   })
   it('offers the current year and the years of the purchases, newest first', async () => {
     costs()
@@ -1099,7 +1143,7 @@ describe('dashboard page year selector', () => {
     await vi.waitFor(() => expect(combobox().exists()).toBe(true))
     expect(summary().text()).toContain('€9,900')
     await pickYear(year - 1)
-    expect(summary().find('h2').text()).toBe(`Summary for ${year - 1}`)
+    expect(summary().find('h2').text()).toBe(`Your year ${year - 1}`)
     expect(summary().text()).toContain('€10,100')
     expect(wrapper.find('section[aria-labelledby="categories-title"] h2').text()).toBe(`Costs by category in ${year - 1}`)
     expect(wrapper.find('section[aria-labelledby="split-title"] h2').text()).toBe(`Household versus business in ${year - 1}`)
@@ -1134,7 +1178,7 @@ describe('dashboard page year selector', () => {
     await mountPage()
     await vi.waitFor(() => expect(summary().exists()).toBe(true))
     expect(combobox().text()).toBe(String(year - 1))
-    expect(summary().find('h2').text()).toBe(`Summary for ${year - 1}`)
+    expect(summary().find('h2').text()).toBe(`Your year ${year - 1}`)
   })
   it('is German with a German label when the language is German', async () => {
     await setLanguage('de')
@@ -1168,7 +1212,7 @@ describe('dashboard page year selector', () => {
     await mountPage()
     await vi.waitFor(() => expect(combobox().exists()).toBe(true))
     expect(combobox().text()).toBe(String(year))
-    expect(summary().find('h2').text()).toBe(`Summary for ${year}`)
+    expect(summary().find('h2').text()).toBe(`Your year ${year}`)
     expect(summary().text()).toContain('€9,900')
   })
   it('keeps a stored year that is in the list', async () => {
@@ -1187,6 +1231,6 @@ describe('dashboard page year selector', () => {
       api.purchases.rows = [lamp(2, 300, `${year}-03-15`)]
       await refreshNuxtData()
       await vi.waitFor(() => expect(combobox().text()).toBe(String(year)))
-      expect(summary().find('h2').text()).toBe(`Summary for ${year}`)
+      expect(summary().find('h2').text()).toBe(`Your year ${year}`)
   })
 })

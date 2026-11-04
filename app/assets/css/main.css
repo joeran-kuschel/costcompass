@@ -155,6 +155,10 @@ main section > h2 {
     padding: 1.75rem;
   }
 }
+/* A card whose content brings its own padding (the summary tiles), so their dividers run edge to edge. */
+.card.card-flush > [data-slot="body"] {
+  padding: 0;
+}
 
 /*
  * Dashboard as flex rows, like the desktop mock: "This month" next to the add tile and the
@@ -172,14 +176,8 @@ main > div:has(#this-month-title) > * {
   min-width: 0;
   margin-top: 0;
 }
-/* The heading and the year picker share the first row, the picker floated to the right. */
 main > div:has(#this-month-title) > h1 {
-  /* Everything but the room for the picker, so the picker fits beside it and the cards wrap below. */
-  flex: 1 1 calc(100% - 8rem);
   margin-bottom: 0;
-}
-main > div:has(#this-month-title) > div {
-  flex: 0 0 auto;
 }
 main > div:has(#this-month-title) > section[aria-labelledby="this-month-title"],
 main > div:has(#this-month-title) > section[aria-labelledby="categories-title"] {
