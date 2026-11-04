@@ -208,16 +208,19 @@ useHead({ title: () => t('nav.dashboard') })
             </UCard>
         </section>
         <section aria-labelledby="months-title" class="mt-6">
-            <h2 id="months-title">{{ t('dashboard.months.title', { year: shownYear }) }}</h2>
             <UCard variant="subtle" class="card">
-                <div class="relative overflow-x-auto p-1 pb-4">
-                    <ol class="grid grid-cols-[repeat(12,minmax(1.5rem,1fr))] gap-1">
+                <div class="flex flex-wrap items-baseline justify-between gap-2">
+                    <h2 id="months-title" class="mb-0">{{ t('dashboard.months.title') }}</h2>
+                    <p class="text-[0.8125rem] text-muted">{{ t('dashboard.months.hint') }}</p>
+                </div>
+                <div class="relative mt-4 overflow-x-auto p-1 pb-4">
+                    <ol class="grid grid-cols-[repeat(12,minmax(2.75rem,1fr))] gap-2">
                         <li v-for="row in monthRows" :key="row.month" class="min-w-0">
                             <NuxtLink :to="row.to"  class="flex flex-col items-center gap-1 rounded focus-visible:outline-2 focus-visible:outline-primary">
                                 <span class="sr-only">{{ row.text }}</span>
-                                <span class="text-xs tabular-nums" :class="row.current ? 'font-bold' : 'text-muted'" aria-hidden="true">{{ row.value }}</span>
-                                <span class="flex h-32 w-full items-end" aria-hidden="true" :title="row.text">
-                                    <span class="block min-h-0.5 w-full rounded-t bg-primary" :style="{ height: row.height }" />
+                                <span class="text-xs tabular-nums" :class="row.current ? 'font-bold text-primary' : 'text-muted'" aria-hidden="true">{{ row.value }}</span>
+                                <span class="flex h-32 w-full items-end justify-center" aria-hidden="true" :title="row.text">
+                                    <span class="block min-h-0.5 w-8 rounded-full" :class="row.current ? 'bg-primary' : 'bg-[var(--chart-soft)]'" :style="{ height: row.height }" />
                                 </span>
                                 <span class="text-xs" :class="{ 'font-bold': row.current }" aria-hidden="true">{{ row.short }}</span>
                             </NuxtLink>

@@ -579,11 +579,11 @@ describe('dashboard page costs per month', () => {
   const spoken = () => items().map(item => clean(item.find('.sr-only').text()))
   const heights = () => items().map(item => /height:\s*([0-9.]+%)/.exec(item.find('[style]').attributes('style') ?? '')?.[1])
 
-  it('has a heading for the current year that labels the section', async () => {
+  it('has the heading "Month by month" that labels the section', async () => {
     costs()
     await mountPage()
     await vi.waitFor(() => expect(section().exists()).toBe(true))
-    expect(section().find('h2').text()).toBe(`Costs per month in ${year}`)
+    expect(section().find('h2').text()).toBe('Month by month')
   })
   it('lists twelve months in calendar order', async () => {
     costs()
@@ -665,6 +665,42 @@ describe('dashboard page costs per month', () => {
     expect(values()[0]).toBe('800')
     expect(values()[2]).toBe('2,3k')
   })
+  it('shows the hint under the heading, translated', async () => {
+    costs()
+    await mountPage()
+    await vi.waitFor(() => expect(items()).toHaveLength(12))
+    expect(section().text()).toContain('Select a month to open it')
+  })
+  // the bar of each month: a 32 px pill
+  const bars = () => items().map(item => item.find('[style*="height"]'))
+
+  it('draws the bars as 32 px pills', async () => {
+    costs()
+    await mountPage()
+    await vi.waitFor(() => expect(items()).toHaveLength(12))
+    for (const bar of bars()) {
+      expect(bar.classes()).toContain('w-8')
+      expect(bar.classes()).toContain('rounded-full')
+    }
+  })
+  it('colours the current month cobalt and the other months with the soft chart colour', async () => {
+    costs()
+    await mountPage()
+    await vi.waitFor(() => expect(items()).toHaveLength(12))
+    const current = new Date().getUTCMonth()
+    bars().forEach((bar, index) => {
+      expect(bar.classes().includes('bg-primary'), `month ${index + 1}`).toBe(index === current)
+      expect(bar.classes().includes('bg-[var(--chart-soft)]'), `month ${index + 1}`).toBe(index !== current)
+    })
+  })
+  it('does not highlight the current month by colour alone: its label and value are bold', async () => {
+    costs()
+    await mountPage()
+    await vi.waitFor(() => expect(items()).toHaveLength(12))
+    const current = items()[new Date().getUTCMonth()]!
+    expect(current.find('span.tabular-nums').classes()).toContain('font-bold')
+    expect(current.findAll('span.text-xs').at(-1)!.classes()).toContain('font-bold')
+  })
   it('puts the short value of the current month in bold and the others in the muted colour', async () => {
     costs()
     await mountPage()
@@ -697,7 +733,8 @@ describe('dashboard page costs per month', () => {
     costs()
     await mountPage()
     await vi.waitFor(() => expect(items()).toHaveLength(12))
-    expect(section().find('h2').text()).toBe(`Kosten pro Monat ${year}`)
+    expect(section().find('h2').text()).toBe('Monat für Monat')
+    expect(section().text()).toContain('Monat auswählen, um ihn zu öffnen')
     expect(spoken()[0]).toBe('Januar: 800 €')
     expect(spoken()[2]).toBe('März: 2.300 €')
   })
@@ -1153,10 +1190,10 @@ describe('dashboard page month bar links', () => {
     for (const link of links()) expect(link.classes()).toEqual(expect.arrayContaining(['focus-visible:outline-2', 'focus-visible:outline-primary']))
   })
   // jsdom has no layout, so the 24 px target can only be checked through the classes that create it.
-  it('gives every column at least 24 px and lets the chart scroll sideways when they do not fit', async () => {
+  it('gives every column at least 44 px and lets the chart scroll sideways when they do not fit', async () => {
     await mountWithCosts()
     const list = section().find('ol')
-    expect(list.classes()).toContain('grid-cols-[repeat(12,minmax(1.5rem,1fr))]')
+    expect(list.classes()).toContain('grid-cols-[repeat(12,minmax(2.75rem,1fr))]')
     expect(list.element.parentElement!.classList.contains('overflow-x-auto')).toBe(true)
   })
   it('lets the link fill its column, so the bars keep their width', async () => {
@@ -1297,7 +1334,8 @@ describe('dashboard page year selector', () => {
     expect(wrapper.find('section[aria-labelledby="categories-title"]').text()).not.toContain('€300')
     // the split follows the year: 300 + 800 x 12 = 9,900 this year, 10,100 last year, business 0 in both
     expect(wrapper.find('section[aria-labelledby="split-title"] [role="img"]').attributes('aria-label')).toBe('Household 100 percent, business 0 percent')
-    expect(months().find('h2').text()).toBe(`Costs per month in ${year - 1}`)
+    // the bars link to the chosen year
+    expect(months().find('a').attributes('href')).toBe(`/months/${year - 1}/01`)
   })
   it('keeps the this-month card on today when another year is chosen', async () => {
     costs()

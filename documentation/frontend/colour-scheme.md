@@ -31,6 +31,7 @@ Everything is in one file, `app/assets/css/main.css`, after the two imports (`ta
 | `--ui-secondary` | `#B54708` | `#FDBA74` | Business badge, household-versus-business bar |
 | `--ui-error` | `#B42318` | `#F97066` | Delete button, error messages |
 | `--ui-warning` | `#DC6803` | `#F59E0B` | Warnings |
+| `--chart-soft` | `#B9C5F6` | `#5B6AC0` | Bars of the months chart other than the current month (see [Months chart colours](#months-chart-colours)) |
 | `--ui-radius` | `0.75rem` | `0.75rem` | Base for all corner radii (set in `:root` only) |
 | `--ui-bg` | `#F7F7FB` | `#0B0C14` | Page background |
 | `--ui-bg-muted` | `#F2F3F8` | `#15172A` | Muted areas |
@@ -84,6 +85,19 @@ Issue #52. `app/components/BusinessBadge.vue` is the one place that renders the 
 The soft variant alone (text on `--ui-secondary` at 10 % opacity) depends on the surface behind it: 4.72:1 on a white card, but 4.40:1 on the page background and 4.27:1 on the muted month page rows, below the 4.5:1 that issue #52 requires. So the badge has an opaque fill, the class `business-badge` in `main.css`, which reads the token `--business-tint`: `#FEF0E3` in light mode (4.86:1 with `#B54708`) and `#3A2410` in dark mode (8.6:1 with `#FDBA74`). Both values are the ones of the mocks, and the contrast no longer depends on the surface.
 
 Checked in the browser at a 320 px wide viewport (an iframe of the dev server), in English and German, light and dark: the computed fill and text colours are the values above, there is no ring, and the badge (87 px wide in English, 109 px in German, 24 px high) stays inside the viewport. In German the page itself scrolls sideways by about 5 px at 320 px; the badge is not the cause, the source is not found yet.
+
+## Months chart colours
+
+Issue #69. The bar of the current month in the shown year is `bg-primary` (cobalt). The other eleven use the token `--chart-soft` (`#B9C5F6` light, `#5B6AC0` dark, "Chart soft" of the mocks), set in `main.css` next to `--business-tint`.
+
+Contrast against the card (`bg-elevated`), computed from the colours, not measured in the browser:
+
+| Mode | `--chart-soft` | Current month (primary) |
+| --- | --- | --- |
+| Light | 1.70:1 | cobalt `#2D4BD8` |
+| Dark | 3.59:1 | cobalt `#3B5BEB` |
+
+Decision: #69 asks for at least 3:1 between bar and background. The light value does not meet it. The author keeps the colour of the mock, because every amount is also text (the short value above the bar and the full text of the link; the bar is `aria-hidden`) and the highlight does not rely on colour: the current month's label and value are bold. A colour with 3:1 in light mode would be about `#7488E4` (3.29:1), but only 2.05:1 against the cobalt of the current month, which would weaken the highlight. The same kind of decision was taken for dark-mode mobility, see [Contrast (decision)](#contrast-decision).
 
 ## Household and business ring
 

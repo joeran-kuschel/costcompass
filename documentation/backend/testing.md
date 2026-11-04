@@ -9,7 +9,7 @@ pnpm test          # watch mode
 pnpm vitest run    # single run
 ```
 
-The setup is Vitest with `@nuxt/test-utils`, environment `nuxt` (`vitest.config.ts`), `happy-dom`, and `@vue/test-utils`. Tests are in `tests/nuxt/` and end in `.test.ts`. At the time of writing: 17 files, 463 tests, all passing, about 10 seconds. No database is needed.
+The setup is Vitest with `@nuxt/test-utils`, environment `nuxt` (`vitest.config.ts`), `happy-dom`, and `@vue/test-utils`. Tests are in `tests/nuxt/` and end in `.test.ts`. At the time of writing: 25 files, 616 tests, all passing, about 10 seconds. No database is needed.
 
 ## Conventions
 
