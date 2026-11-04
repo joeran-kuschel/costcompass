@@ -613,8 +613,68 @@ describe('dashboard page costs per month', () => {
     await mountPage()
     await vi.waitFor(() => expect(items()).toHaveLength(12))
     const hidden = items()[0]!.findAll('[aria-hidden="true"]')
-    expect(hidden).toHaveLength(2)
-    expect(hidden[1]!.text()).toBe('Jan')
+    // the short value, the bar and the month label
+    expect(hidden).toHaveLength(3)
+    expect(hidden[0]!.text()).toBe('800')
+    expect(hidden[2]!.text()).toBe('Jan')
+  })
+  // the short value above each bar
+  const values = () => items().map(item => item.find('span.tabular-nums').text())
+
+  it('shows a short value above every bar, whole euros below 1,000 and thousands with a k', async () => {
+    costs()
+    await mountPage()
+    await vi.waitFor(() => expect(items()).toHaveLength(12))
+    // January 800, March 2,300
+    expect(values()[0]).toBe('800')
+    expect(values()[2]).toBe('2.3k')
+  })
+  it('keeps the full amount in the hidden text of the link, so the short value adds nothing for assistive technology', async () => {
+    costs()
+    await mountPage()
+    await vi.waitFor(() => expect(items()).toHaveLength(12))
+    expect(spoken()[2]).toBe('March: €2,300')
+    expect(items()[2]!.find('.sr-only').text()).not.toContain('2.3k')
+    expect(items()[2]!.find('span.tabular-nums').attributes('aria-hidden')).toBe('true')
+  })
+  it('shows whole thousands without a decimal and rounds to one decimal', async () => {
+    api.purchases.rows = [
+      { id: 2, kind: 'purchase', name: 'Desk', amount: 2000, category: 'appliances', business: false, date: `${year}-03-15` },
+      { id: 3, kind: 'purchase', name: 'Chair', amount: 12640, category: 'appliances', business: false, date: `${year}-04-15` },
+      { id: 4, kind: 'purchase', name: 'Lamp', amount: 999.6, category: 'appliances', business: false, date: `${year}-05-15` },
+    ]
+    await mountPage()
+    await vi.waitFor(() => expect(items()).toHaveLength(12))
+    expect(values()[2]).toBe('2k')
+    expect(values()[3]).toBe('12.6k')
+    // 999.6 rounds up to 1,000: it must read 1k, not 1,000
+    expect(values()[4]).toBe('1k')
+  })
+  it('shows 0 for a month without costs and keeps its baseline', async () => {
+    api.purchases.rows = [{ id: 2, kind: 'purchase', name: 'Desk', amount: 2000, category: 'appliances', business: false, date: `${year}-03-15` }]
+    await mountPage()
+    await vi.waitFor(() => expect(items()).toHaveLength(12))
+    expect(values()[0]).toBe('0')
+    expect(items()[0]!.find('.min-h-0\\.5').exists()).toBe(true)
+  })
+  it('writes the short values the German way, with a decimal comma', async () => {
+    await setLanguage('de')
+    costs()
+    await mountPage()
+    await vi.waitFor(() => expect(items()).toHaveLength(12))
+    expect(values()[0]).toBe('800')
+    expect(values()[2]).toBe('2,3k')
+  })
+  it('puts the short value of the current month in bold and the others in the muted colour', async () => {
+    costs()
+    await mountPage()
+    await vi.waitFor(() => expect(items()).toHaveLength(12))
+    const current = new Date().getUTCMonth()
+    items().forEach((item, index) => {
+      const value = item.find('span.tabular-nums')
+      expect(value.classes().includes('font-bold'), `month ${index + 1}`).toBe(index === current)
+      expect(value.classes().includes('text-muted'), `month ${index + 1}`).toBe(index !== current)
+    })
   })
   it('marks the current month in bold, not by colour alone', async () => {
     costs()

@@ -116,7 +116,8 @@
     },
     "months": {
         "title": "Kosten pro Monat {year}",
-        "alt": "{month}: {amount}"
+        "alt": "{month}: {amount}",
+        "thousand": "{value}k"
     },
     "thisMonth": {
       "title": "Dieser Monat · {month} {year}",
