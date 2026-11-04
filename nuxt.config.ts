@@ -4,6 +4,20 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
   css: ['~/assets/css/main.css'],
+  app: {
+    head: {
+      link: [
+        { rel: 'icon', href: '/favicon.ico', sizes: '48x48' },
+        { rel: 'icon', href: '/favicon.svg', type: 'image/svg+xml' },
+        { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
+        { rel: 'manifest', href: '/manifest.webmanifest' },
+      ],
+      meta: [
+        { name: 'theme-color', content: '#2D4BD8', media: '(prefers-color-scheme: light)' },
+        { name: 'theme-color', content: '#3B5BEB', media: '(prefers-color-scheme: dark)' },
+      ],
+    },
+  },
   i18n: {
     defaultLocale: 'en',
     locales: [

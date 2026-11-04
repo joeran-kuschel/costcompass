@@ -139,6 +139,39 @@ Checked in the browser (dev server): the link goes to `/`, its `aria-label` is "
 
 Not checked: crispness at 2x, 320 px screens, German, the mobile menu.
 
+## Favicon, app icons and web manifest
+
+Issue #58. The browser tab, the home screen and the browser bar use the Cobalt icon set. Everything is static: files in `public/`, links and colours in `nuxt.config.ts`.
+
+| File in `public/` | Use |
+| --- | --- |
+| `favicon.ico` | Fallback tab icon, 16 and 32 px images (replaces the default Nuxt icon) |
+| `favicon.svg` | Tab icon for browsers that support SVG. It has no compass ring, so it stays readable at 16 px, and a `prefers-color-scheme` rule inside the SVG gives it a dark-mode colour |
+| `apple-touch-icon.png` | Apple home screen icon, 180 px |
+| `icon-192.png`, `icon-512.png` | Manifest icons |
+| `icon-maskable-512.png` | Manifest icon for adaptive (masked) shapes |
+| `manifest.webmanifest` | The web manifest |
+
+The manifest has `name` and `short_name` "Costcompass", `start_url` `/`, `theme_color` `#2D4BD8`, `background_color` `#F7F7FB` and the three icons. A manifest holds only one colour, so both are the light values. It has no `display` field on purpose.
+
+`app.head` in `nuxt.config.ts` links `favicon.ico` (with `sizes` `48x48`), `favicon.svg`, `apple-touch-icon.png` and the manifest, and sets two `theme-color` metas: `#2D4BD8` for `(prefers-color-scheme: light)` and `#3B5BEB` for `(prefers-color-scheme: dark)`.
+
+Decisions:
+
+- The `theme-color` follows the system colour scheme through the media queries, not the app's own light and dark mode (the `.dark` class). Someone who toggles the app against the system setting gets the system colour in the browser bar.
+- The manifest is static, with no module and no service worker. A manifest alone does not make an installable app; that is a separate decision (see #58 and #97).
+- One name for both languages, because a static file cannot be translated.
+- The head tags are in `nuxt.config.ts` and not in `useAppHead()`, which is for things that change at runtime, such as the language and the title.
+- The six icon files were copied from `mockups/cobalt/brand` (git-ignored), so they now live only in `public/`. The embedded C2PA content-credentials data was removed: the metadata block of `favicon.svg` (8,192 to 419 bytes) and the 5,758-byte `caBX` chunk of the four PNGs. The other PNG chunks are unchanged byte for byte. `favicon.ico` had none. The images were not compared pixel by pixel with the originals, but the PNGs still decode at their sizes.
+
+To replace an icon, put the new file in `public/` under the same name. Keep the sizes, and check a new file for embedded metadata.
+
+Test: `tests/nuxt/manifest.test.ts` (the name equals `app.name` in English and German, the three icons are listed and exist, the colours, no `display` field, `start_url`, the files named in the head exist, and none of the six icon files contains C2PA markers).
+
+Checked against the dev server: the head contains the four links and both `theme-color` metas, and the six icon files and the manifest return 200 with the right content types (the manifest as `application/manifest+json`).
+
+Not checked: how the favicon looks in a browser tab (especially at 16 px), the Apple icon on a real device, install behaviour on Android, the maskable icon in a real adaptive shape.
+
 ## Check it in the browser
 
 1. Run `pnpm dev` and open the app.
@@ -156,7 +189,7 @@ Not done yet (later steps of #50). These need template changes, not only CSS:
 - A white dialog on the grey page.
 - The segmented type control and the business row of the form (the category badges are done, see [Category badge](#category-badge)).
 - The phone layouts of the mocks.
-- The favicon (`mockups/cobalt/brand`). The logo mark in the header is done, see [Logo mark](#logo-mark).
+- The logo and the favicon are done, see [Logo mark](#logo-mark) and [Favicon, app icons and web manifest](#favicon-app-icons-and-web-manifest).
 - The font Manrope. CSS can set it, but Nuxt UI's font module would download it from Google at build time. Whether to use it, and how, is undecided.
 
 Also open:
