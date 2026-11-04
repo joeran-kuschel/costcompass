@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
 import type { VueWrapper } from '@vue/test-utils'
 import DashboardPage from '~/pages/index.vue'
+import { monthlyTotals } from '~~/shared/utils/costs'
 
 // What each fake API endpoint does; reset before every test.
 const api = {
@@ -622,6 +623,83 @@ describe('dashboard page this month card', () => {
     await mountPage()
     await vi.waitFor(() => expect(wrapper.text()).toContain('No costs yet'))
     expect(section().exists()).toBe(false)
+  })
+})
+
+describe('dashboard page this month subtotals', () => {
+  const today = new Date()
+  const year = today.getUTCFullYear()
+  const month = today.getUTCMonth() + 1
+  const dateIn = (y: number, m: number) => `${y}-${String(m).padStart(2, '0')}-15`
+  const lamp = (id: number, amount: number, date: string) => ({ id, kind: 'purchase', name: 'Lamp', amount, category: 'appliances', business: false, date })
+  const insurance = { id: 3, kind: 'recurring', name: 'Insurance', amount: 19.99, category: 'insurance', business: false, interval: 'monthly' }
+  const section = () => wrapper.find('section[aria-labelledby="this-month-title"]')
+  // Each pair of the description list as label: amount. Spaces are normalised, because German puts a no-break space before the euro sign.
+  const subtotals = () => Object.fromEntries(section().findAll('dl > div').map(pair => [
+    pair.find('dt').text(),
+    pair.find('dd').text().replace(/\s/g, ' '),
+  ]))
+  const amountOf = (text: string) => Number(text.replace(/[^\d.]/g, ''))
+
+  it('shows the recurring and the purchases subtotal with their labels, in cents', async () => {
+    api.recurring.rows = [rent, insurance]
+    api.purchases.rows = [lamp(2, 300.5, dateIn(year, month))]
+    await mountPage()
+    await vi.waitFor(() => expect(section().exists()).toBe(true))
+    expect(subtotals()).toEqual({ Recurring: '€819.99', Purchases: '€300.50' })
+  })
+  it('counts only the purchases of the current month', async () => {
+    api.recurring.rows = [rent]
+    api.purchases.rows = [
+      lamp(2, 300, dateIn(year, month)),
+      lamp(3, 999, dateIn(year - 1, month)),
+    ]
+    await mountPage()
+    await vi.waitFor(() => expect(section().exists()).toBe(true))
+    expect(subtotals()).toEqual({ Recurring: '€800.00', Purchases: '€300.00' })
+  })
+  it('adds up to the total of the month from monthlyTotals', async () => {
+    api.recurring.rows = [rent, insurance]
+    api.purchases.rows = [lamp(2, 300.5, dateIn(year, month))]
+    await mountPage()
+    await vi.waitFor(() => expect(section().exists()).toBe(true))
+    const { Recurring, Purchases } = subtotals()
+    const expected = monthlyTotals(api.recurring.rows as never, api.purchases.rows as never, year)[month - 1]!
+    expect(amountOf(Recurring!) + amountOf(Purchases!)).toBeCloseTo(expected, 2)
+  })
+  it('shows a group without costs as zero, not as nothing', async () => {
+    api.recurring.rows = [rent]
+    await mountPage()
+    await vi.waitFor(() => expect(section().exists()).toBe(true))
+    expect(subtotals()).toEqual({ Recurring: '€800.00', Purchases: '€0.00' })
+  })
+  it('shows zero for both groups in a month without costs', async () => {
+    api.purchases.rows = [lamp(2, 300, dateIn(year - 1, month))]
+    await mountPage()
+    await vi.waitFor(() => expect(section().exists()).toBe(true))
+    expect(subtotals()).toEqual({ Recurring: '€0.00', Purchases: '€0.00' })
+  })
+  it('has the labels as real terms of a description list', async () => {
+    api.recurring.rows = [rent]
+    await mountPage()
+    await vi.waitFor(() => expect(section().exists()).toBe(true))
+    expect(section().findAll('dl dt').map(term => term.text())).toEqual(['Recurring', 'Purchases'])
+    expect(section().findAll('dl dd')).toHaveLength(2)
+  })
+  it('is German with German labels and amounts when the language is German', async () => {
+    await setLanguage('de')
+    api.recurring.rows = [rent, insurance]
+    api.purchases.rows = [lamp(2, 300.5, dateIn(year, month))]
+    await mountPage()
+    await vi.waitFor(() => expect(section().exists()).toBe(true))
+    expect(subtotals()).toEqual({ Wiederkehrend: '819,99 €', Anschaffungen: '300,50 €' })
+  })
+  it('shows no subtotals while the lists are loading', async () => {
+    api.recurring.rows = [rent]
+    api.purchases.delay = 300
+    await mountPage()
+    expect(wrapper.find('dl').exists()).toBe(false)
+    await vi.waitFor(() => expect(section().exists()).toBe(true), { timeout: 2000 })
   })
 })
 

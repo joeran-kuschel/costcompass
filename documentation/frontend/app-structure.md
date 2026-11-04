@@ -6,7 +6,7 @@ Reference and conventions for `app/` (pages, components, composables, texts). Wr
 
 | Route | File | State | What it does |
 | --- | --- | --- | --- |
-| `/` | `app/pages/index.vue` | Exists | Dashboard: "This month" card with cost list, add tile, year select, summary tiles, household versus business bar, costs by category, costs per month |
+| `/` | `app/pages/index.vue` | Exists | Dashboard: "This month" card with the recurring and purchases subtotals and the cost list, add tile, year select, summary tiles, household versus business bar, costs by category, costs per month |
 | `/costs` | `app/pages/costs.vue` | Exists | One sortable table of both kinds, add, edit and delete |
 | `/months/[year]/[month]` | `app/pages/months/[year]/[month].vue` | Exists | Costs of one month, total, previous and next links, add cost in the empty month (pre-filled for the month) |
 | `/calculator` | - | Planned | Rate calculator |
@@ -27,6 +27,14 @@ The dashboard and the month page get their data with `useCostLists()` and show t
 ### Month page address
 
 The address is checked before any data is requested. `monthParamsSchema` (`shared/utils/validation.ts`) accepts a four-digit year and a month `01` to `12`. Anything else shows the not-found error. Once the lists have loaded, a year that is not in `availableYears` also shows it. Build links with `monthPath(year, month)` from `useMonth()`, which pads the month.
+
+### Subtotals in the "This month" card
+
+Issue #61. Between the comparison line and the cost list, the card has a description list (`dl`) with two pairs: "Recurring" (`month.recurring`) and "Purchases" (`month.purchases`), the same keys as the month page. The amounts are `recurringTotal` and `purchasesTotal` from `groupMonthCosts(costsInMonth(...))` for today's month and year, so they ignore the year selector like the rest of the card. A group without costs shows `€0.00`, not nothing.
+
+The subtotals use cents (`useMoney({ cents: true })`), while the card's total and the list rows stay in whole euros. The rounded total can therefore differ from the sum of the two subtotals: 819.99 and 300.50 add up to 1,120.49, and the total shows €1,120. The labels use the `text-muted` colour; their contrast ratio of 4.5:1 is not measured yet.
+
+Tests: `tests/nuxt/dashboard-page.test.ts`, `describe('dashboard page this month subtotals')`: labels and cents, only purchases of the current month, the sum against `monthlyTotals`, zero groups, a month without costs, the `dl` terms and German.
 
 ### Dashboard links to month pages
 
