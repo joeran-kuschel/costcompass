@@ -1,11 +1,10 @@
 <script lang="ts" setup>
-import { annualSummary, categoryBreakDown, splitPercentages, monthBreakdown, monthChange, costsInMonth, groupMonthCosts} from '~~/shared/utils/costs'
+import { annualSummary, categoryBreakDown, splitPercentages, monthBreakdown, monthChange, costsInMonth, groupMonthCosts, largestCosts} from '~~/shared/utils/costs'
 
 const { t } = useI18n()
 const { year, currentYear, currentMonth } = useYear()
-const { monthName, monthYear, monthPath } = useMonth()
+const { monthName, monthYear, monthPath, toRow } = useMonth()
 const { recurring, purchases, failed, loading, retry } = useCostLists()
-const { openAdd } = useCostDialog()
 const years = computed(() => availableYears(purchases.value ?? [], currentYear.value))
 const shownYear = computed(() => years.value.includes(year.value) ? year.value : currentYear.value)
 const empty = computed(() => !failed.value && !loading.value && recurring.value?.length === 0 && purchases.value?.length === 0)
@@ -45,16 +44,9 @@ const thisMonth = computed(() => {
         total: euros(change.current),
         comparison: t(`dashboard.thisMonth.${direction}`, { percent: Math.abs(percent ?? 0), previous: monthName (currentMonth.value === 1 ? 12 : currentMonth.value - 1) }),
         icon: { less: 'i-lucide-trending-down', more: 'i-lucide-trending-up', same: 'i-lucide-minus', none: 'i-lucide-minus'}[direction],
-                listLabel: t('dashboard.thisMonth.list', { month: monthName(currentMonth.value) }),
-        rows: costs.map(cost => ({
-            key: `${cost.kind}-${cost.id}`,
-            name: cost.name,
-            kind: t(`kind.${cost.kind}`),
-            business: cost.business,
-            amount: euros(cost.amount),
-        })),
         recurringTotal: cents(groups.recurringTotal),
-        purchasesTotal: cents(groups.purchasesTotal)
+        purchasesTotal: cents(groups.purchasesTotal),
+        largest: largestCosts(costs).map(toRow)
     }
 })
 
@@ -95,18 +87,6 @@ useHead({ title: () => t('nav.dashboard') })
                         <dd class="font-semibold tabular-nums">{{ thisMonth.purchasesTotal }}</dd>
                     </div>
                 </dl>
-                <ul v-if="thisMonth.rows.length" :aria-label="thisMonth.listLabel" class="mt-4 divide-y divide-default">
-                    <li v-for="row in thisMonth.rows" :key="row.key" class="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
-                        <span class="min-w-0 flex-[1_1_8rem] break-words">{{ row.name }}</span>
-                        <UBadge :label="row.kind" color="neutral" variant="subtle" />
-                        <BusinessBadge v-if="row.business" />
-                        <span class="w-24 text-right">{{ row.amount }}</span>
-                    </li>
-                </ul>
-                <div v-else class="mt-4">
-                    <p>{{ t('dashboard.thisMonth.empty') }}</p>
-                    <UButton :label="t('costs.add')" class="pill mt-2" @click="openAdd()" />
-                </div>
                 <UButton
                     :to="monthPath(currentYear, currentMonth)"
                     :label="t('dashboard.thisMonth.view', { month: monthYear(currentYear, currentMonth) })"
@@ -116,11 +96,24 @@ useHead({ title: () => t('nav.dashboard') })
                 />
             </UCard>
         </section>
-        <section aria-labelledby="add-cost-title">
+        <section aria-labelledby="largest-title">
             <UCard variant="subtle" class="card">
-                <h2 id="add-cost-title">{{ t('dashboard.addCost.title') }}</h2>
-                <p class="font-medium">{{ t('dashboard.addCost.text') }}</p>
-                <p><UButton :label="t('costs.add')" class="pill" @click="openAdd()" /></p>
+                <h2 id="largest-title">{{ t('dashboard.largest.title') }}</h2>
+                <p class="font-medium">{{ t('dashboard.largest.text') }}</p>
+                <ul v-if="thisMonth.largest.length" aria-labelledby="largest-title" class="mt-4 divide-y divide-default">
+                    <li v-for="row in thisMonth.largest" :key="row.key" class="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
+                        <CategoryBadge :category="row.category" :size="40"/>
+                        <div class="min-w-0 flex-1">
+                            <p class="break-words font-semibold">
+                                {{ row.name }}
+                                <BusinessBadge v-if="row.business" />
+                            </p>
+                            <p class="text-sm text-muted">{{ row.subline }}</p>
+                        </div>
+                        <p class="shrink-0 text-right font-extrabold tabular-nums">{{ row.amount }}</p>
+                    </li>
+                </ul>
+                <p v-else class="mt-4">{{ t('dashboard.thisMonth.empty') }}</p>
             </UCard>
         </section>
         <section aria-labelledby="summary-title">

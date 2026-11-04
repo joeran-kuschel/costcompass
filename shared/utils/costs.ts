@@ -1,4 +1,4 @@
-import { CATEGORIES, MONTHS, type CostItem, type Purchase, type RecurringCost, type Category, type Interval, type Month, type AnnualSummary, type CategoryTotal, type SplitPercentages, type MonthTotal, type MonthChange, type MonthRef, type MonthNeighbours, type MonthGroups } from '~~/shared/types/calculation'
+import { CATEGORIES, MONTHS, type Cost, type CostItem, type Purchase, type RecurringCost, type Category, type Interval, type Month, type AnnualSummary, type CategoryTotal, type SplitPercentages, type MonthTotal, type MonthChange, type MonthRef, type MonthNeighbours, type MonthGroups } from '~~/shared/types/calculation'
 const PERIODS_PER_YEAR: Record<Interval, number> = {
   monthly: 12,
   quarterly: 4,
@@ -94,6 +94,15 @@ export function availableYears(purchases: Purchase[], currentYear: number): numb
     const years = new Set(purchases.map(purchase => new Date(purchase.date).getUTCFullYear()))
     years.add(currentYear)
     return [...years].sort((a,b) => b - a)
+}
+export function largestCosts<T extends Cost>(costs: T[], n = 4): T[] {
+    return [...costs]
+        .sort((a, b) =>
+            b.amount - a.amount
+            || (a.kind === b.kind ? 0 : a.kind === 'recurring' ? -1 : 1)
+            || a.name.localeCompare(b.name, 'en')
+        )
+        .slice(0, n)
 }
 // Month page functions
 export function monthNeighbours(current: MonthRef, validYears: number[]): MonthNeighbours {

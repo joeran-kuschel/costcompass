@@ -6,7 +6,7 @@ Reference and conventions for `app/` (pages, components, composables, texts). Wr
 
 | Route | File | State | What it does |
 | --- | --- | --- | --- |
-| `/` | `app/pages/index.vue` | Exists | Dashboard: "This month" card with the recurring and purchases subtotals and the cost list, add tile, year select, summary tiles, household versus business bar, costs by category, costs per month |
+| `/` | `app/pages/index.vue` | Exists | Dashboard: "This month" card with the recurring and purchases subtotals, "Largest this month" card, year select, summary tiles, household versus business bar, costs by category, costs per month |
 | `/costs` | `app/pages/costs.vue` | Exists | One sortable table of both kinds, add, edit and delete |
 | `/months/[year]/[month]` | `app/pages/months/[year]/[month].vue` | Exists | Costs of one month, total, previous and next links, add cost in the empty month (pre-filled for the month) |
 | `/calculator` | - | Planned | Rate calculator |
@@ -30,11 +30,24 @@ The address is checked before any data is requested. `monthParamsSchema` (`share
 
 ### Subtotals in the "This month" card
 
-Issue #61. Between the comparison line and the cost list, the card has a description list (`dl`) with two pairs: "Recurring" (`month.recurring`) and "Purchases" (`month.purchases`), the same keys as the month page. The amounts are `recurringTotal` and `purchasesTotal` from `groupMonthCosts(costsInMonth(...))` for today's month and year, so they ignore the year selector like the rest of the card. A group without costs shows `€0.00`, not nothing.
+Issue #61. Below the comparison line, the card has a description list (`dl`) with two pairs: "Recurring" (`month.recurring`) and "Purchases" (`month.purchases`), the same keys as the month page. The amounts are `recurringTotal` and `purchasesTotal` from `groupMonthCosts(costsInMonth(...))` for today's month and year, so they ignore the year selector like the rest of the card. A group without costs shows `€0.00`, not nothing.
 
-The subtotals use cents (`useMoney({ cents: true })`), while the card's total and the list rows stay in whole euros. The rounded total can therefore differ from the sum of the two subtotals: 819.99 and 300.50 add up to 1,120.49, and the total shows €1,120. The labels use the `text-muted` colour; their contrast ratio of 4.5:1 is not measured yet.
+The subtotals use cents (`useMoney({ cents: true })`), while the card's total stays in whole euros. The rounded total can therefore differ from the sum of the two subtotals: 819.99 and 300.50 add up to 1,120.49, and the total shows €1,120. The labels use the `text-muted` colour; their contrast ratio of 4.5:1 is not measured yet.
 
 Tests: `tests/nuxt/dashboard-page.test.ts`, `describe('dashboard page this month subtotals')`: labels and cents, only purchases of the current month, the sum against `monthlyTotals`, zero groups, a month without costs, the `dl` terms and German.
+
+### "Largest this month" card
+
+Issue #63. Written for developers. The card replaces the "Add a cost" tile and sits next to the "This month" card (the weight-2 flex row in `main.css` now selects `largest-title`). It is a `section` with `aria-labelledby="largest-title"`; its `ul` is named by the same heading ("Largest this month", `dashboard.largest.title`), with a hint (`dashboard.largest.text`).
+
+- The rows come from `largestCosts(costsInMonth(...))` for today's month and year, so, like the "This month" card, they ignore the year selector. They are mapped with `toRow` from `useMonth()`.
+- Each row has a `CategoryBadge` (40 px), the name, the `BusinessBadge` for business costs, a sub line ("Housing · Monthly", "Appliances · 8 Nov") and the amount with cents.
+- A month without costs shows "No costs this month yet." (`dashboard.thisMonth.empty`) and no button.
+- The full list of the month is no longer on the dashboard (this also removed the list and the add button from the "This month" card). The "View <month year>" link of that card leads to it on the month page.
+- The dashboard has no add entry point of its own. The sidebar button and the phone's round button remain.
+- On narrow screens the card wraps below the "This month" card. This was not decided from a mock (the phone mock has no such card).
+
+Tests: `tests/nuxt/dashboard-page.test.ts`, `describe('dashboard page largest this month')`; `describe('largestCosts')` in `tests/nuxt/costs.test.ts`. Not checked in the browser (light and dark mode, German, 320 px); text contrast not measured.
 
 ### Dashboard links to month pages
 
@@ -106,7 +119,7 @@ The items come from `useNavItems()` (one `computed`; labels from `nav.dashboard`
 | This month | `monthPath(currentYear, currentMonth)` | `i-lucide-calendar` |
 
 - Add a new page to `useNavItems` once. Only today's month page is in the navigation (see below); other month pages stay out of it.
-- The "Add cost" button is the only add entry on desktop. `/costs` has no button of its own any more (author's decision). The dashboard tile and the button of an empty month card stay, see [Add and edit dialog](#add-and-edit-dialog).
+- The "Add cost" button is the only add entry on desktop. `/costs` has no button of its own any more (author's decision). The dashboard has no add entry of its own since #63; see [Add and edit dialog](#add-and-edit-dialog).
 - Styling is in `app/assets/css/main.css`: nav links are pills at least 48 px high. A link that is not the current page gets the tint `--ui-bg-accented` and the text colour `#2238b0` (dark mode `#afc0ff`) on hover; Nuxt UI's own hover fill is hidden so the two do not add up. `.pill-shadow` gives the add button a soft cobalt shadow, the same in light and dark mode. The icon of the current item takes the colour of its text (white, as in the mocks): Nuxt UI gives it the primary colour, which was 2.64:1 against the dark pill in light mode (below the 3:1 for icons) and not white in dark mode; the rule `nav [data-slot="link"][aria-current="page"] [data-slot="linkLeadingIcon"] { color: inherit }` fixes that. Checked in the browser: the icon is white in both modes, the icons of the other items are unchanged. No unit test, because jsdom has no styles.
 - The language select has a visible label: `LanguageSwitcher` wraps the `USelect` in a `UFormField` with the text `language.label` ("Language" / "Sprache"), connected to the select by `for` and `id`. It has no `aria-label` any more.
 
@@ -273,7 +286,6 @@ Who calls what:
 
 | Place | Call |
 | --- | --- |
-| Dashboard: "Add a cost" tile and the "Add cost" button of an empty "This month" card | `openAdd()` |
 | Sidebar: "Add cost" button | `openAdd()` |
 | Phone: round add button next to the tab bar | `openAdd(monthRef)`, `monthRef` is `null` outside month pages |
 | `/costs`: pencil button of a row | `openEdit(row.original)` |
@@ -323,7 +335,7 @@ Checked by hand in the browser: the dashboard and month page buttons open the di
 | --- | --- |
 | `useMoney(options?)` | A formatter for euros: whole euros, or cents with `useMoney({ cents: true })` |
 | `useYear()` | `year` (selected, shared state), `currentYear`, `currentMonth` (read once, in UTC) |
-| `useMonth()` | `monthName(month, style?)`, `monthYear(year, month)`, `monthPath(year, month)` |
+| `useMonth()` | `monthName(month, style?)`, `monthYear(year, month)`, `monthPath(year, month)`, `toRow(cost)` (a display row for a stored cost: `key`, `name`, `subline`, `business`, `amount` in cents, `category`; used by the month page and the "Largest this month" card) |
 | `useCostLists()` | `recurring`, `purchases`, `failed`, `loading`, `retry`. Uses `useFetch` with `lazy: true`, so the layout, the dashboard, the costs page and the month page share the cached data. |
 | `useNavItems()` | `items` (computed, follows the language): `label`, `shortLabel`, `to`, `icon` for Dashboard, Costs and This month. Read by the sidebar and `MobileBar`. |
 | `useCategory()` | `categoryIcon(category)`, `categoryClass(category)`, `categoryStyle(size)` for `CategoryBadge`; also exports `CATEGORY_SIZES` and `CategorySize` |

@@ -124,9 +124,9 @@
         "empty": "In diesem Monat gibt es noch keine Kosten.",
         "view": "{month} ansehen"
     },
-    "addCost": {
-      "title": "Kosten hinzufügen",
-      "text":  "Eine wiederkehrende Ausgabe oder eine einmalige Anschaffung."
+    "largest": {
+      "title": "Größte Kosten diesen Monat",
+      "text": "Die höchsten Kosten dieses Monats."
     }
   },
   "month": {

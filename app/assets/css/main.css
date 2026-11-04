@@ -185,7 +185,7 @@ main > div:has(#this-month-title) > section[aria-labelledby="this-month-title"],
 main > div:has(#this-month-title) > section[aria-labelledby="categories-title"] {
   flex: 3 1 27.5rem;
 }
-main > div:has(#this-month-title) > section[aria-labelledby="add-cost-title"],
+main > div:has(#this-month-title) > section[aria-labelledby="largest-title"],
 main > div:has(#this-month-title) > section[aria-labelledby="split-title"] {
   flex: 2 1 18.75rem;
 }

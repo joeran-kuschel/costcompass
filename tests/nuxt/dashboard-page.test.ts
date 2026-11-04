@@ -703,39 +703,61 @@ describe('dashboard page this month subtotals', () => {
   })
 })
 
-describe('dashboard page this month cost list', () => {
+describe('dashboard page largest this month', () => {
   const today = new Date()
   const year = today.getUTCFullYear()
   const month = today.getUTCMonth() + 1
   const previousYear = month === 1 ? year - 1 : year
   const previousMonth = month === 1 ? 12 : month - 1
   const dateIn = (y: number, m: number) => `${y}-${String(m).padStart(2, '0')}-15`
-  const monthName = (locale: string) => new Intl.DateTimeFormat(locale, { month: 'long', timeZone: 'UTC' }).format(new Date(Date.UTC(2026, month - 1, 1)))
-  const lamp = (id: number, amount: number, date: string, business = false) => ({ id, kind: 'purchase', name: 'Lamp', amount, category: 'appliances', business, date })
-  const section = () => wrapper.find('section[aria-labelledby="this-month-title"]')
+  const shortDate = (locale: string) => new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(new Date(dateIn(year, month)))
+  const lamp = (id: number, amount: number, date: string, business = false, name = 'Lamp') => ({ id, kind: 'purchase', name, amount, category: 'appliances', business, date })
+  const section = () => wrapper.find('section[aria-labelledby="largest-title"]')
   const list = () => section().find('ul')
-  // The parts of a row are flex items without whitespace between them: join them with a space.
-  const rows = () => section().findAll('li').map(item => Array.from(item.element.children).map(part => part.textContent?.trim()).join(' '))
+  const summaryTotal = () => wrapper.find('section[aria-labelledby="summary-title"]').text()
+  // name, subline and amount of each row, with spaces normalised (German puts a no-break space before the euro sign)
+  const rows = () => section().findAll('li').map(item => ({
+    name: item.find('p').text().replace(/\s+/g, ' '),
+    subline: item.find('.text-muted').text().replace(/\s+/g, ' '),
+    amount: item.findAll('p').at(-1)!.text().replace(/\s/g, ' '),
+  }))
 
-  it('lists the costs of the month with name, kind and amount, recurring costs first', async () => {
-    api.purchases.rows = [lamp(2, 300, dateIn(year, month))]
+  it('has a heading that names the list', async () => {
     api.recurring.rows = [rent]
     await mountPage()
     await vi.waitFor(() => expect(list().exists()).toBe(true))
-    expect(rows()).toEqual(['Rent Recurring €800', 'Lamp Purchase €300'])
+    expect(section().find('h2').text()).toBe('Largest this month')
+    expect(section().find('h2').attributes('id')).toBe('largest-title')
+    expect(list().attributes('aria-labelledby')).toBe('largest-title')
   })
-  it('gives the list an accessible name with the month', async () => {
+  it('lists the costs of the month by amount with category, interval or date, and cents', async () => {
     api.recurring.rows = [rent]
+    api.purchases.rows = [lamp(2, 300.5, dateIn(year, month))]
     await mountPage()
     await vi.waitFor(() => expect(list().exists()).toBe(true))
-    expect(list().attributes('aria-label')).toBe(`Costs in ${monthName('en')}`)
+    expect(rows()).toEqual([
+      { name: 'Rent', subline: 'Housing · Monthly', amount: '€800.00' },
+      { name: 'Lamp', subline: `Appliances · ${shortDate('en')}`, amount: '€300.50' },
+    ])
   })
-  it('marks business costs with a text badge and no other cost', async () => {
+  it('shows the four largest costs and leaves out the rest', async () => {
     api.recurring.rows = [rent]
-    api.purchases.rows = [lamp(2, 300, dateIn(year, month), true)]
+    api.purchases.rows = [
+      lamp(2, 500, dateIn(year, month), false, 'Desk'),
+      lamp(3, 400, dateIn(year, month), false, 'Chair'),
+      lamp(4, 300, dateIn(year, month), false, 'Lamp'),
+      lamp(5, 10, dateIn(year, month), false, 'Pen'),
+    ]
     await mountPage()
     await vi.waitFor(() => expect(list().exists()).toBe(true))
-    expect(rows()).toEqual(['Rent Recurring €800', 'Lamp Purchase Business €300'])
+    expect(rows().map(row => row.name)).toEqual(['Rent', 'Desk', 'Chair', 'Lamp'])
+  })
+  it('puts a recurring cost before a purchase of the same amount', async () => {
+    api.recurring.rows = [{ ...rent, name: 'Zebra', amount: 100 }]
+    api.purchases.rows = [lamp(2, 100, dateIn(year, month), false, 'Aardvark')]
+    await mountPage()
+    await vi.waitFor(() => expect(list().exists()).toBe(true))
+    expect(rows().map(row => row.name)).toEqual(['Zebra', 'Aardvark'])
   })
   it('lists only the costs of the current month', async () => {
     api.recurring.rows = [rent]
@@ -747,7 +769,7 @@ describe('dashboard page this month cost list', () => {
     await mountPage()
     await vi.waitFor(() => expect(list().exists()).toBe(true))
     expect(rows()).toHaveLength(2)
-    expect(section().text()).not.toContain('€999')
+    expect(section().text()).not.toContain('999')
   })
   it('lists a recurring cost and a purchase with the same id', async () => {
     api.recurring.rows = [{ ...rent, id: 5 }]
@@ -756,27 +778,15 @@ describe('dashboard page this month cost list', () => {
     await vi.waitFor(() => expect(list().exists()).toBe(true))
     expect(rows()).toHaveLength(2)
   })
-  it('adds up to the total of the card', async () => {
+  it('gives every row a category badge and marks business costs with a text badge', async () => {
     api.recurring.rows = [rent]
-    api.purchases.rows = [lamp(2, 300, dateIn(year, month))]
+    api.purchases.rows = [lamp(2, 300, dateIn(year, month), true)]
     await mountPage()
     await vi.waitFor(() => expect(list().exists()).toBe(true))
-    expect(section().text()).toContain('€1,100')
-  })
-  it('shows an empty state with an add action when the month has no costs', async () => {
-    api.purchases.rows = [lamp(2, 300, dateIn(previousYear, previousMonth))]
-    await mountPage()
-    await vi.waitFor(() => expect(section().exists()).toBe(true))
-    expect(list().exists()).toBe(false)
-    expect(section().text()).toContain('No costs this month yet.')
-    expect(section().find('button').text()).toBe('Add cost')
-  })
-  it('shows no empty state while the month has costs', async () => {
-    api.recurring.rows = [rent]
-    await mountPage()
-    await vi.waitFor(() => expect(list().exists()).toBe(true))
-    expect(section().text()).not.toContain('No costs this month yet.')
-    expect(section().find('button').exists()).toBe(false)
+    expect(section().findAll('.category-disc')).toHaveLength(2)
+    const items = section().findAll('li')
+    expect(items[0]!.text()).not.toContain('Business')
+    expect(items[1]!.text()).toContain('Business')
   })
   it('is German with German texts when the language is German', async () => {
     await setLanguage('de')
@@ -784,9 +794,17 @@ describe('dashboard page this month cost list', () => {
     api.purchases.rows = [lamp(2, 300, dateIn(year, month), true)]
     await mountPage()
     await vi.waitFor(() => expect(list().exists()).toBe(true))
-    expect(list().attributes('aria-label')).toBe(`Kosten im ${monthName('de')}`)
-    expect(rows()[0]).toMatch(/^Rent Wiederkehrend 800\s€$/)
-    expect(rows()[1]?.replace(/\s/g, ' ')).toBe('Lamp Anschaffung Geschäftlich 300 €')
+    expect(section().find('h2').text()).toBe('Größte Kosten diesen Monat')
+    expect(rows()[0]).toEqual({ name: 'Rent', subline: 'Wohnen · Monatlich', amount: '800,00 €' })
+    expect(rows()[1]!.subline).toBe(`Geräte · ${shortDate('de')}`)
+  })
+  it('shows a short text instead of an empty list when the month has no costs', async () => {
+    api.purchases.rows = [lamp(2, 300, dateIn(previousYear, previousMonth))]
+    await mountPage()
+    await vi.waitFor(() => expect(section().exists()).toBe(true))
+    expect(list().exists()).toBe(false)
+    expect(section().text()).toContain('No costs this month yet.')
+    expect(section().find('button').exists()).toBe(false)
   })
   it('German empty state', async () => {
     await setLanguage('de')
@@ -794,84 +812,30 @@ describe('dashboard page this month cost list', () => {
     await mountPage()
     await vi.waitFor(() => expect(section().exists()).toBe(true))
     expect(section().text()).toContain('In diesem Monat gibt es noch keine Kosten.')
-    expect(section().find('button').text()).toBe('Kosten hinzufügen')
   })
-})
-
-describe('dashboard page add cost', () => {
-  // The dialog itself lives in the layout (see CostDialog.test.ts); the page only asks for it.
-  const year = new Date().getUTCFullYear()
-  const tile = () => wrapper.find('section[aria-labelledby="add-cost-title"]')
-  const tileButton = () => tile().find('button')
-  const summaryTotal = () => wrapper.find('section[aria-labelledby="summary-title"]').text()
-  const dialogState = () => {
-    const { open, cost, month } = useCostDialog()
-    return { open: open.value, cost: cost.value, month: month.value }
-  }
-
-  it('has a heading, a hint and an "Add cost" button', async () => {
+  it('shows the new rows when the lists are refreshed, as the layout does after a save', async () => {
     api.recurring.rows = [rent]
     await mountPage()
-    await vi.waitFor(() => expect(tile().exists()).toBe(true))
-    expect(tile().find('h2').text()).toBe('Add a cost')
-    expect(tile().text()).toContain('A recurring cost or a one-off purchase.')
-    expect(tileButton().text()).toBe('Add cost')
-  })
-  it('is German with German texts when the language is German', async () => {
-    await setLanguage('de')
-    api.recurring.rows = [rent]
-    await mountPage()
-    await vi.waitFor(() => expect(tile().exists()).toBe(true))
-    expect(tile().find('h2').text()).toBe('Kosten hinzufügen')
-    expect(tile().text()).toContain('Eine wiederkehrende Ausgabe oder eine einmalige Anschaffung.')
-    expect(tileButton().text()).toBe('Kosten hinzufügen')
-  })
-  it('does not ask for the dialog until the button is pressed', async () => {
-    api.recurring.rows = [rent]
-    await mountPage()
-    await vi.waitFor(() => expect(tile().exists()).toBe(true))
-    expect(dialogState().open).toBe(false)
-  })
-  it('asks for an empty add dialog when the button is pressed', async () => {
-    api.recurring.rows = [rent]
-    await mountPage()
-    await vi.waitFor(() => expect(tile().exists()).toBe(true))
-    await tileButton().trigger('click')
-    expect(dialogState()).toEqual({ open: true, cost: null, month: null })
-  })
-  it('asks for the same dialog from the button of an empty month', async () => {
-    const today = new Date()
-    const previous = today.getUTCMonth() === 0 ? `${year - 1}-12-15` : `${year}-${String(today.getUTCMonth()).padStart(2, '0')}-15`
-    api.purchases.rows = [{ id: 2, kind: 'purchase', name: 'Lamp', amount: 300, category: 'appliances', business: false, date: previous }]
-    await mountPage()
-    const card = () => wrapper.find('section[aria-labelledby="this-month-title"]')
-    await vi.waitFor(() => expect(card().find('button').exists()).toBe(true))
-    await card().find('button').trigger('click')
-    expect(dialogState()).toEqual({ open: true, cost: null, month: null })
-  })
-  it('shows the new numbers when the lists are refreshed, as the layout does after a save', async () => {
-    api.recurring.rows = [rent]
-    await mountPage()
-    await vi.waitFor(() => expect(tile().exists()).toBe(true))
+    await vi.waitFor(() => expect(list().exists()).toBe(true))
     expect(summaryTotal()).toContain('€9,600')
-    // what the API will return once a new monthly cost was saved
     api.recurring.rows = [rent, { ...rent, id: 2, name: 'Gym', amount: 100 }]
     await refreshNuxtData()
-    await vi.waitFor(() => expect(summaryTotal()).toContain('€10,800'))
+    await vi.waitFor(() => expect(rows().map(row => row.name)).toEqual(['Rent', 'Gym']))
+    expect(summaryTotal()).toContain('€10,800')
   })
-  it('shows no add tile while the lists are loading', async () => {
+  it('shows no card while the lists are loading, after an error or without any costs', async () => {
     api.recurring.rows = [rent]
     api.purchases.delay = 300
     await mountPage()
-    expect(tile().exists()).toBe(false)
-    await vi.waitFor(() => expect(tile().exists()).toBe(true), { timeout: 2000 })
+    expect(section().exists()).toBe(false)
+    await vi.waitFor(() => expect(section().exists()).toBe(true), { timeout: 2000 })
   })
-  it('shows no add tile when loading fails', async () => {
+  it('shows no card when loading fails', async () => {
     api.recurring.rows = [rent]
     api.recurring.fail = true
     await mountPage()
     await vi.waitFor(() => expect(alert().exists()).toBe(true))
-    expect(tile().exists()).toBe(false)
+    expect(section().exists()).toBe(false)
   })
 })
 
@@ -998,12 +962,10 @@ describe('dashboard page "View month" link', () => {
     expect(link()!.attributes('href')).toBe('/months/2026/03')
     expect(link()!.text()).toBe('View March 2026')
   })
-  it('is also there when the month has no costs, next to the add button', async () => {
+  it('is also there when the month has no costs', async () => {
     api.purchases.rows = [lamp(2, '2026-01-15')]
     await mountOn('2026-03-15')
-    expect(card().text()).toContain('No costs this month yet.')
     expect(link()!.attributes('href')).toBe('/months/2026/03')
-    expect(card().find('button').text()).toBe('Add cost')
   })
   it('is not shown while the lists load or when loading fails', async () => {
     api.recurring.rows = [rent]

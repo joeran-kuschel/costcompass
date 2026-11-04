@@ -9,7 +9,7 @@ const { year, month } = parsed.data
 const { t, locale } = useI18n()
 const { currentYear, currentMonth } = useYear()
 const { recurring, purchases, failed, loading, retry } = useCostLists()
-const { monthName, monthYear, monthPath } = useMonth()
+const { monthName, monthYear, monthPath, toRow } = useMonth()
 const title = computed(() => monthYear(year, month))
 const euros = useMoney({ cents: true })
 const monthRef: MonthRef = { year, month: month as Month }
@@ -22,7 +22,6 @@ const sections = computed(() => [
     { id: 'recurring', title: t('month.recurring'), total: euros(groups.value.recurringTotal), rows: recurringRows.value },
     { id: 'purchases', title: t('month.purchases'), total: euros(groups.value.purchasesTotal), rows: purchaseRows.value },
 ].filter(section => section.rows.length > 0))
-const formatDate = (date:string) => new Intl.DateTimeFormat(locale.value, { day: 'numeric', month: 'short', timeZone: 'UTC'}).format(new Date(date))
 const heading = useTemplateRef<HTMLElement>('heading')
 const { openAdd } = useCostDialog()
 
@@ -35,17 +34,6 @@ watch([loading, failed], () => {
         showError(createError({ status: 404, fatal: true, data: { reason: 'month' } }))
     }
 }, { immediate: true })
-
-function toRow(cost: Stored<RecurringCost> | Stored<Purchase>) {
-    const detail = cost.kind === 'recurring' ? t(`interval.${cost.interval}`) : formatDate(cost.date)
-    return {
-        key: `${cost.kind}-${cost.id}`,
-        name: cost.name,
-        subline: `${t(`category.${cost.category}`)} · ${detail}`,
-        business: cost.business,
-        amount: euros(cost.amount)
-    }
-}
 
 async function onRetry() {
     await retry()
