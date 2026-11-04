@@ -5,6 +5,7 @@ const { t, n } = useI18n()
 const { year, currentYear, currentMonth } = useYear()
 const { monthName, monthYear, monthPath, toRow } = useMonth()
 const { recurring, purchases, failed, loading, retry } = useCostLists()
+const { categoryClass } = useCategory()
 const years = computed(() => availableYears(purchases.value ?? [], currentYear.value))
 const shownYear = computed(() => years.value.includes(year.value) ? year.value : currentYear.value)
 const empty = computed(() => !failed.value && !loading.value && recurring.value?.length === 0 && purchases.value?.length === 0)
@@ -15,7 +16,8 @@ const categoryRows = computed (() => categoryBreakDown(recurring.value ?? [], pu
     category,
     label: t(`category.${category}`),
     amount: euros(total),
-    percent: n(percent / 100, { style: 'percent' })
+    percent: n(percent / 100, { style: 'percent' }),
+    value: percent
 })))
 const split = computed(() => splitPercentages(summary.value))
 const tiles = computed(() => [
@@ -145,6 +147,9 @@ useHead({ title: () => t('nav.dashboard') })
         <section aria-labelledby="categories-title">
             <UCard variant="subtle" class="card">
                 <h2 id="categories-title">{{ t('dashboard.categories.title') }}</h2>
+                <div class="mb-2.5 mt-4 flex h-3.5 gap-[3px] overflow-hidden rounded-full bg-accented" aria-hidden="true">
+                    <div v-for="row in categoryRows" v-show="row.value > 0" :key="row.category" :class="categoryClass(row.category)" :style="{ width: `${row.value}%` }" />
+                </div>
                 <ul class="grid grid-cols-[repeat(auto-fill,minmax(13.75rem,1fr))] gap-x-6 gap-y-1.5">
                     <li v-for="row in categoryRows" :key="row.category" class="flex items-center gap-3 py-2">
                         <CategoryBadge :category="row.category" :size="36" />

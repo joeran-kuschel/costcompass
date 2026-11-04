@@ -117,7 +117,7 @@ Issue #51. `app/components/CategoryBadge.vue` shows a round disc with a white ic
 | `food` | `i-lucide-shopping-basket` | `#15803D` | `#15803D` |
 | `mobility` | `i-lucide-car` | `#0369A1` | `#0284C7` |
 
-The colours are the tokens `--category-<id>` in `main.css` (light in `:root`, dark in `.dark`), taken from the mocks. To change one, edit the token; to add a category, add it to `CATEGORIES`, then to both maps and to both token sets.
+The colours are the tokens `--category-<id>` in `main.css` (light in `:root`, dark in `.dark`), taken from the mocks. The dashboard's stacked bar above the category list (#66) uses the same tokens through `categoryClass()` for its segments. To change one, edit the token; to add a category, add it to `CATEGORIES`, then to both maps and to both token sets.
 
 Tests: `tests/nuxt/useCategory.test.ts`, `tests/nuxt/CategoryBadge.test.ts`, and new cases in `costs-page.test.ts` and `dashboard-page.test.ts`. The component test relies on the rendered icon class `iconify i-lucide:<name>` (with a colon).
 
