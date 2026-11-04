@@ -99,7 +99,7 @@ useHead({ title: () => t('nav.dashboard') })
                     <UIcon :name="thisMonth.icon" aria-hidden="true" />
                     {{ thisMonth.comparison }}
                 </p>
-                <div class="mt-10 flex flex-wrap items-center justify-between gap-3">
+                <div class="mt-auto flex w-full flex-wrap items-center justify-between gap-3 pt-10">
                     <dl class="flex flex-wrap gap-x-8 gap-y-2">
                         <div>
                             <dt class="text-sm">{{ t('month.recurring') }}</dt>
