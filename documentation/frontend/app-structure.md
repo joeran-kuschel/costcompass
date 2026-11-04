@@ -120,11 +120,14 @@ Two places on `app/pages/index.vue` link to `/months/[year]/[month]` (issues #18
 Notes on the months chart:
 
 - Each `li` holds a `NuxtLink` (a real `<a>`, works without JavaScript). The `li` has no layout of its own, so the link fills the grid column and the bars keep their width.
-- Link name: the `sr-only` text from `dashboard.months.alt` ("March: €1,100"). The bar and the short label are `aria-hidden`; the bar has a hover `title`.
+- Link name: the `sr-only` text from `dashboard.months.alt` ("March: €1,100"). The bar, the short value and the short label are `aria-hidden`; the bar has a hover `title`.
+- Short value above each bar (`span.text-xs.tabular-nums`, `aria-hidden`; bold for the current month, `text-muted` for the others). `monthRows` carries it as `value`, built by `shortAmount(total)`: if `Math.round(total) < 1000` it is the whole number from `n(...)` ("800"); otherwise `n(total / 1000, { maximumFractionDigits: 1 })` inside the key `dashboard.months.thousand` (`"{value}k"` in en and de), so "2.3k" in English, "2,3k" in German, "2k" for 2,000 and "12.6k". 999.60 rounds to 1000 and reads "1k". A month of 0 shows "0" and keeps its baseline.
+- Decision: the value is hand-built, not `Intl.NumberFormat` with `notation: 'compact'` (what issue #68 asked for). The author checked it: German short compact does not abbreviate thousands ("2100", "12.600"), the long form is "2,1 Tausend" (too wide for a 24 px column), and the mock builds "2.1k" by hand too. The full amount stays in the link's `sr-only` text.
+- The scroll area has `pb-4` (16 px) below the month labels.
 - Keyboard focus shows an outline (`focus-visible:outline-2 focus-visible:outline-primary`).
-- The current month's label is bold only if the shown year is the current year (`shownYear === currentYear && month === currentMonth`).
+- The current month's label and value are bold only if the shown year is the current year (`shownYear === currentYear && month === currentMonth`).
 - The grid is `repeat(12, minmax(1.5rem, 1fr))` inside an `overflow-x-auto` wrapper. 1.5rem is 24 px, the minimum target size. Twelve columns plus gaps do not fit on very narrow screens, so the chart scrolls sideways instead of squeezing the targets below 24 px. A check on 320 px screens is still open (to verify).
-- Tests: `tests/nuxt/dashboard-page.test.ts`, the describes "dashboard page month bar links" and "dashboard page "View month" link".
+- Tests: `tests/nuxt/dashboard-page.test.ts`, the describes "dashboard page month bar links" and "dashboard page "View month" link"; the value above the bars is tested in "dashboard page costs per month".
 
 ### Year fallback on the dashboard
 

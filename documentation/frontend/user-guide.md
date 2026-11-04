@@ -48,7 +48,7 @@ The Dashboard (**Dashboard** in the sidebar) gives you the overview. It has thes
 - **Your year**: the heading "Your year 2026" with the **Year** select to its right. Choose which year to look at. The list contains the current year and every year in which you bought something. If the year you chose has no purchases any more (for example because you deleted the last one), Costcompass shows the current year instead. The year changes this section and everything below it; "This month" and "Largest this month" always show the current month. Below the heading, one card shows four values: **Annual total** ("per year"), **Average** ("per month"), **Household** and **Business** (each with "<n>% of the year"; the two percentages add up to 100).
 - **Where your money goes**: every category with its icon, its amount in whole euros and, below the amount, its share of the year's costs (for example "86%"). The categories are sorted by amount, largest first, and sit in several columns on a wide screen and in one column on a phone. The percentages are whole numbers and add up to 100. A category without costs shows €0 and 0%. Above the list, one bar shows the same shares in the category colours, one segment per category. The bar is only a picture; the list has every number as text. A category without costs has no segment.
 - **Household and business**: a ring that shows how the year splits between household (blue) and business (orange), with the household percentage in the middle. Beside it, two rows give the amount for **Household** and for **Business**. A screen reader reads both percentages from the ring. Without costs the ring is grey and shows 0%.
-- **Costs per month**: twelve bars, one per month, for the selected year. The current month's name is bold (only when you look at the current year).
+- **Costs per month**: twelve bars, one per month, for the selected year. A short amount stands above each bar: whole euros below 1,000 ("800"), from 1,000 up in thousands with a "k" and at most one decimal ("2.3k", "2k" for exactly 2,000; German: "2,3k"). A month without costs shows "0". The current month's amount and name are bold (only when you look at the current year).
 
 Amounts on the Dashboard are rounded to whole euros. The Costs page and the month page show cents. Because of the rounding, household plus business can differ from the total by one euro on the Dashboard.
 
@@ -60,7 +60,7 @@ If your costs cannot be loaded, you see "Could not load your costs." with a **Tr
 
 Each of the twelve bars in "Costs per month" is a link. Select a bar (or tab to it and press Enter) to open the month page of that month in the selected year. Select 2025 in the year list, then the bar "March", and you get March 2025. If a bar shows no height, the month has no costs; the link still works. On a narrow screen the chart scrolls sideways, so every bar stays wide enough to tap.
 
-Screen readers read each bar as a link with the month and the amount, for example "March: €1,100". With the keyboard, the focused bar gets an outline.
+Screen readers read each bar as a link with the month and the full amount, for example "March: €1,100"; the short amount above the bar is not read, so nothing is said twice. With the keyboard, the focused bar gets an outline.
 
 ## Look at one month
 

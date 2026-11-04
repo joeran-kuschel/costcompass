@@ -42,13 +42,15 @@ const tiles = computed(() => [
     { key: 'business',  value: summary.value.business, label: t('business.label'), sub: t('dashboard.summary.ofYear', { percent: split.value.business }),  dot: 'bg-secondary' },
 ].map(tile => ({ ...tile, value: euros(tile.value) })))
 const monthRows = computed (() => monthBreakdown(recurring.value ?? [], purchases.value ?? [], shownYear.value).map(({ month, total, share}) => {
+    const shortAmount = (total: number) => Math.round(total) < 1000 ? n(Math.round(total)) : t('dashboard.months.thousand', { value: n(total / 1000, { maximumFractionDigits: 1 }) })
     return {
         month,
         short: monthName(month, 'short'),
         text: t('dashboard.months.alt', { month: monthName(month, 'long'), amount: euros(total)}),
         height: `${share * 100}%`,
         to: monthPath(shownYear.value, month),
-        current: shownYear.value === currentYear.value && month === currentMonth.value
+        current: shownYear.value === currentYear.value && month === currentMonth.value,
+        value: shortAmount(total)
     }
 }))
 const thisMonth = computed(() => {
@@ -208,11 +210,12 @@ useHead({ title: () => t('nav.dashboard') })
         <section aria-labelledby="months-title" class="mt-6">
             <h2 id="months-title">{{ t('dashboard.months.title', { year: shownYear }) }}</h2>
             <UCard variant="subtle" class="card">
-                <div class="relative overflow-x-auto p-1">
+                <div class="relative overflow-x-auto p-1 pb-4">
                     <ol class="grid grid-cols-[repeat(12,minmax(1.5rem,1fr))] gap-1">
                         <li v-for="row in monthRows" :key="row.month" class="min-w-0">
                             <NuxtLink :to="row.to"  class="flex flex-col items-center gap-1 rounded focus-visible:outline-2 focus-visible:outline-primary">
                                 <span class="sr-only">{{ row.text }}</span>
+                                <span class="text-xs tabular-nums" :class="row.current ? 'font-bold' : 'text-muted'" aria-hidden="true">{{ row.value }}</span>
                                 <span class="flex h-32 w-full items-end" aria-hidden="true" :title="row.text">
                                     <span class="block min-h-0.5 w-full rounded-t bg-primary" :style="{ height: row.height }" />
                                 </span>
