@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { annualSummary, categoryBreakDown, splitPercentages, monthBreakdown, monthChange, costsInMonth} from '~~/shared/utils/costs'
+import { annualSummary, categoryBreakDown, splitPercentages, monthBreakdown, monthChange, costsInMonth, groupMonthCosts} from '~~/shared/utils/costs'
 
 const { t } = useI18n()
 const { year, currentYear, currentMonth } = useYear()
@@ -11,6 +11,7 @@ const shownYear = computed(() => years.value.includes(year.value) ? year.value :
 const empty = computed(() => !failed.value && !loading.value && recurring.value?.length === 0 && purchases.value?.length === 0)
 const summary = computed (() => annualSummary(recurring.value ?? [], purchases.value ?? [], shownYear.value))
 const euros = useMoney()
+const cents = useMoney({ cents: true })
 const categoryRows = computed (() => categoryBreakDown(recurring.value ?? [], purchases.value ?? [], shownYear.value).map(({ category, total, share}) => ({
     category,
     label: t(`category.${category}`),
@@ -37,19 +38,23 @@ const thisMonth = computed(() => {
     const change = monthChange(recurring.value ?? [], purchases.value ?? [], currentYear.value, currentMonth.value)
     const percent = change.percent
     const direction = percent === null ? 'none' : percent < 0 ? 'less': percent > 0 ? 'more' : 'same'
+    const costs = costsInMonth(recurring.value ?? [], purchases.value ?? [], currentYear.value, currentMonth.value)
+    const groups = groupMonthCosts(costs)
     return {
         title: t('dashboard.thisMonth.title', { month: monthName(currentMonth.value), year: currentYear.value}),
         total: euros(change.current),
         comparison: t(`dashboard.thisMonth.${direction}`, { percent: Math.abs(percent ?? 0), previous: monthName (currentMonth.value === 1 ? 12 : currentMonth.value - 1) }),
         icon: { less: 'i-lucide-trending-down', more: 'i-lucide-trending-up', same: 'i-lucide-minus', none: 'i-lucide-minus'}[direction],
                 listLabel: t('dashboard.thisMonth.list', { month: monthName(currentMonth.value) }),
-        rows: costsInMonth(recurring.value ?? [], purchases.value ?? [], currentYear.value, currentMonth.value).map(cost => ({
+        rows: costs.map(cost => ({
             key: `${cost.kind}-${cost.id}`,
             name: cost.name,
             kind: t(`kind.${cost.kind}`),
             business: cost.business,
             amount: euros(cost.amount),
-        }))
+        })),
+        recurringTotal: cents(groups.recurringTotal),
+        purchasesTotal: cents(groups.purchasesTotal)
     }
 })
 
@@ -80,6 +85,16 @@ useHead({ title: () => t('nav.dashboard') })
                     <UIcon :name="thisMonth.icon" aria-hidden="true" />
                     {{ thisMonth.comparison }}
                 </p>
+                <dl class="mt-4 flex flex-wrap gap-x-8 gap-y-2">
+                    <div>
+                        <dt class="text-sm text-muted">{{ t('month.recurring') }}</dt>
+                        <dd class="font-semibold tabular-nums">{{ thisMonth.recurringTotal }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm text-muted">{{ t('month.purchases') }}</dt>
+                        <dd class="font-semibold tabular-nums">{{ thisMonth.purchasesTotal }}</dd>
+                    </div>
+                </dl>
                 <ul v-if="thisMonth.rows.length" :aria-label="thisMonth.listLabel" class="mt-4 divide-y divide-default">
                     <li v-for="row in thisMonth.rows" :key="row.key" class="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
                         <span class="min-w-0 flex-[1_1_8rem] break-words">{{ row.name }}</span>
