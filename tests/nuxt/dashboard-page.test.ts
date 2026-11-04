@@ -317,7 +317,7 @@ describe('dashboard page category rows', () => {
     costs()
     await mountPage()
     await vi.waitFor(() => expect(rows()).toHaveLength(5))
-    expect(section().find('[style*="width"]').exists()).toBe(false)
+    for (const row of rows()) expect(row.find('[style*="width"]').exists()).toBe(false)
   })
   it('shows a hidden category badge of 36 px in every row', async () => {
     costs()
@@ -335,6 +335,51 @@ describe('dashboard page category rows', () => {
     await vi.waitFor(() => expect(rows()).toHaveLength(5))
     // Last year's 500 must not count: it would make the appliances 800.
     expect(parts().find(row => row.name === 'Appliances')?.amount).toBe('€300')
+  })
+  // The bar above the list: one segment per category, hidden when the category is 0%.
+  const bar = () => section().find('div[aria-hidden="true"]')
+  const segments = () => Array.from(bar().element.children) as HTMLElement[]
+  const visibleSegments = () => segments().filter(segment => segment.style.display !== 'none')
+
+  it('shows a decorative bar above the list, without any text', async () => {
+    costs()
+    await mountPage()
+    await vi.waitFor(() => expect(rows()).toHaveLength(5))
+    expect(bar().exists()).toBe(true)
+    expect(bar().text()).toBe('')
+    expect(bar().element.compareDocumentPosition(section().find('ul').element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+  it('sizes the segments by the share of the total, in the order of the list', async () => {
+    costs()
+    await mountPage()
+    await vi.waitFor(() => expect(rows()).toHaveLength(5))
+    // 86%, 11% and 3% as in the list below
+    expect(visibleSegments().map(segment => segment.style.width)).toEqual(['86%', '11%', '3%'])
+  })
+  it('colours every segment with the colour token of its category', async () => {
+    costs()
+    await mountPage()
+    await vi.waitFor(() => expect(rows()).toHaveLength(5))
+    expect(visibleSegments().map(segment => segment.className)).toEqual([
+      'bg-[var(--category-housing)]',
+      'bg-[var(--category-insurance)]',
+      'bg-[var(--category-appliances)]',
+    ])
+  })
+  it('has no visible segment for a category with 0%', async () => {
+    costs()
+    await mountPage()
+    await vi.waitFor(() => expect(rows()).toHaveLength(5))
+    expect(segments()).toHaveLength(5)
+    expect(visibleSegments()).toHaveLength(3)
+  })
+  it('shows an empty track when the year has no costs', async () => {
+    // only a purchase of last year: the current year has no costs
+    api.purchases.rows = [{ id: 4, kind: 'purchase', name: 'Old laptop', amount: 500, category: 'appliances', business: true, date: `${year - 1}-03-15` }]
+    await mountPage()
+    await vi.waitFor(() => expect(rows()).toHaveLength(5))
+    expect(bar().exists()).toBe(true)
+    expect(visibleSegments()).toHaveLength(0)
   })
   it('lists the rows in a list', async () => {
     costs()
