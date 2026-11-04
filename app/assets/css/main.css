@@ -320,6 +320,21 @@ nav [data-slot="link"]:not([aria-current="page"]):hover::before {
   outline: 3px solid #ffffff;
   outline-offset: -3px;
 }
+/* The round add button next to the tab bar: 68 px, primary colour, a 28 px plus (mocks: BPhoneDashboard, BDarkPhoneDashboard). */
+.mobile-add {
+  flex: none;
+  width: 4.25rem;
+  height: 4.25rem;
+  justify-content: center;
+  border-radius: 9999px;
+  background-color: var(--ui-primary);
+  color: #ffffff;
+  box-shadow: 0 12px 28px -8px rgba(45, 75, 216, 0.6);
+}
+.mobile-add [data-slot="leadingIcon"] {
+  width: 1.75rem;
+  height: 1.75rem;
+}
 
 /* A round disc with a white icon, one per category. The colour comes from the `bg-[var(--category-*)]` class, the size from `--category-size`. */
 .category-disc {

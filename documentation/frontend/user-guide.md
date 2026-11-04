@@ -87,7 +87,9 @@ On a wide screen (about 1024 pixels or more) the sidebar on the left holds the a
 
 On a narrower screen, such as a phone, the sidebar is replaced by a tab bar that floats above the bottom edge of the screen. It has three tabs: **Dashboard**, **Costs** and **Month** (today's month). The tab for the page you are on is filled with colour and the others are plain, so you can tell them apart. Tap a tab to go there.
 
-On a narrow screen there is no language list and no **Add cost** button in the tab bar yet. Both are planned. Until then, use the **Add a cost** tile on the dashboard or the buttons on the month page, and switch the language on a wide screen.
+Next to the tab bar sits a round button with a plus sign. Tap it to add a cost, on any page. On a month page it adds the cost to that month: a purchase starts on the first day of the month and its date is limited to that month. While the add or edit window is open the button is hidden, and it comes back when you close the window.
+
+On a narrow screen there is no language list yet. It is planned. Until then, switch the language on a wide screen.
 
 ## Change the language
 

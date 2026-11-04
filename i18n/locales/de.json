@@ -17,6 +17,7 @@
   "costs": {
     "title": "Kosten",
     "add": "Kosten hinzufügen",
+    "addToMonth": "Kosten zu {month} hinzufügen",
     "edit": "{name} editieren",
     "delete": "{name} löschen",
     "deleteError": "Die Kosten konnten nicht gelöscht werden. Bitte versuche es erneut.",

@@ -113,7 +113,7 @@ The items come from `useNavItems()` (one `computed`; labels from `nav.dashboard`
 
 ### Below the `lg` breakpoint
 
-Below 1024 px the sidebar is hidden and the [bottom tab bar](#bottom-tab-bar) is the navigation. Still missing on small screens: the compact language button (#59) and the floating add button (#55). They come in the same pull request as their own issues. The menu button and the mobile menu of the old header are gone.
+Below 1024 px the sidebar is hidden and the [bottom tab bar](#bottom-tab-bar) is the navigation. The round [add button](#add-button-on-phones) (#55) sits next to it. Still missing on small screens: the compact language button (#59), which comes as its own issue. The menu button and the mobile menu of the old header are gone.
 
 `USidebar` has `hidden lg:block`. With `collapsible="none"` it has no mobile behaviour of its own, and `breakpoint="lg"` only matters for the collapsible modes, so before this change the sidebar also showed on phones. Now below 1024 px only the tab bar shows, from 1024 px only the sidebar. The DOM holds two `nav` landmarks, both named "Main nav" (`nav.label`); one of them is always `display: none`, so a screen reader meets only one.
 
@@ -130,7 +130,7 @@ Issue #54. Written for developers. On phones the navigation is a pill that float
 | Styles | `app/assets/css/main.css` | `.mobile-tabs`, `.mobile-tab` and the bottom padding of `main`, see below. |
 | Viewport meta | `nuxt.config.ts` | `width=device-width, initial-scale=1, viewport-fit=cover`. |
 
-The outer row is a flex row so that the round add button of #55 can sit next to the pill later (68 px in the mock). It is not built yet.
+The outer row is a flex row, so the round add button of #55 sits next to the pill, see [Add button on phones](#add-button-on-phones).
 
 ### The items
 
@@ -159,7 +159,7 @@ Contrast, calculated: resting text on the pill 9.47:1 (light) and 7.45:1 (dark);
 
 ### Tests
 
-- `tests/nuxt/MobileBar.test.ts`: one named `nav`, three tabs in order with the short labels, real links with hrefs (today's month with a two-digit month), hidden decorative icons, German names, the row is `fixed` and `lg:hidden`.
+- `tests/nuxt/MobileBar.test.ts` (the add button has its own describe, see [Add button on phones](#add-button-on-phones)): one named `nav`, three tabs in order with the short labels, real links with hrefs (today's month with a two-digit month), hidden decorative icons, German names, the row is `fixed` and `lg:hidden`.
 - `tests/nuxt/useNavItems.test.ts`: labels, short labels, links, an own Lucide icon per item, German and a language switch.
 - `tests/nuxt/DefaultLayout.test.ts`: two navs both named "Main nav", the `hidden lg:block` and `lg:hidden` pair, sidebar queries scoped to the sidebar.
 - The current tab (`aria-current`) has no unit test: the test environment's router does not report a `NuxtLink` as active.
@@ -168,7 +168,25 @@ Contrast, calculated: resting text on the pill 9.47:1 (light) and 7.45:1 (dark);
 
 Checked in the browser (dev server, iframes of the given widths, measured values; a screenshot of the bar did not work): at 320, 390 and 1023 px the bar shows and the sidebar is hidden, at 1024 and 1280 px the reverse. No sideways overflow. Each tab is 56 px high. At 320 px the pill is 288 px wide and each tab 92 px, at 390 px 115 px; no label is clipped in English or German. The pill's bottom edge is 28 px above the viewport bottom. The computed colours match the mock in light and dark mode. The current tab was checked on `/costs`, on today's month page and on another month page (no tab is current there).
 
-Not checked *(to verify)*: a real or notched phone and the safe area, the on-screen keyboard, a screen reader, the keyboard focus outline, and the bar below 1024 px on pages other than `/costs`.
+Not checked *(to verify)*: a real or notched phone and the safe area, the on-screen keyboard, a screen reader, the keyboard focus outline on the tabs, and the bar below 1024 px on pages other than `/costs`.
+
+### Add button on phones
+
+Issue #55. Written for developers. `MobileBar.vue` has a second child in the fixed row, after the `nav`: a `UButton` (class `mobile-add`, icon `i-lucide-plus`, no visible text) with an `aria-label`. It calls `openAdd(monthRef)` of [`useCostDialog()`](#add-and-edit-dialog). From 1024 px the row is `lg:hidden`, so the button is not there; the sidebar has its own "Add cost" button.
+
+| Where | Accessible name | Dialog opens |
+| --- | --- | --- |
+| Month page | `costs.addToMonth`, "Add cost to {month}" / "Kosten zu {month} hinzufügen", for example "Add cost to November 2026" (`monthYear` of `useMonth()`) | With the month's defaults: a purchase starts on the first day, the date is limited to the month, a yearly or quarterly cost starts with that due month |
+| Any other page | `costs.add`, "Add cost" / "Kosten hinzufügen" | Empty |
+
+- `monthRef` is a `computed` that runs `monthParamsSchema.safeParse(route.params)`, the same check the month page uses. It gives `{ year, month }` on a month page and `null` elsewhere. It is computed because the layout, and so `MobileBar`, stays mounted while the user navigates.
+- The button has `v-if="!open"`: it disappears while the add or edit dialog is open and comes back when it closes. The tabs stay.
+- Styles in `main.css`: `.mobile-add` is 68 px round, `flex: none`, background `var(--ui-primary)` (`#2d4bd8` light, `#3b5beb` dark), white icon, shadow `0 12px 28px -8px rgba(45, 75, 216, .6)`; the icon inside (`[data-slot="leadingIcon"]`) is 28 px. The values come from the mocks `BPhoneDashboard` and `BDarkPhoneDashboard`.
+- Tests: `tests/nuxt/MobileBar.test.ts`, describe "MobileBar add button": a round icon button named "Add cost" with a hidden plus icon and no text; named after the month on a month page; the plain name elsewhere; German names, including "Kosten zu März 2026 hinzufügen"; an empty dialog elsewhere and the shown month on a month page (checked through the state of `useCostDialog()`); not there while the dialog is open and back after it closes; the tabs stay.
+
+Checked in the browser (dev server, iframes): the button is 68 x 68 px, radius 9999px, fill `rgb(45, 75, 216)`, icon 28 px, the shadow as above, 16 px from the right edge, on the same row as the tab bar. At 390 px the tab pill is 280 px wide, at 320 px 210 px; no sideways overflow at either width. On `/costs` the dialog opens empty; on `/months/2026/11` it opens with the date `2026-11-01` and a date minimum of `2026-11-01`. While the dialog is open the button is gone.
+
+Not checked *(to verify)*: the label on a month page in a real screen reader, the German label in the browser, dark mode, a real phone, whether the button covers page content (the pages have 112 px bottom padding below 1024 px since #54, and the button does not change the row's height), and the keyboard focus order and a visible focus style on the round button (the tabs have a white outline; the button has only Nuxt UI's default).
 
 ### The "This month" navigation entry
 
@@ -199,7 +217,7 @@ Checked in the browser at 1024, 1280 and 1440 px in English and German: no sidew
 
 ## Add and edit dialog
 
-`app/layouts/default.vue` renders one `UModal` with `CostForm` for the whole app. A page, the sidebar (#53) or later a floating button (#55) does not own a modal. It asks the layout to open it through `useCostDialog()`.
+`app/layouts/default.vue` renders one `UModal` with `CostForm` for the whole app. A page, the sidebar (#53) or the floating phone button (#55) does not own a modal. It asks the layout to open it through `useCostDialog()`.
 
 | Call | Opens | State after |
 | --- | --- | --- |
@@ -216,6 +234,7 @@ Who calls what:
 | --- | --- |
 | Dashboard: "Add a cost" tile and the "Add cost" button of an empty "This month" card | `openAdd()` |
 | Sidebar: "Add cost" button | `openAdd()` |
+| Phone: round add button next to the tab bar | `openAdd(monthRef)`, `monthRef` is `null` outside month pages |
 | `/costs`: pencil button of a row | `openEdit(row.original)` |
 | Month page: "Add cost" next to the heading and in the empty month card | `openAdd(monthRef)` |
 
@@ -252,7 +271,7 @@ Checked by hand in the browser: the dashboard and month page buttons open the di
 | `BusinessBadge.vue` | The "Business" badge with a briefcase icon, no props. See [Business badge](colour-scheme.md#business-badge) |
 | `CategoryBadge.vue` | Round disc with a white category icon; props `category` and `size` (28, 32, 36, 40, 44, 56). Decoration only (`aria-hidden`), the name is text in the parent. See [Category badge](colour-scheme.md#category-badge) |
 | `LogoMark.vue` | The Costcompass mark (disc, ring, compass needle) as an inline SVG, no props. Decoration only (`aria-hidden`), sized by the parent. Used in the sidebar title. See [Logo mark](colour-scheme.md#logo-mark) |
-| `MobileBar.vue` | The bottom tab bar below `lg`: a named `nav` with three tab links from `useNavItems()`. No props. See [Bottom tab bar](#bottom-tab-bar) |
+| `MobileBar.vue` | The bottom tab bar below `lg`: a named `nav` with three tab links from `useNavItems()`, and the round add button. No props. See [Bottom tab bar](#bottom-tab-bar) |
 | `LanguageSwitcher.vue` | `USelect` that calls `setLocale()`. Wrapped in a `UFormField` with the visible label `language.label`. Sits in the footer slot of the sidebar, see [Sidebar navigation](#sidebar-navigation) |
 
 `CostForm` is opened through the [add and edit dialog](#add-and-edit-dialog). It validates with the Zod schemas from `shared/utils/validation.ts`, so the browser and the API apply the same rules, except that the date field limit of the `month` prop is a browser limit only.
@@ -276,6 +295,7 @@ Checked by hand in the browser: the dashboard and month page buttons open the di
 - Categories and intervals are keyed by id: `category.housing`, `interval.monthly`.
 - Labels that go through `t()` and live in script code must be wrapped in `computed` so they update when the language changes.
 - Month names and dates come from `Intl` through `useMonth()`, in UTC, in the active language.
+- Add button texts: `costs.add` (all pages) and `costs.addToMonth` (month pages, "Add cost to {month}" / "Kosten zu {month} hinzufügen"), used by the [phone add button](#add-button-on-phones).
 - Navigation texts: `nav.label`, `nav.dashboard`, `nav.costs`, `nav.thisMonth` and `nav.month` (the short label of the tab bar: "Month" / "Monat").
 - Page titles: each page sets `useHead({ title: () => t('...') })`. `app.vue` adds the suffix: "<page> – Costcompass".
 
