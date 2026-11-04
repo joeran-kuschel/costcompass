@@ -85,7 +85,9 @@ If you open a month in a year that has no data and is not the current year, or a
 
 On a wide screen (about 1024 pixels or more) the sidebar on the left holds the app name, the **Add cost** button, the links to **Dashboard**, **Costs** and **This month**, and the language list.
 
-On a narrower screen, such as a phone, the sidebar is not shown yet and there is no menu. Navigation for small screens is planned.
+On a narrower screen, such as a phone, the sidebar is replaced by a tab bar that floats above the bottom edge of the screen. It has three tabs: **Dashboard**, **Costs** and **Month** (today's month). The tab for the page you are on is filled with colour and the others are plain, so you can tell them apart. Tap a tab to go there.
+
+On a narrow screen there is no language list and no **Add cost** button in the tab bar yet. Both are planned. Until then, use the **Add a cost** tile on the dashboard or the buttons on the month page, and switch the language on a wide screen.
 
 ## Change the language
 

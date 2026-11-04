@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, afterEach } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import DefaultLayout from '~/layouts/default.vue'
 import LogoMark from '~/components/LogoMark.vue'
@@ -16,6 +16,10 @@ describe('LogoMark', () => {
     const fills = wrapper.findAll('circle').map(circle => circle.attributes('fill'))
     expect(fills.filter(fill => fill === 'var(--ui-primary)')).toHaveLength(2)
   })
+})
+
+afterEach(async () => {
+  await useNuxtApp().$i18n.setLocale('en')
 })
 
 // The sidebar replaces the header: logo and name, the add button, the navigation and the language select.
@@ -39,16 +43,28 @@ describe('default layout sidebar title', () => {
 })
 
 describe('default layout navigation', () => {
-  const nav = (wrapper: Mounted) => wrapper.find('nav')
-  const navLinks = (wrapper: Mounted) => wrapper.findAll('nav a')
+  // The sidebar's navigation; the tab bar for phones has its own (see MobileBar.test.ts).
+  const nav = (wrapper: Mounted) => sidebar(wrapper).find('nav')
+  const navLinks = (wrapper: Mounted) => sidebar(wrapper).findAll('nav a')
   const thisMonthPath = () => {
     const { currentYear, currentMonth } = useYear()
     return `/months/${currentYear.value}/${String(currentMonth.value).padStart(2, '0')}`
   }
-  it('is the only navigation and has an accessible name', async () => {
+  it('has a navigation with an accessible name in the sidebar', async () => {
     const wrapper = await mountSuspended(DefaultLayout)
-    expect(wrapper.findAll('nav')).toHaveLength(1)
     expect(nav(wrapper).attributes('aria-label')).toBe('Main nav')
+  })
+  it('has a second navigation for phones, the tab bar, with the same name: only one of the two is shown at a time', async () => {
+    const wrapper = await mountSuspended(DefaultLayout)
+    const navs = wrapper.findAll('nav')
+    expect(navs).toHaveLength(2)
+    expect(navs.map(item => item.attributes('aria-label'))).toEqual(['Main nav', 'Main nav'])
+  })
+  it('shows the sidebar from the lg breakpoint up and the tab bar below it', async () => {
+    const wrapper = await mountSuspended(DefaultLayout)
+    expect(sidebar(wrapper).classes()).toEqual(expect.arrayContaining(['hidden', 'lg:block']))
+    const bar = wrapper.findAll('nav').find(item => item.classes().includes('mobile-tabs'))!
+    expect(bar.element.parentElement!.classList.contains('lg:hidden')).toBe(true)
   })
   it('has Dashboard, Costs and This month, in that order, each with a hidden icon', async () => {
     const wrapper = await mountSuspended(DefaultLayout)

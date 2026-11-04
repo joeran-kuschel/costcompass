@@ -1,0 +1,53 @@
+import { describe, it, expect, afterEach } from 'vitest'
+import { mountSuspended } from '@nuxt/test-utils/runtime'
+import MobileBar from '~/components/MobileBar.vue'
+
+type Mounted = Awaited<ReturnType<typeof mountSuspended>>
+
+afterEach(async () => {
+  await useNuxtApp().$i18n.setLocale('en')
+})
+
+const thisMonthPath = () => {
+  const { currentYear, currentMonth } = useYear()
+  return `/months/${currentYear.value}/${String(currentMonth.value).padStart(2, '0')}`
+}
+const bar = (route = '/') => mountSuspended(MobileBar, { route })
+const tabs = (wrapper: Mounted) => wrapper.findAll('nav a')
+
+describe('MobileBar', () => {
+  it('is one navigation with an accessible name', async () => {
+    const wrapper = await bar()
+    expect(wrapper.findAll('nav')).toHaveLength(1)
+    expect(wrapper.find('nav').attributes('aria-label')).toBe('Main nav')
+  })
+  it('has three tabs: Dashboard, Costs and Month, in that order', async () => {
+    expect(tabs(await bar()).map(tab => tab.text())).toEqual(['Dashboard', 'Costs', 'Month'])
+  })
+  it('makes every tab a real link', async () => {
+    const wrapper = await bar()
+    expect(tabs(wrapper).map(tab => tab.element.tagName)).toEqual(['A', 'A', 'A'])
+    expect(tabs(wrapper).map(tab => tab.attributes('href'))).toEqual(['/', '/costs', thisMonthPath()])
+  })
+  it('gives every tab an icon that is hidden from assistive technology', async () => {
+    for (const tab of tabs(await bar())) {
+      expect(tab.find('.iconify').attributes('aria-hidden'), tab.text()).toBe('true')
+    }
+  })
+  it('has German tab names', async () => {
+    await useNuxtApp().$i18n.setLocale('de')
+    const wrapper = await bar()
+    expect(tabs(wrapper).map(tab => tab.text())).toEqual(['Dashboard', 'Kosten', 'Monat'])
+    expect(wrapper.find('nav').attributes('aria-label')).toBe('Hauptnavigation')
+  })
+  it('is fixed at the bottom and hidden from the lg breakpoint up, where the sidebar takes over', async () => {
+    const wrapper = await bar()
+    const row = wrapper.find('nav').element.parentElement!
+    expect(row.classList.contains('fixed')).toBe(true)
+    expect(row.classList.contains('lg:hidden')).toBe(true)
+  })
+})
+
+// The current tab (`aria-current="page"`, set by NuxtLink) is not tested here: the router of the test environment does not
+// report a link as active, not even after a push. It was checked in the browser: Costs is current on /costs, Month on
+// the page of today's month, and no tab on another month page (the same rule as the sidebar, see DefaultLayout.test.ts).

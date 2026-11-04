@@ -13,6 +13,8 @@ export default defineNuxtConfig({
         { rel: 'manifest', href: '/manifest.webmanifest' },
       ],
       meta: [
+        // viewport-fit=cover lets the page use the whole screen of a notched phone, so env(safe-area-inset-bottom) has a value for the tab bar.
+        { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
         { name: 'theme-color', content: '#2D4BD8', media: '(prefers-color-scheme: light)' },
         { name: 'theme-color', content: '#3B5BEB', media: '(prefers-color-scheme: dark)' },
       ],

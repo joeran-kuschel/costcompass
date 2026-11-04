@@ -69,7 +69,7 @@ Tests: `tests/nuxt/dashboard-page.test.ts`, describe "dashboard page year select
 
 ## Sidebar navigation
 
-Issue #53 (this replaces the header of #21). The layout is `app/layouts/default.vue`. From the `lg` breakpoint (1024 px) up, the navigation is a sidebar on the left. The layout has no `UHeader` any more.
+Issue #53 (this replaces the header of #21). The layout is `app/layouts/default.vue`. From the `lg` breakpoint (1024 px) up, the navigation is a sidebar on the left (`hidden lg:block`); below it, see the [bottom tab bar](#bottom-tab-bar). The layout has no `UHeader` any more.
 
 The layout is a wrapper `div` with `lg:flex lg:min-h-screen`. Its children, in order:
 
@@ -77,7 +77,7 @@ The layout is a wrapper `div` with `lg:flex lg:min-h-screen`. Its children, in o
 | --- | --- |
 | Skip link | `<a href="#main">`, text `nav.skip` ("Skip to content"), visually hidden until it has the focus |
 | `USidebar` | `collapsible="none"`, `as="div"`, `breakpoint="lg"`, 248 px wide (`[--sidebar-width:15.5rem]`), `shrink-0` |
-| `UMain` | `id="main"`, `min-w-0 flex-1`, with the page slot inside a `UContainer`. `min-w-0` lets the costs table scroll inside its card instead of widening the page |
+| `UMain` | `id="main"`, `min-w-0 flex-1`, with the page slot inside a `UContainer` with `class="mx-0"`: the content is aligned to the left edge of the area next to the sidebar, up to 1160 px wide (the container's default `mx-auto` centred it, which left a growing gap on both sides on wide screens). `min-w-0` lets the costs table scroll inside its card instead of widening the page |
 
 The add and edit dialog (below) stays outside the wrapper.
 
@@ -89,7 +89,7 @@ The sidebar has three parts:
 | Body | The "Add cost" button (`UButton`, icon `i-lucide-plus`, classes `pill pill-shadow`, calls `openAdd()`), then one vertical `UNavigationMenu` named by `nav.label` ("Main nav" / "Hauptnavigation") |
 | Footer slot | `LanguageSwitcher` |
 
-`navItems` is one `computed` (labels from `nav.dashboard`, `nav.costs` and `nav.thisMonth`, so they follow a language switch). Each item has an icon:
+The items come from `useNavItems()` (one `computed`; labels from `nav.dashboard`, `nav.costs` and `nav.thisMonth`, so they follow a language switch), shared with the [bottom tab bar](#bottom-tab-bar). Each item has an icon:
 
 | Item | Path | Icon |
 | --- | --- | --- |
@@ -97,7 +97,7 @@ The sidebar has three parts:
 | Costs | `/costs` | `i-lucide-list` |
 | This month | `monthPath(currentYear, currentMonth)` | `i-lucide-calendar` |
 
-- Add a new page to `navItems` once. Only today's month page is in the navigation (see below); other month pages stay out of it.
+- Add a new page to `useNavItems` once. Only today's month page is in the navigation (see below); other month pages stay out of it.
 - The "Add cost" button is the only add entry on desktop. `/costs` has no button of its own any more (author's decision). The dashboard tile and the month page buttons stay, see [Add and edit dialog](#add-and-edit-dialog).
 - Styling is in `app/assets/css/main.css`: nav links are pills at least 48 px high. A link that is not the current page gets the tint `--ui-bg-accented` and the text colour `#2238b0` (dark mode `#afc0ff`) on hover; Nuxt UI's own hover fill is hidden so the two do not add up. `.pill-shadow` gives the add button a soft cobalt shadow, the same in light and dark mode.
 - The language select has a visible label: `LanguageSwitcher` wraps the `USelect` in a `UFormField` with the text `language.label` ("Language" / "Sprache"), connected to the select by `for` and `id`. It has no `aria-label` any more.
@@ -113,7 +113,62 @@ The sidebar has three parts:
 
 ### Below the `lg` breakpoint
 
-The sidebar is hidden below 1024 px and nothing replaces it yet: there is no navigation, no language select and no layout-level add button on small screens. They come in the same pull request as their own issues: the bottom tab bar (#54), the compact language button (#59) and the floating add button (#55). The menu button and the mobile menu of the old header are gone.
+Below 1024 px the sidebar is hidden and the [bottom tab bar](#bottom-tab-bar) is the navigation. Still missing on small screens: the compact language button (#59) and the floating add button (#55). They come in the same pull request as their own issues. The menu button and the mobile menu of the old header are gone.
+
+`USidebar` has `hidden lg:block`. With `collapsible="none"` it has no mobile behaviour of its own, and `breakpoint="lg"` only matters for the collapsible modes, so before this change the sidebar also showed on phones. Now below 1024 px only the tab bar shows, from 1024 px only the sidebar. The DOM holds two `nav` landmarks, both named "Main nav" (`nav.label`); one of them is always `display: none`, so a screen reader meets only one.
+
+## Bottom tab bar
+
+Issue #54. Written for developers. On phones the navigation is a pill that floats above the bottom edge, with the same three destinations as the sidebar.
+
+### Parts
+
+| Part | File | What it does |
+| --- | --- | --- |
+| `MobileBar.vue` | `app/components/MobileBar.vue` | A `div` (`fixed inset-x-4 bottom-7 z-40 flex items-center gap-2.5 lg:hidden`) with one `<nav>` named `nav.label` (class `mobile-tabs`). In it, one `NuxtLink` (class `mobile-tab`) per item: a decorative `UIcon` (`size-5`) above the short label. Used once, in `layouts/default.vue` (`<MobileBar />`, next to the `UModal`, outside the flex wrapper). |
+| `useNavItems()` | `app/composables/useNavItems.ts` | Returns `items`, a `computed` that follows the language. Each item has `label`, `shortLabel`, `to` and `icon`. |
+| Styles | `app/assets/css/main.css` | `.mobile-tabs`, `.mobile-tab` and the bottom padding of `main`, see below. |
+| Viewport meta | `nuxt.config.ts` | `width=device-width, initial-scale=1, viewport-fit=cover`. |
+
+The outer row is a flex row so that the round add button of #55 can sit next to the pill later (68 px in the mock). It is not built yet.
+
+### The items
+
+| Item | `label` | `shortLabel` | `to` | `icon` |
+| --- | --- | --- | --- | --- |
+| Dashboard | `nav.dashboard` | `nav.dashboard` | `/` | `i-lucide-layout-dashboard` |
+| Costs | `nav.costs` | `nav.costs` | `/costs` | `i-lucide-list` |
+| This month | `nav.thisMonth` ("This month" / "Dieser Monat") | `nav.month` ("Month" / "Monat") | `monthPath(currentYear, currentMonth)` | `i-lucide-calendar` |
+
+The sidebar and the tab bar both read `useNavItems()`. The layout's own `navItems`, with its `useYear()` and `useMonth()` calls, moved into the composable. The sidebar passes the items to `UNavigationMenu`, which ignores `shortLabel` (no stray attribute in the markup). The short label "Month" fits three tabs on a 320 px screen. Add a new page to `useNavItems` once; both navigations get it.
+
+### Styles
+
+- `.mobile-tabs`: `flex: 1`, 6 px padding, fully rounded, background `#14162b` (light) and `#262a45` (dark), shadow `0 12px 28px -8px rgba(20, 22, 43, .45)`.
+- `.mobile-tab`: `flex: 1`, a column with a 2 px gap, at least 56 px high, 11 px bold text in `#b8bcd3`, rounded. The current tab (`[aria-current="page"]`) is filled with `var(--ui-primary)` (`#2d4bd8` light, `#3b5beb` dark) with white text. The current page is therefore carried by the fill and not by the text colour alone.
+- `:focus-visible` on a tab: a 3 px white outline with offset -3 px. The mock has no focus style; this one was added.
+- Bottom padding: a media query `(width < 64rem)` gives `main` `padding-bottom: calc(7rem + env(safe-area-inset-bottom))`, so no content sits behind the bar. The bar is 68 px high and ends 28 px above the bottom edge; 112 px leaves air.
+
+Contrast, calculated: resting text on the pill 9.47:1 (light) and 7.45:1 (dark); white on the current tab 6.75:1 (light) and 5.41:1. The dark pill (`#262a45`) against the dark page (`#0b0c14`) is only 1.39:1. That follows the mock and is a shape contrast, not a text contrast; look at it on a real screen.
+
+### Viewport meta
+
+`nuxt.config.ts` sets `viewport-fit=cover`. The one tag replaces Nuxt's default viewport tag. Without it `env(safe-area-inset-bottom)` has no value on a notched phone.
+
+`interactive-widget` is deliberately not set. With the default, the fixed bar stays at the bottom of the layout viewport and is simply behind the on-screen keyboard: it neither jumps up nor covers the field being typed in. `interactive-widget=resizes-content` would make it jump above the keyboard. This is reasoning, not tested on a phone *(to verify)*.
+
+### Tests
+
+- `tests/nuxt/MobileBar.test.ts`: one named `nav`, three tabs in order with the short labels, real links with hrefs (today's month with a two-digit month), hidden decorative icons, German names, the row is `fixed` and `lg:hidden`.
+- `tests/nuxt/useNavItems.test.ts`: labels, short labels, links, an own Lucide icon per item, German and a language switch.
+- `tests/nuxt/DefaultLayout.test.ts`: two navs both named "Main nav", the `hidden lg:block` and `lg:hidden` pair, sidebar queries scoped to the sidebar.
+- The current tab (`aria-current`) has no unit test: the test environment's router does not report a `NuxtLink` as active.
+
+### Checked and not checked
+
+Checked in the browser (dev server, iframes of the given widths, measured values; a screenshot of the bar did not work): at 320, 390 and 1023 px the bar shows and the sidebar is hidden, at 1024 and 1280 px the reverse. No sideways overflow. Each tab is 56 px high. At 320 px the pill is 288 px wide and each tab 92 px, at 390 px 115 px; no label is clipped in English or German. The pill's bottom edge is 28 px above the viewport bottom. The computed colours match the mock in light and dark mode. The current tab was checked on `/costs`, on today's month page and on another month page (no tab is current there).
+
+Not checked *(to verify)*: a real or notched phone and the safe area, the on-screen keyboard, a screen reader, the keyboard focus outline, and the bar below 1024 px on pages other than `/costs`.
 
 ### The "This month" navigation entry
 
@@ -124,7 +179,7 @@ Decision for #56: the entry is the current item (`aria-current="page"`) only on 
 Known limits:
 
 - "Today" is read once per app load (see `useYear()` under [Composables](#composables)). A tab that stays open past midnight into a new month keeps the old month in the link until the page is reloaded. This follows from the existing `useYear` decision.
-- The shorter phone label "Month" named in the issue belongs to the bottom tab bar (#54), which does not exist yet.
+- The shorter phone label "Month" (`nav.month`) is used by the [bottom tab bar](#bottom-tab-bar) only; the sidebar keeps "This month".
 
 Tests: `tests/nuxt/DefaultLayout.test.ts` checks the sidebar (title link, one named navigation, item order and icons, the add button and its dialog request, skip link and `id="main"`, keyboard order in the DOM, the language select with its visible label, German texts) and, for This month, the path with a two-digit month computed from `useYear()`, the current state on today's month page but not on another month page or the same month of another year, Dashboard and Costs on their own pages, and the German names. In `tests/nuxt/error-page.test.ts` the link finder now ignores links inside the navigation, because the sidebar has a link to a month page.
 
@@ -197,6 +252,7 @@ Checked by hand in the browser: the dashboard and month page buttons open the di
 | `BusinessBadge.vue` | The "Business" badge with a briefcase icon, no props. See [Business badge](colour-scheme.md#business-badge) |
 | `CategoryBadge.vue` | Round disc with a white category icon; props `category` and `size` (28, 32, 36, 40, 44, 56). Decoration only (`aria-hidden`), the name is text in the parent. See [Category badge](colour-scheme.md#category-badge) |
 | `LogoMark.vue` | The Costcompass mark (disc, ring, compass needle) as an inline SVG, no props. Decoration only (`aria-hidden`), sized by the parent. Used in the sidebar title. See [Logo mark](colour-scheme.md#logo-mark) |
+| `MobileBar.vue` | The bottom tab bar below `lg`: a named `nav` with three tab links from `useNavItems()`. No props. See [Bottom tab bar](#bottom-tab-bar) |
 | `LanguageSwitcher.vue` | `USelect` that calls `setLocale()`. Wrapped in a `UFormField` with the visible label `language.label`. Sits in the footer slot of the sidebar, see [Sidebar navigation](#sidebar-navigation) |
 
 `CostForm` is opened through the [add and edit dialog](#add-and-edit-dialog). It validates with the Zod schemas from `shared/utils/validation.ts`, so the browser and the API apply the same rules, except that the date field limit of the `month` prop is a browser limit only.
@@ -209,6 +265,7 @@ Checked by hand in the browser: the dashboard and month page buttons open the di
 | `useYear()` | `year` (selected, shared state), `currentYear`, `currentMonth` (read once, in UTC) |
 | `useMonth()` | `monthName(month, style?)`, `monthYear(year, month)`, `monthPath(year, month)` |
 | `useCostLists()` | `recurring`, `purchases`, `failed`, `loading`, `retry`. Uses `useFetch` with `lazy: true`, so the layout, the dashboard, the costs page and the month page share the cached data. |
+| `useNavItems()` | `items` (computed, follows the language): `label`, `shortLabel`, `to`, `icon` for Dashboard, Costs and This month. Read by the sidebar and `MobileBar`. |
 | `useCategory()` | `categoryIcon(category)`, `categoryClass(category)`, `categoryStyle(size)` for `CategoryBadge`; also exports `CATEGORY_SIZES` and `CategorySize` |
 | `useCostDialog()` | `open`, `cost` (`Stored<Cost> \| null`), `month` (`MonthRef \| null`), `openAdd(month?)`, `openEdit(cost)`, `close()`. State in `useState` (keys `costDialogOpen`, `costDialogCost`, `costDialogMonth`). See [Add and edit dialog](#add-and-edit-dialog). |
 | `useAppHead()` | `<html lang>`, `dir` and the title template; called by `app.vue` and `error.vue` |
@@ -219,6 +276,7 @@ Checked by hand in the browser: the dashboard and month page buttons open the di
 - Categories and intervals are keyed by id: `category.housing`, `interval.monthly`.
 - Labels that go through `t()` and live in script code must be wrapped in `computed` so they update when the language changes.
 - Month names and dates come from `Intl` through `useMonth()`, in UTC, in the active language.
+- Navigation texts: `nav.label`, `nav.dashboard`, `nav.costs`, `nav.thisMonth` and `nav.month` (the short label of the tab bar: "Month" / "Monat").
 - Page titles: each page sets `useHead({ title: () => t('...') })`. `app.vue` adds the suffix: "<page> – Costcompass".
 
 ## Accessibility conventions
