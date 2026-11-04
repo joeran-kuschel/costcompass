@@ -46,9 +46,11 @@ const thisMonth = computed(() => {
         icon: { less: 'i-lucide-trending-down', more: 'i-lucide-trending-up', same: 'i-lucide-minus', none: 'i-lucide-minus'}[direction],
         recurringTotal: cents(groups.recurringTotal),
         purchasesTotal: cents(groups.purchasesTotal),
+        empty: costs.length === 0,
         largest: largestCosts(costs).map(toRow)
     }
 })
+const { openAdd } = useCostDialog()
 
 useHead({ title: () => t('nav.dashboard') })
 </script>
@@ -70,30 +72,37 @@ useHead({ title: () => t('nav.dashboard') })
     <template v-else>
         <YearSelect :model-value="shownYear" @update:model-value="year = $event" :years="years"/>
         <section aria-labelledby="this-month-title">
-            <UCard variant="subtle" class="card">
+            <UCard variant="subtle" class="card card-hero">
+                <span class="hero-ring" aria-hidden="true" />
                 <h2 id="this-month-title">{{ thisMonth.title }}</h2>
-                <p class="text-5xl font-extrabold tracking-tight tabular-nums">{{ thisMonth.total }}</p>
-                <p class="flex items-center gap-2">
+                <p class="hero-total">{{ thisMonth.total }}</p>
+                <p class="mt-3 inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1">
                     <UIcon :name="thisMonth.icon" aria-hidden="true" />
                     {{ thisMonth.comparison }}
                 </p>
-                <dl class="mt-4 flex flex-wrap gap-x-8 gap-y-2">
-                    <div>
-                        <dt class="text-sm text-muted">{{ t('month.recurring') }}</dt>
-                        <dd class="font-semibold tabular-nums">{{ thisMonth.recurringTotal }}</dd>
+                <div class="mt-10 flex flex-wrap items-center justify-between gap-3">
+                    <dl class="flex flex-wrap gap-x-8 gap-y-2">
+                        <div>
+                            <dt class="text-sm">{{ t('month.recurring') }}</dt>
+                            <dd class="font-semibold tabular-nums">{{ thisMonth.recurringTotal }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm">{{ t('month.purchases') }}</dt>
+                            <dd class="font-semibold tabular-nums">{{ thisMonth.purchasesTotal }}</dd>
+                        </div>
+                    </dl>
+                    <div v-if="thisMonth.empty" class="flex flex-wrap items-center gap-3">
+                        <p class="text-sm">{{ t('dashboard.thisMonth.empty') }}</p>
+                        <UButton :label="t('costs.add')" class="pill border-white/60 text-white hover:bg-white/15 focus-visible:outline-white" color="neutral" variant="outline" @click="openAdd()" />
                     </div>
-                    <div>
-                        <dt class="text-sm text-muted">{{ t('month.purchases') }}</dt>
-                        <dd class="font-semibold tabular-nums">{{ thisMonth.purchasesTotal }}</dd>
-                    </div>
-                </dl>
-                <UButton
-                    :to="monthPath(currentYear, currentMonth)"
-                    :label="t('dashboard.thisMonth.view', { month: monthYear(currentYear, currentMonth) })"
-                    trailing-icon="i-lucide-arrow-right"
-                    variant="link"
-                    class="mt-4 px-0"
-                />
+                    <UButton
+                        :to="monthPath(currentYear, currentMonth)"
+                        :label="t('dashboard.thisMonth.view', { month: monthYear(currentYear, currentMonth) })"
+                        trailing-icon="i-lucide-arrow-right"
+                        color="neutral" variant="solid"
+                        class="pill ml-auto bg-white text-[#2D4BD8] hover:bg-white/90 focus-visible:outline-white"
+                    />
+                </div>
             </UCard>
         </section>
         <section aria-labelledby="largest-title">

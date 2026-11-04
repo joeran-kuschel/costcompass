@@ -192,6 +192,10 @@ main > div:has(#this-month-title) > section[aria-labelledby="split-title"] {
 
 /* A card with the action colour behind it, for the month's total (white text, big number). */
 .card-hero {
+  position: relative;
+  overflow: hidden;
+  /* A new stacking context, so the ring can sit behind the text with z-index -1 and still above the card's colour. */
+  isolation: isolate;
   background-color: var(--ui-color-primary-500);
   color: #ffffff;
 }
@@ -201,13 +205,33 @@ main > div:has(#this-month-title) > section[aria-labelledby="split-title"] {
   letter-spacing: 0;
   color: #dce2fb;
 }
-.card-hero p {
+/* The labels of the subtotals in the light tint of the heading, the amounts in white (5.25:1 and 6.75:1 on the cobalt). */
+.card-hero dt {
+  color: #dce2fb;
+}
+.card-hero dd {
+  color: #ffffff;
+}
+/* The big number. Only this element, so other text in the card keeps its size. */
+.card-hero .hero-total {
   margin-top: 0.375rem;
   font-size: clamp(2.25rem, 12vw, 3.5rem);
   font-weight: 800;
   letter-spacing: -0.04em;
   line-height: 1;
   font-variant-numeric: tabular-nums;
+}
+/* A decorative ring in the top right corner, clipped by the card; it never takes clicks. */
+.card-hero .hero-ring {
+  position: absolute;
+  top: -4.5rem;
+  right: -4.5rem;
+  z-index: -1;
+  width: 15rem;
+  height: 15rem;
+  border: 2.25rem solid rgb(255 255 255 / 0.08);
+  border-radius: 9999px;
+  pointer-events: none;
 }
 
 /* Costs page: the heading and the add button share a row, the table card takes the full width below. */

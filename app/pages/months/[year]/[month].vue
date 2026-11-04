@@ -84,7 +84,7 @@ async function onRetry() {
         <template v-else>
             <UCard variant="subtle" class="card card-hero mt-4" aria-labelledby="month-total-title">
                 <h2 id="month-total-title">{{ t('month.total', { month: monthName(month) }) }}</h2>
-                <p>{{ euros(groups.total) }}</p>
+                <p class="hero-total">{{ euros(groups.total) }}</p>
             </UCard>
             <UCard v-if="sections.length === 0" variant="subtle" class="card mt-6 text-center">
                 <UIcon name="i-lucide-calendar-x" class="size-8" aria-hidden="true" />

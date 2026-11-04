@@ -115,7 +115,7 @@
         "alt": "{month}: {amount}"
     },
     "thisMonth": {
-        "title": "Dieser Monat, {month} {year}",
+      "title": "Dieser Monat · {month} {year}",
         "less": "{percent} % weniger als im {previous}",
         "more": "{percent} % mehr als im {previous}",
         "same": "Genauso viel wie im {previous}",

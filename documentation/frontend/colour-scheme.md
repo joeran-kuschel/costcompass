@@ -85,6 +85,17 @@ The soft variant alone (text on `--ui-secondary` at 10 % opacity) depends on the
 
 Checked in the browser at a 320 px wide viewport (an iframe of the dev server), in English and German, light and dark: the computed fill and text colours are the values above, there is no ring, and the badge (87 px wide in English, 109 px in German, 24 px high) stays inside the viewport. In German the page itself scrolls sideways by about 5 px at 320 px; the badge is not the cause, the source is not found yet.
 
+## Hero card
+
+Issue #60. The "This month" card on the dashboard is a solid cobalt card, `class="card card-hero"` in `app/pages/index.vue`. The month page's total card uses the same class.
+
+- Background: `var(--ui-color-primary-500)` (`#2D4BD8`). The `.dark` block does not change this variable, so the card looks the same in light and dark mode.
+- `.card-hero` sets `position: relative`, `overflow: hidden` and `isolation: isolate`, so the ring is clipped by the card and sits behind the text (`z-index: -1`).
+- Text: white. The heading and the subtotal labels (`dt`) use the light tint `#dce2fb`, the subtotal amounts (`dd`) white.
+- The big number is the rule `.card-hero .hero-total`, not `.card-hero p`, so other text in the card keeps its size. The element needs the class: `index.vue` and `pages/months/[year]/[month].vue` both set `class="hero-total"` on the total. Size is `clamp(2.25rem, 12vw, 3.5rem)`, weight 800, tabular numerals.
+- `.card-hero .hero-ring`: a decorative ring (15 rem, border 2.25 rem in white at 8% opacity) in the top right corner, `pointer-events: none`.
+- Contrast, computed (not measured in a tool): white 6.75:1 and `#dce2fb` 5.25:1 on `#2D4BD8`. Not measured: the "View" and "Add cost" buttons on the cobalt and the white focus outline.
+
 ## Category badge
 
 Issue #51. `app/components/CategoryBadge.vue` shows a round disc with a white icon for a category. Props: `category` and `size` (`CategorySize`: 28, 32, 36, 40, 44 or 56 px, from `CATEGORY_SIZES` in `app/composables/useCategory.ts`).

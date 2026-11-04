@@ -6,7 +6,7 @@ Reference and conventions for `app/` (pages, components, composables, texts). Wr
 
 | Route | File | State | What it does |
 | --- | --- | --- | --- |
-| `/` | `app/pages/index.vue` | Exists | Dashboard: "This month" card with the recurring and purchases subtotals, "Largest this month" card, year select, summary tiles, household versus business bar, costs by category, costs per month |
+| `/` | `app/pages/index.vue` | Exists | Dashboard: "This month" hero card with the recurring and purchases subtotals, "Largest this month" card, year select, summary tiles, household versus business bar, costs by category, costs per month |
 | `/costs` | `app/pages/costs.vue` | Exists | One sortable table of both kinds, add, edit and delete |
 | `/months/[year]/[month]` | `app/pages/months/[year]/[month].vue` | Exists | Costs of one month, total, previous and next links, add cost in the empty month (pre-filled for the month) |
 | `/calculator` | - | Planned | Rate calculator |
@@ -32,9 +32,22 @@ The address is checked before any data is requested. `monthParamsSchema` (`share
 
 Issue #61. Below the comparison line, the card has a description list (`dl`) with two pairs: "Recurring" (`month.recurring`) and "Purchases" (`month.purchases`), the same keys as the month page. The amounts are `recurringTotal` and `purchasesTotal` from `groupMonthCosts(costsInMonth(...))` for today's month and year, so they ignore the year selector like the rest of the card. A group without costs shows `€0.00`, not nothing.
 
-The subtotals use cents (`useMoney({ cents: true })`), while the card's total stays in whole euros. The rounded total can therefore differ from the sum of the two subtotals: 819.99 and 300.50 add up to 1,120.49, and the total shows €1,120. The labels use the `text-muted` colour; their contrast ratio of 4.5:1 is not measured yet.
+The subtotals use cents (`useMoney({ cents: true })`), while the card's total stays in whole euros. The rounded total can therefore differ from the sum of the two subtotals: 819.99 and 300.50 add up to 1,120.49, and the total shows €1,120. Since issue #60 the labels are `dt` elements in the light tint `#dce2fb` on the cobalt hero card (see [Hero card](colour-scheme.md#hero-card)).
 
 Tests: `tests/nuxt/dashboard-page.test.ts`, `describe('dashboard page this month subtotals')`: labels and cents, only purchases of the current month, the sum against `monthlyTotals`, zero groups, a month without costs, the `dl` terms and German.
+
+### The hero card ("This month")
+
+Issue #60. Written for developers. The "This month" card is a solid cobalt card (`class="card card-hero"`). Colours and CSS are in [Hero card](colour-scheme.md#hero-card). From top to bottom:
+
+- A decorative ring (`span.hero-ring`, `aria-hidden`, no text), clipped by the card.
+- The heading `h2#this-month-title`: "This month · March 2026" (`dashboard.thisMonth.title`, with a middle dot, in both languages).
+- The total as `p.hero-total` (large, tabular numerals, whole euros).
+- The comparison with the previous month in a translucent pill (`bg-white/15`, `rounded-full`). The trend icon is decoration; the direction is in the words.
+- A bottom row (flex, wraps): the subtotals `dl` on the left (cents), and at the right the white pill link "View <month year>" with an arrow (`ml-auto`).
+- In a month without costs, the row also shows "No costs this month yet." (`dashboard.thisMonth.empty`) and an outlined white "Add cost" button that calls `openAdd()` (the `thisMonth.empty` flag). With costs, neither is rendered. The "Largest this month" card shows the same text in that case.
+
+Tests: `tests/nuxt/dashboard-page.test.ts`: the heading with the middle dot, the trend icon, the ring, and `describe('dashboard page this month card empty month')` (text and button, the button asks for an empty dialog, the link stays, nothing with costs, German). Checked by the author in the browser: light and dark mode, German, 320 px, spacing. Not checked: a real phone, a screen reader, the contrast of the buttons and the focus ring, the size of the total on a phone against the mock (`BPhoneDashboard`).
 
 ### "Largest this month" card
 
@@ -43,7 +56,7 @@ Issue #63. Written for developers. The card replaces the "Add a cost" tile and s
 - The rows come from `largestCosts(costsInMonth(...))` for today's month and year, so, like the "This month" card, they ignore the year selector. They are mapped with `toRow` from `useMonth()`.
 - Each row has a `CategoryBadge` (40 px), the name, the `BusinessBadge` for business costs, a sub line ("Housing · Monthly", "Appliances · 8 Nov") and the amount with cents.
 - A month without costs shows "No costs this month yet." (`dashboard.thisMonth.empty`) and no button.
-- The full list of the month is no longer on the dashboard (this also removed the list and the add button from the "This month" card). The "View <month year>" link of that card leads to it on the month page.
+- The full list of the month is no longer on the dashboard (this also removed the list from the "This month" card; its "Add cost" button came back in an empty month with #60). The "View <month year>" link of that card leads to it on the month page.
 - The dashboard has no add entry point of its own. The sidebar button and the phone's round button remain.
 - On narrow screens the card wraps below the "This month" card. This was not decided from a mock (the phone mock has no such card).
 

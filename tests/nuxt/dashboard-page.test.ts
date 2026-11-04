@@ -547,7 +547,7 @@ describe('dashboard page this month card', () => {
     api.recurring.rows = [rent]
     await mountPage()
     await vi.waitFor(() => expect(section().exists()).toBe(true))
-    expect(section().find('h2').text()).toBe(`This month, ${monthName('en', month)} ${year}`)
+    expect(section().find('h2').text()).toBe(`This month · ${monthName('en', month)} ${year}`)
   })
   it('shows the total of the current month in whole euros', async () => {
     api.recurring.rows = [rent]
@@ -592,9 +592,19 @@ describe('dashboard page this month card', () => {
     api.purchases.rows = [lamp(2, 400, dateIn(year, month))]
     await mountPage()
     await vi.waitFor(() => expect(section().exists()).toBe(true))
-    const icon = section().find('[aria-hidden="true"]')
+    const icon = section().find('[class*="trending"]')
     expect(icon.exists()).toBe(true)
+    expect(icon.attributes('aria-hidden')).toBe('true')
     expect(icon.classes().join(' ')).toContain('trending-up')
+  })
+  it('hides the decorative ring from assistive technology and gives it no text', async () => {
+    api.recurring.rows = [rent]
+    await mountPage()
+    await vi.waitFor(() => expect(section().exists()).toBe(true))
+    const ring = section().find('.hero-ring')
+    expect(ring.exists()).toBe(true)
+    expect(ring.attributes('aria-hidden')).toBe('true')
+    expect(ring.text()).toBe('')
   })
   it('is German with German texts when the language is German', async () => {
     await setLanguage('de')
@@ -602,7 +612,7 @@ describe('dashboard page this month card', () => {
     api.purchases.rows = [lamp(2, 400, dateIn(year, month))]
     await mountPage()
     await vi.waitFor(() => expect(section().exists()).toBe(true))
-    expect(section().find('h2').text()).toBe(`Dieser Monat, ${monthName('de', month)} ${year}`)
+    expect(section().find('h2').text()).toBe(`Dieser Monat · ${monthName('de', month)} ${year}`)
     expect(comparison()).toBe(`50 % mehr als im ${monthName('de', previousMonth)}`)
   })
   it('shows no card while the lists are loading', async () => {
@@ -623,6 +633,58 @@ describe('dashboard page this month card', () => {
     await mountPage()
     await vi.waitFor(() => expect(wrapper.text()).toContain('No costs yet'))
     expect(section().exists()).toBe(false)
+  })
+})
+
+describe('dashboard page this month card empty month', () => {
+  const today = new Date()
+  const year = today.getUTCFullYear()
+  const month = today.getUTCMonth() + 1
+  const previousYear = month === 1 ? year - 1 : year
+  const previousMonth = month === 1 ? 12 : month - 1
+  const dateIn = (y: number, m: number) => `${y}-${String(m).padStart(2, '0')}-15`
+  const lamp = (id: number, date: string) => ({ id, kind: 'purchase', name: 'Lamp', amount: 300, category: 'appliances', business: false, date })
+  const card = () => wrapper.find('section[aria-labelledby="this-month-title"]')
+  const dialogState = () => {
+    const { open, cost, month } = useCostDialog()
+    return { open: open.value, cost: cost.value, month: month.value }
+  }
+
+  it('shows a short text and an "Add cost" button when the month has no costs', async () => {
+    api.purchases.rows = [lamp(2, dateIn(previousYear, previousMonth))]
+    await mountPage()
+    await vi.waitFor(() => expect(card().exists()).toBe(true))
+    expect(card().text()).toContain('No costs this month yet.')
+    expect(card().find('button').text()).toBe('Add cost')
+  })
+  it('asks for an empty add dialog when the button is pressed', async () => {
+    api.purchases.rows = [lamp(2, dateIn(previousYear, previousMonth))]
+    await mountPage()
+    await vi.waitFor(() => expect(card().find('button').exists()).toBe(true))
+    expect(dialogState().open).toBe(false)
+    await card().find('button').trigger('click')
+    expect(dialogState()).toEqual({ open: true, cost: null, month: null })
+  })
+  it('keeps the link to the month page next to the button', async () => {
+    api.purchases.rows = [lamp(2, dateIn(previousYear, previousMonth))]
+    await mountPage()
+    await vi.waitFor(() => expect(card().exists()).toBe(true))
+    expect(card().findAll('a').some(anchor => anchor.attributes('href')?.startsWith('/months/'))).toBe(true)
+  })
+  it('shows neither the text nor the button when the month has costs', async () => {
+    api.recurring.rows = [rent]
+    await mountPage()
+    await vi.waitFor(() => expect(card().exists()).toBe(true))
+    expect(card().text()).not.toContain('No costs this month yet.')
+    expect(card().find('button').exists()).toBe(false)
+  })
+  it('is German when the language is German', async () => {
+    await setLanguage('de')
+    api.purchases.rows = [lamp(2, dateIn(previousYear, previousMonth))]
+    await mountPage()
+    await vi.waitFor(() => expect(card().exists()).toBe(true))
+    expect(card().text()).toContain('In diesem Monat gibt es noch keine Kosten.')
+    expect(card().find('button').text()).toBe('Kosten hinzufügen')
   })
 })
 
