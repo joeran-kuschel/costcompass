@@ -16,7 +16,7 @@ Costcompass is a household cost tracker built on Nuxt UI 4 and Tailwind 4, theme
 - **Spacing:** 4px scale. Content sits in a `container` (1160px) with `page-top` above and `page-bottom` below; sections are `space-6` apart; card padding is `card-padding` (20px on phones).
 - **Radius:** `--ui-radius` is `radius-base`, so fields are `radius-md`, modals `radius-lg`, cards `radius-card`. Buttons are pills (`radius-pill`, `tap-target` high); icon buttons are 44px circles.
 - **Charts:** bars are hand-built, real text for every value, the 12 month columns are links; household uses `primary`, business `secondary`.
-- **Layout:** header with title, navigation and language select; the dashboard is flex rows (this month beside the add tile, categories beside the split) that wrap on narrow screens; add and edit happen in a modal.
+- **Layout:** header with title, navigation and language select; the dashboard is flex rows (this month beside the add tile, categories beside the split) that wrap on narrow screens and are as tall as their tallest section; add and edit happen in a modal.
 
 ## Iconography
 

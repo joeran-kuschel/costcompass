@@ -46,8 +46,17 @@ Issue #60. Written for developers. The "This month" card is a solid cobalt card 
 - The comparison with the previous month in a translucent pill (`bg-white/15`, `rounded-full`). The trend icon is decoration; the direction is in the words.
 - A bottom row (flex, wraps): the subtotals `dl` on the left (cents), and at the right the white pill link "View <month year>" with an arrow (`ml-auto`).
 - In a month without costs, the row also shows "No costs this month yet." (`dashboard.thisMonth.empty`) and an outlined white "Add cost" button that calls `openAdd()` (the `thisMonth.empty` flag). With costs, neither is rendered. The "Largest this month" card shows the same text in that case.
+- The card is a flex column and its body fills it, so when the row stretches the card to the height of "Largest this month", the bottom row sits at the bottom. It uses `mt-auto` and `pt-10` (at least 40 px above it) and `w-full`, because the column does not stretch its children. See [Equal heights in a row](#equal-heights-in-a-row).
 
 Tests: `tests/nuxt/dashboard-page.test.ts`: the heading with the middle dot, the trend icon, the ring, and `describe('dashboard page this month card empty month')` (text and button, the button asks for an empty dialog, the link stays, nothing with costs, German). Checked by the author in the browser: light and dark mode, German, 320 px, spacing. Not checked: a real phone, a screen reader, the contrast of the buttons and the focus ring, the size of the total on a phone against the mock (`BPhoneDashboard`).
+
+### Equal heights in a row
+
+Issue #111. Written for developers. The dashboard rows are flex rows in `main.css` (`main > div:has(#this-month-title)`). They use `align-items: stretch`, so the sections of one row are as tall as the tallest one: "This month" next to "Largest this month", "Where your money goes" next to "Household and business". A section alone in its row ("Your year", "Month by month") keeps its own height. Each dashboard `section` is a flex column and its `.card` has `flex: 1`, so a shorter card fills the section and no empty strip shows below it.
+
+The month page's total card also uses `card-hero`; its two lines stay at the top.
+
+Tests: none. jsdom has no layout, so equal heights cannot be tested. Not checked: see the PR text of #111.
 
 ### "Largest this month" card
 

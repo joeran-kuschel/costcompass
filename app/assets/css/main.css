@@ -171,7 +171,8 @@ main section > h2 {
 main > div:has(#this-month-title) {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-start;
+  /* The sections of one row are as tall as the tallest of them; a section alone in its row keeps its own height. */
+  align-items: stretch;
   gap: 1.5rem;
 }
 main > div:has(#this-month-title) > * {
@@ -181,6 +182,14 @@ main > div:has(#this-month-title) > * {
 }
 main > div:has(#this-month-title) > h1 {
   margin-bottom: 0;
+}
+/* The card fills its (stretched) section, so a shorter card does not end early. */
+main > div:has(#this-month-title) > section {
+  display: flex;
+  flex-direction: column;
+}
+main > div:has(#this-month-title) > section > .card {
+  flex: 1;
 }
 main > div:has(#this-month-title) > section[aria-labelledby="this-month-title"],
 main > div:has(#this-month-title) > section[aria-labelledby="categories-title"] {
@@ -199,6 +208,17 @@ main > div:has(#this-month-title) > section[aria-labelledby="split-title"] {
   isolation: isolate;
   background-color: var(--ui-color-primary-500);
   color: #ffffff;
+}
+/* The content is a column that fills the card, so the bottom row of the dashboard hero can sit at the bottom when the card is stretched to the height of its neighbour. */
+.card-hero {
+  display: flex;
+  flex-direction: column;
+}
+.card-hero > [data-slot="body"] {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
 }
 .card-hero h2 {
   font-size: 0.9375rem;

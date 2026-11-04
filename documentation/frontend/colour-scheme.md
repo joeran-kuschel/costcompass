@@ -123,6 +123,7 @@ Issue #64. The class `card-flush` is used together with `card` (`.card.card-flus
 
 Issue #60. The "This month" card on the dashboard is a solid cobalt card, `class="card card-hero"` in `app/pages/index.vue`. The month page's total card uses the same class.
 
+- `.card-hero` is a flex column and its body (`[data-slot="body"]`) is a flex column that fills the card (`flex: 1`, `align-items: flex-start`), so the dashboard hero's bottom row can sit at the bottom of a card that a row has stretched (issue #111, see [Equal heights in a row](app-structure.md#equal-heights-in-a-row)). The month page's total card shares this; its two lines stay at the top.
 - Background: `var(--ui-color-primary-500)` (`#2D4BD8`). The `.dark` block does not change this variable, so the card looks the same in light and dark mode.
 - `.card-hero` sets `position: relative`, `overflow: hidden` and `isolation: isolate`, so the ring is clipped by the card and sits behind the text (`z-index: -1`).
 - Text: white. The heading and the subtotal labels (`dt`) use the light tint `#dce2fb`, the subtotal amounts (`dd`) white.
