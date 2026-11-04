@@ -50,7 +50,9 @@
   "nav": {
     "dashboard": "Dashboard",
     "costs": "Costs",
-    "thisMonth": "This month"
+    "thisMonth": "This month",
+    "label": "Main nav",
+    "skip": "Skip to content"
   },
   "language": {
     "label": "Language"

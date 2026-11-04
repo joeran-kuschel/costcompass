@@ -233,10 +233,10 @@ th button [data-slot="label"] {
   color: var(--ui-text-muted);
 }
 
-/* Header navigation as pills: the current page is a filled pill, as in the mocks. */
+/* Sidebar navigation as pills: the current page is a filled pill, as in the mocks. */
 nav [data-slot="link"] {
   border-radius: 9999px;
-  min-height: 2.5rem;
+  min-height: 3rem;
   font-weight: 700;
 }
 nav [data-slot="link"][aria-current="page"] {
@@ -250,6 +250,17 @@ nav [data-slot="link"][aria-current="page"]::before {
   background-color: #262a45;
   color: #ffffff;
 }
+/* Hover: the tinted pill of the mocks. Nuxt UI draws its own hover fill with ::before, which is hidden so the two do not add up. */
+nav [data-slot="link"]:not([aria-current="page"]):hover {
+  background-color: var(--ui-bg-accented);
+  color: #2238b0;
+}
+nav [data-slot="link"]:not([aria-current="page"]):hover::before {
+  display: none;
+}
+.dark nav [data-slot="link"]:not([aria-current="page"]):hover {
+  color: #afc0ff;
+}
 
 /* Pill-shaped buttons with a 44 px target, as in the mocks: `pill` for buttons with a label, `pill-icon` for icon buttons. */
 .pill {
@@ -257,6 +268,10 @@ nav [data-slot="link"][aria-current="page"]::before {
   min-height: 2.75rem;
   padding-inline: 1.25rem;
   font-weight: 700;
+}
+/* The primary button of the sidebar floats above the page with a soft cobalt shadow, the same in light and dark mode. */
+.pill-shadow {
+  box-shadow: 0 12px 28px -10px rgba(45, 75, 216, 0.6);
 }
 .pill-icon {
   border-radius: 9999px;

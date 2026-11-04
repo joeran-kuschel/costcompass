@@ -74,7 +74,6 @@ function sortableHeader(label: string) {
 </script>
 <template>
     <h1>{{ t('costs.title') }}</h1>
-    <UButton :label="t('costs.add')" class="pill" @click="openAdd()" />
     <UTable :data="costs" :columns="columns" class="card" :ui="{ root: 'overflow-x-auto px-5 pb-2 pt-1', th: 'px-2 pb-2.5 pt-3.5 text-[13px] font-extrabold uppercase tracking-wide text-muted', td: 'px-2 py-2.5 text-sm text-default' }">
         <template #name-cell="{ row }">
             <div class="flex items-center gap-3">

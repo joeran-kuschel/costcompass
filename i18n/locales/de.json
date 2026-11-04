@@ -50,7 +50,9 @@
   "nav": {
     "dashboard": "Dashboard",
     "costs": "Kosten",
-    "thisMonth": "Dieser Monat"
+    "thisMonth": "Dieser Monat",
+    "label": "Hauptnavigation",
+    "skip": "Zum Inhalt springen"
   },
   "language": {
     "label": "Sprache"

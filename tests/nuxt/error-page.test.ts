@@ -13,8 +13,8 @@ async function mountError(error: Record<string, unknown>) {
 const notFound = { status: 404, statusText: 'Not Found', message: 'Page not found: /foo' }
 const failure = { status: 500, statusText: 'Server Error', message: 'ECONNREFUSED 10.0.0.5:5432 secret detail' }
 const invalidMonth = { status: 404, statusText: 'Not Found', message: 'Page not found: /months/2026/13', data: { reason: 'month' } }
-// The header's "This month" entry also leads to a month page; the link of the error itself is the one outside the header.
-const goToLink = () => wrapper.findAll('a').find(link => link.attributes('href')?.startsWith('/months/') && !link.element.closest('header'))
+// The sidebar's "This month" entry also leads to a month page; the link of the error itself is the one outside the navigation.
+const goToLink = () => wrapper.findAll('a').find(link => link.attributes('href')?.startsWith('/months/') && !link.element.closest('nav'))
 const backButton = () => wrapper.findAll('button').find(button => ['Back to dashboard', 'Zurück zum Dashboard'].includes(button.text()))
 
 afterEach(async () => {
@@ -37,10 +37,10 @@ describe('error page for a page that does not exist', () => {
     await mountError(notFound)
     await vi.waitFor(() => expect(document.title).toBe('Page not found – Costcompass'))
   })
-  it('is shown inside the layout, with the header and the language switcher', async () => {
+  it('is shown inside the layout, with the sidebar navigation and the language switcher', async () => {
     await mountError(notFound)
-    expect(wrapper.find('header').exists()).toBe(true)
-    expect(wrapper.find('header [role="combobox"]').exists()).toBe(true)
+    expect(wrapper.find('nav[aria-label="Main nav"]').exists()).toBe(true)
+    expect(wrapper.find('[role="combobox"]').exists()).toBe(true)
   })
   it('announces the page to screen readers', async () => {
     await mountError(notFound)

@@ -18,34 +18,44 @@ describe('LogoMark', () => {
   })
 })
 
-describe('default layout header title', () => {
-  const title = (wrapper: Awaited<ReturnType<typeof mountSuspended>>) => wrapper.find('header [data-slot="title"]')
+// The sidebar replaces the header: logo and name, the add button, the navigation and the language select.
+type Mounted = Awaited<ReturnType<typeof mountSuspended>>
+const sidebar = (wrapper: Mounted) => wrapper.find('[data-slot="root"][data-variant="sidebar"]')
+
+describe('default layout sidebar title', () => {
+  const title = (wrapper: Mounted) => sidebar(wrapper).find('[data-slot="title"] a')
   it('is one link to the dashboard that shows the mark and the app name', async () => {
     const wrapper = await mountSuspended(DefaultLayout)
     const link = title(wrapper)
-    expect(link.element.tagName).toBe('A')
     expect(link.attributes('href')).toBe('/')
     expect(link.text()).toBe('Costcompass')
     expect(link.find('svg').exists()).toBe(true)
   })
   it('is named by the app name only, the mark adds nothing', async () => {
     const wrapper = await mountSuspended(DefaultLayout)
-    const link = title(wrapper)
-    expect(link.attributes('aria-label')).toBe('Costcompass')
-    expect(link.find('svg').attributes('aria-hidden')).toBe('true')
+    expect(title(wrapper).find('svg').attributes('aria-hidden')).toBe('true')
+    expect(title(wrapper).text()).toBe('Costcompass')
   })
 })
 
 describe('default layout navigation', () => {
-  // The links of the header navigation (the desktop one; the mobile menu is not open).
-  const navLinks = (wrapper: Awaited<ReturnType<typeof mountSuspended>>) => wrapper.findAll('header nav a')
+  const nav = (wrapper: Mounted) => wrapper.find('nav')
+  const navLinks = (wrapper: Mounted) => wrapper.findAll('nav a')
   const thisMonthPath = () => {
     const { currentYear, currentMonth } = useYear()
     return `/months/${currentYear.value}/${String(currentMonth.value).padStart(2, '0')}`
   }
-  it('has Dashboard, Costs and This month, in that order', async () => {
+  it('is the only navigation and has an accessible name', async () => {
+    const wrapper = await mountSuspended(DefaultLayout)
+    expect(wrapper.findAll('nav')).toHaveLength(1)
+    expect(nav(wrapper).attributes('aria-label')).toBe('Main nav')
+  })
+  it('has Dashboard, Costs and This month, in that order, each with a hidden icon', async () => {
     const wrapper = await mountSuspended(DefaultLayout)
     expect(navLinks(wrapper).map(link => link.text())).toEqual(['Dashboard', 'Costs', 'This month'])
+    for (const link of navLinks(wrapper)) {
+      expect(link.find('.iconify').attributes('aria-hidden'), link.text()).toBe('true')
+    }
   })
   it('links "This month" to the month page of today, with a two-digit month', async () => {
     const wrapper = await mountSuspended(DefaultLayout)
@@ -76,6 +86,65 @@ describe('default layout navigation', () => {
     await useNuxtApp().$i18n.setLocale('de')
     const wrapper = await mountSuspended(DefaultLayout)
     expect(navLinks(wrapper).map(link => link.text())).toEqual(['Dashboard', 'Kosten', 'Dieser Monat'])
+    expect(nav(wrapper).attributes('aria-label')).toBe('Hauptnavigation')
     await useNuxtApp().$i18n.setLocale('en')
+  })
+})
+
+describe('default layout add cost button', () => {
+  const addButton = (wrapper: Mounted) => sidebar(wrapper).findAll('button').find(button => button.text() === 'Add cost')!
+  it('is in the sidebar, above the navigation, with a hidden plus icon', async () => {
+    const wrapper = await mountSuspended(DefaultLayout)
+    const html = sidebar(wrapper).html()
+    expect(addButton(wrapper)).toBeTruthy()
+    expect(html.indexOf('Add cost')).toBeLessThan(html.indexOf('<nav'))
+    expect(addButton(wrapper).find('.iconify').attributes('aria-hidden')).toBe('true')
+  })
+  it('asks for an empty add dialog when it is pressed', async () => {
+    const wrapper = await mountSuspended(DefaultLayout)
+    await addButton(wrapper).trigger('click')
+    const { open, cost, month } = useCostDialog()
+    expect({ open: open.value, cost: cost.value, month: month.value }).toEqual({ open: true, cost: null, month: null })
+    useCostDialog().close()
+  })
+  it('has a German name', async () => {
+    await useNuxtApp().$i18n.setLocale('de')
+    const wrapper = await mountSuspended(DefaultLayout)
+    expect(sidebar(wrapper).findAll('button').some(button => button.text() === 'Kosten hinzufügen')).toBe(true)
+    await useNuxtApp().$i18n.setLocale('en')
+  })
+})
+
+describe('default layout skip link and main area', () => {
+  it('has a skip link to the main area as the very first element', async () => {
+    const wrapper = await mountSuspended(DefaultLayout)
+    const first = wrapper.find('a')
+    expect(first.attributes('href')).toBe('#main')
+    expect(first.text()).toBe('Skip to content')
+    expect(wrapper.find('main').attributes('id')).toBe('main')
+  })
+  it('hides the skip link until it has focus', async () => {
+    const wrapper = await mountSuspended(DefaultLayout)
+    expect(wrapper.find('a[href="#main"]').classes()).toContain('sr-only')
+  })
+  it('has a German skip link', async () => {
+    await useNuxtApp().$i18n.setLocale('de')
+    const wrapper = await mountSuspended(DefaultLayout)
+    expect(wrapper.find('a[href="#main"]').text()).toBe('Zum Inhalt springen')
+    await useNuxtApp().$i18n.setLocale('en')
+  })
+  it('keeps the keyboard order: skip link, logo, add cost, navigation, language, then the page', async () => {
+    const wrapper = await mountSuspended(DefaultLayout)
+    const order = wrapper.findAll('a, button, [role="combobox"]').map(item => item.text())
+    expect(order.slice(0, 7)).toEqual(['Skip to content', 'Costcompass', 'Add cost', 'Dashboard', 'Costs', 'This month', 'English'])
+  })
+})
+
+describe('default layout language select', () => {
+  it('is at the bottom of the sidebar with a visible label', async () => {
+    const wrapper = await mountSuspended(DefaultLayout)
+    const footer = sidebar(wrapper).find('[data-slot="footer"]')
+    expect(footer.find('label').text()).toBe('Language')
+    expect(footer.find('[role="combobox"]').exists()).toBe(true)
   })
 })

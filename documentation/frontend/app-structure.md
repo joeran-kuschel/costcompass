@@ -67,26 +67,57 @@ The month page and the costs page do not use the stored year.
 
 Tests: `tests/nuxt/dashboard-page.test.ts`, describe "dashboard page year selector" (falls back when the stored year has no purchases; keeps a stored year that is in the list; falls back after the purchases of the selected year are deleted).
 
-## Header and navigation on small screens
+## Sidebar navigation
 
-Issue #21. The layout is `app/layouts/default.vue`. Nuxt UI's `UHeader` hides its default slot below the `lg` breakpoint (1024 px; the theme sets `hidden lg:flex` on it) and shows a toggle button instead. A navigation in the default slot alone would vanish on a phone, so the layout uses four slots (the dialog described below sits after `UMain`, outside the header):
+Issue #53 (this replaces the header of #21). The layout is `app/layouts/default.vue`. From the `lg` breakpoint (1024 px) up, the navigation is a sidebar on the left. The layout has no `UHeader` any more.
 
-| Slot | Content | Visible |
+The layout is a wrapper `div` with `lg:flex lg:min-h-screen`. Its children, in order:
+
+| Element | Content |
+| --- | --- |
+| Skip link | `<a href="#main">`, text `nav.skip` ("Skip to content"), visually hidden until it has the focus |
+| `USidebar` | `collapsible="none"`, `as="div"`, `breakpoint="lg"`, 248 px wide (`[--sidebar-width:15.5rem]`), `shrink-0` |
+| `UMain` | `id="main"`, `min-w-0 flex-1`, with the page slot inside a `UContainer`. `min-w-0` lets the costs table scroll inside its card instead of widening the page |
+
+The add and edit dialog (below) stays outside the wrapper.
+
+The sidebar has three parts:
+
+| Part | Content |
+| --- | --- |
+| Title slot | One `NuxtLink` to `/` with `LogoMark` (36 px) and the app name (`app.name`), see [Logo mark](colour-scheme.md#logo-mark) |
+| Body | The "Add cost" button (`UButton`, icon `i-lucide-plus`, classes `pill pill-shadow`, calls `openAdd()`), then one vertical `UNavigationMenu` named by `nav.label` ("Main nav" / "Hauptnavigation") |
+| Footer slot | `LanguageSwitcher` |
+
+`navItems` is one `computed` (labels from `nav.dashboard`, `nav.costs` and `nav.thisMonth`, so they follow a language switch). Each item has an icon:
+
+| Item | Path | Icon |
 | --- | --- | --- |
-| `#title` | `LogoMark` and the app name (`app.name`), see [Logo mark](colour-scheme.md#logo-mark) | At every width |
-| default | `UNavigationMenu` with `navItems` | From `lg` up |
-| `#body` | The same `navItems`, `orientation="vertical"` | In the mobile menu, opened by the toggle |
-| `#right` | `LanguageSwitcher` | At every width |
+| Dashboard | `/` | `i-lucide-layout-dashboard` |
+| Costs | `/costs` | `i-lucide-list` |
+| This month | `monthPath(currentYear, currentMonth)` | `i-lucide-calendar` |
 
-Both menus read the one `navItems` computed (labels from `nav.dashboard`, `nav.costs` and `nav.thisMonth`, wrapped in `computed` so they follow a language switch), so they cannot drift apart. The language switcher is outside the menu on purpose: it stays reachable with one tap and the menu holds only pages.
+- Add a new page to `navItems` once. Only today's month page is in the navigation (see below); other month pages stay out of it.
+- The "Add cost" button is the only add entry on desktop. `/costs` has no button of its own any more (author's decision). The dashboard tile and the month page buttons stay, see [Add and edit dialog](#add-and-edit-dialog).
+- Styling is in `app/assets/css/main.css`: nav links are pills at least 48 px high. A link that is not the current page gets the tint `--ui-bg-accented` and the text colour `#2238b0` (dark mode `#afc0ff`) on hover; Nuxt UI's own hover fill is hidden so the two do not add up. `.pill-shadow` gives the add button a soft cobalt shadow, the same in light and dark mode.
+- The language select has a visible label: `LanguageSwitcher` wraps the `USelect` in a `UFormField` with the text `language.label` ("Language" / "Sprache"), connected to the select by `for` and `id`. It has no `aria-label` any more.
 
-- The toggle's accessible name is a Nuxt UI text, not one of ours: "Open menu" / "Close menu" (German "Menü öffnen" / "Menü schließen"), taken from the Nuxt UI locale, which follows the i18n locale.
-- The menu closes after a navigation: `UHeader` watches `route.fullPath` and sets `open` to false (prop `autoClose`, default `true`).
-- Add a new page to `navItems` once; it then appears in both places. Only today's month page is in the navigation (see below); other month pages stay out of it.
+### Keyboard order
+
+1. Skip link (appears on the first Tab; Enter moves to `#main`)
+2. Logo link
+3. Add cost
+4. Dashboard, Costs, This month
+5. Language select
+6. The page content
+
+### Below the `lg` breakpoint
+
+The sidebar is hidden below 1024 px and nothing replaces it yet: there is no navigation, no language select and no layout-level add button on small screens. They come in the same pull request as their own issues: the bottom tab bar (#54), the compact language button (#59) and the floating add button (#55). The menu button and the mobile menu of the old header are gone.
 
 ### The "This month" navigation entry
 
-Issue #56. `navItems` has a third entry after Dashboard and Costs: "This month" (German "Dieser Monat", key `nav.thisMonth`). It links to `monthPath(currentYear, currentMonth)`, with `currentYear` and `currentMonth` from `useYear()` and `monthPath` from `useMonth()`. The address has a two-digit month, for example `/months/2026/11`. The desktop menu and the vertical mobile menu share the entry, like the other two.
+Issue #56. `navItems` has a third entry after Dashboard and Costs: "This month" (German "Dieser Monat", key `nav.thisMonth`). It links to `monthPath(currentYear, currentMonth)`, with `currentYear` and `currentMonth` from `useYear()` and `monthPath` from `useMonth()`. The address has a two-digit month, for example `/months/2026/11`. 
 
 Decision for #56: the entry is the current item (`aria-current="page"`) only on the page of today's month. It is not marked on other month pages, and not on the same month of another year. On those pages no navigation item is current.
 
@@ -95,26 +126,25 @@ Known limits:
 - "Today" is read once per app load (see `useYear()` under [Composables](#composables)). A tab that stays open past midnight into a new month keeps the old month in the link until the page is reloaded. This follows from the existing `useYear` decision.
 - The shorter phone label "Month" named in the issue belongs to the bottom tab bar (#54), which does not exist yet.
 
-Tests: `tests/nuxt/DefaultLayout.test.ts` checks the order (Dashboard, Costs, This month), the path with a two-digit month computed from `useYear()`, the current state on today's month page but not on another month page or the same month of another year, Dashboard and Costs on their own pages, and the German names. In `tests/nuxt/error-page.test.ts` the link finder now ignores links inside the header, because the header has a second link to a month page.
+Tests: `tests/nuxt/DefaultLayout.test.ts` checks the sidebar (title link, one named navigation, item order and icons, the add button and its dialog request, skip link and `id="main"`, keyboard order in the DOM, the language select with its visible label, German texts) and, for This month, the path with a two-digit month computed from `useYear()`, the current state on today's month page but not on another month page or the same month of another year, Dashboard and Costs on their own pages, and the German names. In `tests/nuxt/error-page.test.ts` the link finder now ignores links inside the navigation, because the sidebar has a link to a month page.
 
-Checked by hand against the dev server: the link is `/months/2026/11` on `/` and on month pages, and `aria-current` is only set on `/months/2026/11`. Not checked: the mobile menu on a phone, 320 px, and the sidebar (#53, does not exist yet) *(to verify)*.
+Checked by hand against the dev server: the link is `/months/2026/11` on `/` and on month pages, and `aria-current` is only set on `/months/2026/11`.
 
-### How to check it
+### How to check the sidebar
 
-There is no automated test, because jsdom has no layout and cannot tell a wide from a narrow screen. Check by hand:
+There is no automated test for the widths, because jsdom has no layout. Check by hand:
 
-1. Run `pnpm dev` and open the app.
-2. Set the browser window or the device toolbar to 320 px wide.
-3. The top bar shows the title, the language list and the menu button. The links are not visible.
-4. Open the menu, choose **Costs**: the page changes and the menu closes.
-5. Switch the language in the top bar and repeat. The toggle name and the links change language.
-6. Widen the window to 1024 px or more: the toggle disappears and the links sit in the top bar.
+1. Run `pnpm dev` and open the app at 1024 px or wider.
+2. The sidebar is on the left, 248 px wide, with the logo, "Add cost", the three links and the language select.
+3. Press Tab once: the skip link appears. Press Enter: the focus moves to the main content.
+4. Choose **Costs**: the page changes and the link is the current item.
+5. Switch the language and repeat. The labels change and are not cut off.
 
-Checked so far at 320 px in English and German. Dark mode is not checked yet *(to verify)*. Whether the whole bar fits at 320 px with a long German label is covered by that check only for the current texts.
+Checked in the browser at 1024, 1280 and 1440 px in English and German: no sideways scroll, sidebar 248 px, all links 48 px high, the hover tint is visible in light mode. In dark mode the hover was checked as well: fill `#1E2340`, text `#AFC0FF` (8.62:1), the same values as the dark mock, and the hovered and the current pill (`#262A45`, white text) look alike apart from the text colour; the current page also has `aria-current`. Not checked: 320 px, anything below `lg`, a screen reader, and whether the built-in minimum height of `UMain` (made for a layout with `UHeader`) has any effect next to the wrapper's `lg:min-h-screen` *(to verify)*.
 
 ## Add and edit dialog
 
-Groundwork for the sidebar (#53) and the floating add button (#55). `app/layouts/default.vue` renders one `UModal` with `CostForm` for the whole app. A page, or later a sidebar or a floating button, does not own a modal. It asks the layout to open it through `useCostDialog()`.
+`app/layouts/default.vue` renders one `UModal` with `CostForm` for the whole app. A page, the sidebar (#53) or later a floating button (#55) does not own a modal. It asks the layout to open it through `useCostDialog()`.
 
 | Call | Opens | State after |
 | --- | --- | --- |
@@ -130,7 +160,7 @@ Who calls what:
 | Place | Call |
 | --- | --- |
 | Dashboard: "Add a cost" tile and the "Add cost" button of an empty "This month" card | `openAdd()` |
-| `/costs`: "Add cost" button | `openAdd()` |
+| Sidebar: "Add cost" button | `openAdd()` |
 | `/costs`: pencil button of a row | `openEdit(row.original)` |
 | Month page: "Add cost" next to the heading and in the empty month card | `openAdd(monthRef)` |
 
@@ -152,11 +182,11 @@ State lives in `useState`, not in provide/inject, so any component can open the 
 
 ### Tests
 
-- `tests/nuxt/CostDialog.test.ts` (13 tests, mounted on the layout): opens empty, pre-filled for an edit and for a month (date on the first day, `min` and `max`, hint); Cancel and the close button clear the state; no leftover cost or month in the next dialog; focus returns to the element that had it before the dialog opened; both lists are loaded again and the dialog closes after a save; German.
+- `tests/nuxt/CostDialog.test.ts` (mounted on the layout): opens empty (also from the sidebar button), pre-filled for an edit and for a month (date on the first day, `min` and `max`, hint); Cancel and the close button clear the state; no leftover cost or month in the next dialog; focus returns to the element that had it before the dialog opened; both lists are loaded again and the dialog closes after a save; German.
 - `dashboard-page.test.ts`, `costs-page.test.ts` and `month-page.test.ts` only check that the page asks for the dialog with the right state (`open`, `cost`, `month` of `useCostDialog()`), and that the page shows new numbers after `refreshNuxtData()`.
 - Every file that touches the dialog closes its state after each test, because `useState` outlives a test.
 
-Checked by hand in the browser: the dashboard and month page buttons open the dialog, and the costs table updates after a save. Not checked: use from a sidebar or floating button (they do not exist yet) and the dialog on a phone *(to verify)*.
+Checked by hand in the browser: the dashboard and month page buttons open the dialog, and the costs table updates after a save. The sidebar button opens the dialog (test in `CostDialog.test.ts`). Not checked: use from a floating button (does not exist yet) and the dialog on a phone *(to verify)*.
 
 ## Components
 
@@ -166,8 +196,8 @@ Checked by hand in the browser: the dashboard and month page buttons open the di
 | `YearSelect.vue` | `v-model` year select with a visible label; takes a `years` list |
 | `BusinessBadge.vue` | The "Business" badge with a briefcase icon, no props. See [Business badge](colour-scheme.md#business-badge) |
 | `CategoryBadge.vue` | Round disc with a white category icon; props `category` and `size` (28, 32, 36, 40, 44, 56). Decoration only (`aria-hidden`), the name is text in the parent. See [Category badge](colour-scheme.md#category-badge) |
-| `LogoMark.vue` | The Costcompass mark (disc, ring, compass needle) as an inline SVG, no props. Decoration only (`aria-hidden`), sized by the parent. Used in the header title. See [Logo mark](colour-scheme.md#logo-mark) |
-| `LanguageSwitcher.vue` | `USelect` that calls `setLocale()`; accessible name from `language.label`. Sits in the `#right` slot of the header, see [Header and navigation on small screens](#header-and-navigation-on-small-screens) |
+| `LogoMark.vue` | The Costcompass mark (disc, ring, compass needle) as an inline SVG, no props. Decoration only (`aria-hidden`), sized by the parent. Used in the sidebar title. See [Logo mark](colour-scheme.md#logo-mark) |
+| `LanguageSwitcher.vue` | `USelect` that calls `setLocale()`. Wrapped in a `UFormField` with the visible label `language.label`. Sits in the footer slot of the sidebar, see [Sidebar navigation](#sidebar-navigation) |
 
 `CostForm` is opened through the [add and edit dialog](#add-and-edit-dialog). It validates with the Zod schemas from `shared/utils/validation.ts`, so the browser and the API apply the same rules, except that the date field limit of the `month` prop is a browser limit only.
 

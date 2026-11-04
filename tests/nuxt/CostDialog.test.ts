@@ -50,9 +50,16 @@ async function opened(action: () => void) {
 }
 
 describe('cost dialog in the layout', () => {
-  it('is not open and has no trigger button of its own', () => {
+  it('is not open until something asks for it', () => {
     expect(dialog()).toBeNull()
-    expect(wrapper.findAll('button').filter(b => b.text() === 'Add cost')).toHaveLength(0)
+    expect(state().open).toBe(false)
+  })
+  it('opens an empty add form from the "Add cost" button of the sidebar', async () => {
+    const sidebarButton = wrapper.findAll('button').find(b => b.text() === 'Add cost')!
+    await opened(() => sidebarButton.trigger('click'))
+    expect(dialog()!.textContent).toContain('Add cost')
+    expect(nameInput()!.value).toBe('')
+    expect(state()).toMatchObject({ open: true, cost: null, month: null })
   })
   it('opens an empty form titled "Add cost"', async () => {
     await opened(() => useCostDialog().openAdd())

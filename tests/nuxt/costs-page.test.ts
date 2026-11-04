@@ -106,10 +106,9 @@ describe('costs page add and edit', () => {
     await vi.waitFor(() => expect(wrapper.findAll('tbody tr')).toHaveLength(3))
     expect(dialogState().open).toBe(false)
   })
-  it('asks for an empty add dialog from the "Add cost" button', async () => {
+  it('has no "Add cost" button of its own, the sidebar of the layout has it', async () => {
     await vi.waitFor(() => expect(wrapper.findAll('tbody tr')).toHaveLength(3))
-    await addButton()!.trigger('click')
-    expect(dialogState()).toEqual({ open: true, cost: null, month: null })
+    expect(addButton()).toBeUndefined()
   })
   it('asks for the edit dialog with the stored cost of the row when a row is edited', async () => {
     await vi.waitFor(() => expect(wrapper.findAll('tbody tr')).toHaveLength(3))

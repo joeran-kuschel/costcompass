@@ -15,7 +15,7 @@ Every cost has a name, an amount in euros, and a category: Housing, Insurance, A
 
 ## Add a cost
 
-1. Open **Costs** in the top menu and select **Add cost**. (On the Dashboard you can use the **Add cost** button in the "Add a cost" box.)
+1. Select **Add cost** in the sidebar. (On the Dashboard you can use the **Add cost** button in the "Add a cost" box.)
 2. Under **Type**, choose Recurring or Purchase.
 3. Fill in **Name**, **Amount** and **Category**. Tick **Business cost** if it belongs to your business.
 4. For a purchase, pick the **Date**.
@@ -41,7 +41,7 @@ The table is sorted by name. Select the header of Name, Category, Kind, Amount o
 
 ## Read the dashboard
 
-The Dashboard (**Dashboard** in the menu) gives you the overview. It has these parts, from top to bottom:
+The Dashboard (**Dashboard** in the sidebar) gives you the overview. It has these parts, from top to bottom:
 
 - **Year**: choose which year to look at. The list contains the current year and every year in which you bought something. If the year you chose has no purchases any more (for example because you deleted the last one), Costcompass shows the current year instead. This changes the sections from "Summary" down; "This month" always shows the current month.
 - **This month**: the total for the current month, a comparison with the month before (for example "50% more than September"), and a list of this month's costs. Without costs it says "No costs this month yet." and offers **Add cost**. At the end of the card is a link such as **View March 2026**. It opens the month page of the current month, whichever year you selected, also when the month has no costs.
@@ -67,7 +67,7 @@ Screen readers read each bar as a link with the month and the amount, for exampl
 
 The month page lists everything that falls in one month, with the month's total. It has its own address, for example `/months/2026/03` for March 2026. You can bookmark it and use the browser's back button.
 
-You reach the month page from the Dashboard (the "View" link in the "This month" card or a bar in "Costs per month"). It is not in the menu. You can also type the address in the browser. The month is always two digits: `/months/2026/03` works, `/months/2026/3` shows "Page not found".
+You reach the month page from the Dashboard (the "View" link in the "This month" card or a bar in "Costs per month"). It is not in the sidebar, except **This month**. You can also type the address in the browser. The month is always two digits: `/months/2026/03` works, `/months/2026/3` shows "Page not found".
 
 On the page you see:
 
@@ -81,20 +81,15 @@ If the month cannot be loaded you see "Couldn't load the costs of <month>" and "
 
 If you open a month in a year that has no data and is not the current year, or a month outside 01 to 12, you see "That month doesn't exist" with a link to the current month and a **Back to dashboard** button.
 
-## Use Costcompass on a phone
+## Find your way around
 
-On a narrow screen (below about 1024 pixels wide, which covers phones and most tablets held upright) the top bar shows the app name, the language list and a menu button. The links to **Dashboard** and **Costs** are inside the menu.
+On a wide screen (about 1024 pixels or more) the sidebar on the left holds the app name, the **Add cost** button, the links to **Dashboard**, **Costs** and **This month**, and the language list.
 
-1. Select the menu button, named **Open menu** (in German **Menü öffnen**).
-2. Select **Dashboard** or **Costs**.
-
-The page opens and the menu closes by itself. To close the menu without choosing a page, select the same button again; it is then named **Close menu** (**Menü schließen**).
-
-The language list stays in the top bar at every screen width, so you can switch the language without opening the menu (see [Change the language](#change-the-language)). On a wide screen the menu button is gone and the links sit in the top bar.
+On a narrower screen, such as a phone, the sidebar is not shown yet and there is no menu. Navigation for small screens is planned.
 
 ## Change the language
 
-Use the language list in the top bar. English and Deutsch are available. The page changes at once and Costcompass remembers your choice. On your first visit it uses your browser's language, or English if it does not support yours.
+Use the language list at the bottom of the sidebar. English and Deutsch are available. The page changes at once and Costcompass remembers your choice. On your first visit it uses your browser's language, or English if it does not support yours.
 
 ## Use it with a keyboard or screen reader
 

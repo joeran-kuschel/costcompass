@@ -126,10 +126,10 @@ The acceptance criteria of #51 ask for 4.5:1 between icon and disc in both modes
 
 ## Logo mark
 
-Issue #57. `app/components/LogoMark.vue` shows the Costcompass mark next to the name in the header: a disc, a ring and a compass needle. It takes no props.
+Issue #57. `app/components/LogoMark.vue` shows the Costcompass mark next to the name at the top of the sidebar: a disc, a ring and a compass needle. It takes no props.
 
-- It is an inline SVG with `viewBox="0 0 64 64"` and no fixed width or height. The parent sets the size with a class; the header uses `size-9` (36 px) and `shrink-0`.
-- The SVG has `aria-hidden="true"` and `focusable="false"`. The name stays real text: the `#title` slot of `UHeader` in `app/layouts/default.vue` holds the mark and `t('app.name')`. `UHeader` wraps the slot in a link to `/` and builds the link's `aria-label` from the slot text, so the link is named "Costcompass" and the mark adds nothing.
+- It is an inline SVG with `viewBox="0 0 64 64"` and no fixed width or height. The parent sets the size with a class; the sidebar uses `size-9` (36 px) and `shrink-0`.
+- The SVG has `aria-hidden="true"` and `focusable="false"`. The name stays real text: the title slot of `USidebar` in `app/layouts/default.vue` holds one `NuxtLink` to `/` with the mark and `t('app.name')`. The link has no `aria-label`; its name is the text, "Costcompass", and the mark adds nothing.
 - The disc and the centre dot use `fill="var(--ui-primary)"`, so the mark is `#2D4BD8` in light mode and `#3B5BEB` in dark mode without extra CSS. The ring and the needle are white.
 - It is an inline component and not an image file, because an image cannot read the theme variable.
 - Only the mark is used. The wordmark files of the brand folder (`logo.svg`, `logo-dark.svg`, text converted to outlines) are not, because the name stays text. The mark was taken from `mockups/cobalt/brand/` (git-ignored); the embedded C2PA content-credentials metadata of the source SVG was dropped.
@@ -137,7 +137,7 @@ Issue #57. `app/components/LogoMark.vue` shows the Costcompass mark next to the 
 
 Checked in the browser (dev server): the link goes to `/`, its `aria-label` is "Costcompass", the mark is 36 x 36 px, the fill is `rgb(45, 75, 216)` in light mode and `rgb(59, 91, 235)` in dark mode, and the ring and needle are visible at 36 px. The brand README says the mark with the ring is meant for 48 px and up, while the mock uses 36 px; it was looked at only at 1x.
 
-Not checked: crispness at 2x, 320 px screens, German, the mobile menu.
+Not checked: crispness at 2x, 320 px screens, German. Below `lg` the sidebar, and with it the mark, is not shown (see [Sidebar navigation](app-structure.md#sidebar-navigation)).
 
 ## Favicon, app icons and web manifest
 
