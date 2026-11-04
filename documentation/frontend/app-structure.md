@@ -136,7 +136,7 @@ Notes on the months chart:
 - The scroll area has `pb-4` (16 px) below the month labels.
 - Keyboard focus shows an outline (`focus-visible:outline-2 focus-visible:outline-primary`).
 - The current month's label and value are bold only if the shown year is the current year (`shownYear === currentYear && month === currentMonth`).
-- The grid is `repeat(12, minmax(2.75rem, 1fr))` with an 8 px gap (`gap-2`) inside an `overflow-x-auto` wrapper. 2.75rem is 44 px. Twelve columns plus gaps do not fit on narrow screens, so the chart scrolls sideways instead of squeezing the targets. A check on 320 px screens is still open (to verify).
+- The grid is `repeat(12, minmax(2.75rem, 1fr))` with an 8 px gap (`gap-2`) inside an `overflow-x-auto` wrapper. 2.75rem is 44 px. Twelve columns plus gaps do not fit on narrow screens, so the chart scrolls sideways instead of squeezing the targets. Looked at in the browser by the author (the 320 px width was part of that check); not measured.
 - Tests: `tests/nuxt/dashboard-page.test.ts`, the describes "dashboard page month bar links" and "dashboard page "View month" link"; the heading, hint, pills, colours, column width and the value above the bars are tested in "dashboard page costs per month".
 
 ### Year fallback on the dashboard

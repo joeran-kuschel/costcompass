@@ -99,7 +99,6 @@
       "title": "Dein Jahr {year}",
       "total": "Jahressumme",
       "household": "Haushalt",
-      "business": "Geschäftlich",
       "average": "Durchschnitt",
       "perYear": "pro Jahr",
       "perMonth": "pro Monat",
@@ -111,7 +110,6 @@
     "split": {
       "title": "Haushalt und Geschäftliches",
       "household": "Haushalt",
-      "business": "Geschäftlich",
       "alt": "Haushalt {household} Prozent, Geschäftlich {business} Prozent"
     },
     "months": {

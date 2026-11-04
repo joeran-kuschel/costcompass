@@ -99,7 +99,6 @@
       "title": "Your year {year}",
       "total": "Annual total",
       "household": "Household",
-      "business": "Business",
       "average": "Average",
       "perYear": "per year",
       "perMonth": "per month",
@@ -111,7 +110,6 @@
     "split": {
       "title": "Household and business",
       "household": "Household",
-      "business": "Business",
       "alt": "Household {household} percent, business {business} percent"
     },
     "months": {
