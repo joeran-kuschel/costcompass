@@ -32,7 +32,8 @@ export interface AnnualSummary {
 export interface CategoryTotal {
     category: Category,
     total: number,
-    share: number
+    share: number,
+    percent: number
 }
 export interface SplitPercentages {
     household: number,

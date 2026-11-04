@@ -284,28 +284,40 @@ describe('dashboard page category rows', () => {
   const section = () => wrapper.find('section[aria-labelledby="categories-title"]')
   const rows = () => section().findAll('li')
   const plain = (text: string) => text.replace(/\u00A0/g, ' ')
-  const rowTexts = () => rows().map(row => plain(row.text()))
-  const widths = () => rows().map(row => /width:\s*([0-9.]+%)/.exec(row.find('span[style*="width"]').attributes('style') ?? '')?.[1])
+  // name, amount and percentage of each row, spaces normalised (German puts a no-break space before the euro and the percent sign)
+  const parts = () => rows().map(row => ({
+    name: plain(row.find('span.flex-1').text()),
+    amount: plain(row.find('b').text()),
+    percent: plain(row.find('span.text-muted').text()),
+  }))
 
-  it('has a heading for the current year that labels the section', async () => {
+  it('has the heading "Where your money goes" that labels the section', async () => {
     costs()
     await mountPage()
     await vi.waitFor(() => expect(section().exists()).toBe(true))
     const heading = section().find('h2')
-    expect(heading.text()).toBe(`Costs by category in ${year}`)
+    expect(heading.text()).toBe('Where your money goes')
     expect(section().attributes('aria-labelledby')).toBe(heading.attributes('id'))
   })
   it('shows one row per category, the largest first, with name and amount in whole euros', async () => {
     costs()
     await mountPage()
     await vi.waitFor(() => expect(rows()).toHaveLength(5))
-    expect(rowTexts()).toEqual(['Housing€9,600', 'Insurance€1,200', 'Appliances€300', 'Food€0', 'Mobility€0'])
+    expect(parts().map(row => [row.name, row.amount])).toEqual([['Housing', '€9,600'], ['Insurance', '€1,200'], ['Appliances', '€300'], ['Food', '€0'], ['Mobility', '€0']])
   })
-  it('sizes every bar relative to the largest category', async () => {
+  it('shows the share of the total under the amount, adding up to 100%', async () => {
     costs()
     await mountPage()
     await vi.waitFor(() => expect(rows()).toHaveLength(5))
-    expect(widths()).toEqual(['100%', '12.5%', '3.125%', '0%', '0%'])
+    // 9,600 / 1,200 / 300 of 11,100 are 86.49%, 10.81% and 2.70%: rounded down 86 + 10 + 2 = 98, the two points go to the largest remainders
+    expect(parts().map(row => row.percent)).toEqual(['86%', '11%', '3%', '0%', '0%'])
+    expect(parts().reduce((total, row) => total + parseInt(row.percent), 0)).toBe(100)
+  })
+  it('has no bar per row any more', async () => {
+    costs()
+    await mountPage()
+    await vi.waitFor(() => expect(rows()).toHaveLength(5))
+    expect(section().find('[style*="width"]').exists()).toBe(false)
   })
   it('shows a hidden category badge of 36 px in every row', async () => {
     costs()
@@ -322,17 +334,7 @@ describe('dashboard page category rows', () => {
     await mountPage()
     await vi.waitFor(() => expect(rows()).toHaveLength(5))
     // Last year's 500 must not count: it would make the appliances 800.
-    expect(rowTexts()).toContain('Appliances€300')
-    expect(rowTexts()).not.toContain('Appliances€800')
-  })
-  it('hides the bars from assistive technology, so a row reads as name and amount', async () => {
-    costs()
-    await mountPage()
-    await vi.waitFor(() => expect(rows()).toHaveLength(5))
-    for (const row of rows()) {
-      expect(row.find('[aria-hidden="true"]').exists()).toBe(true)
-      expect(plain(row.find('[aria-hidden="true"]').text())).toBe('')
-    }
+    expect(parts().find(row => row.name === 'Appliances')?.amount).toBe('€300')
   })
   it('lists the rows in a list', async () => {
     costs()
@@ -345,8 +347,14 @@ describe('dashboard page category rows', () => {
     costs()
     await mountPage()
     await vi.waitFor(() => expect(rows()).toHaveLength(5))
-    expect(section().find('h2').text()).toBe(`Kosten nach Kategorie ${year}`)
-    expect(rowTexts()).toEqual(['Wohnen9.600 €', 'Versicherung1.200 €', 'Geräte300 €', 'Essen0 €', 'Mobilität0 €'])
+    expect(section().find('h2').text()).toBe('Wo Dein Geld hin geht')
+    expect(parts()).toEqual([
+      { name: 'Wohnen', amount: '9.600 €', percent: '86 %' },
+      { name: 'Versicherung', amount: '1.200 €', percent: '11 %' },
+      { name: 'Geräte', amount: '300 €', percent: '3 %' },
+      { name: 'Essen', amount: '0 €', percent: '0 %' },
+      { name: 'Mobilität', amount: '0 €', percent: '0 %' },
+    ])
   })
   it('shows no category section while the lists are loading', async () => {
     costs()
@@ -1145,7 +1153,9 @@ describe('dashboard page year selector', () => {
     await pickYear(year - 1)
     expect(summary().find('h2').text()).toBe(`Your year ${year - 1}`)
     expect(summary().text()).toContain('€10,100')
-    expect(wrapper.find('section[aria-labelledby="categories-title"] h2').text()).toBe(`Costs by category in ${year - 1}`)
+    // the categories follow the year: the appliances were 300 this year and 500 last year
+    expect(wrapper.find('section[aria-labelledby="categories-title"]').text()).toContain('€500')
+    expect(wrapper.find('section[aria-labelledby="categories-title"]').text()).not.toContain('€300')
     expect(wrapper.find('section[aria-labelledby="split-title"] h2').text()).toBe(`Household versus business in ${year - 1}`)
     expect(months().find('h2').text()).toBe(`Costs per month in ${year - 1}`)
   })

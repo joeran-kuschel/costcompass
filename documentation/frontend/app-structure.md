@@ -6,7 +6,7 @@ Reference and conventions for `app/` (pages, components, composables, texts). Wr
 
 | Route | File | State | What it does |
 | --- | --- | --- | --- |
-| `/` | `app/pages/index.vue` | Exists | Dashboard: "This month" hero card with the recurring and purchases subtotals, "Largest this month" card, summary card with the year select in its header, household versus business bar, costs by category, costs per month |
+| `/` | `app/pages/index.vue` | Exists | Dashboard: "This month" hero card with the recurring and purchases subtotals, "Largest this month" card, summary card with the year select in its header, household versus business bar, "Where your money goes" (categories), costs per month |
 | `/costs` | `app/pages/costs.vue` | Exists | One sortable table of both kinds, add, edit and delete |
 | `/months/[year]/[month]` | `app/pages/months/[year]/[month].vue` | Exists | Costs of one month, total, previous and next links, add cost in the empty month (pre-filled for the month) |
 | `/calculator` | - | Planned | Rate calculator |
@@ -82,6 +82,17 @@ Below the header is one `UCard` (`card card-flush overflow-hidden`) with a `dl` 
 - Locale keys: `dashboard.summary.average`, `perYear`, `perMonth`, `ofYear`, `business` are new; `averagePerMonth` was removed.
 
 Tests: `tests/nuxt/dashboard-page.test.ts`: one card, order, whole-euro values, sub lines, shares add up to 100, dots hidden, the year select next to the heading with its label, German. The year-select tests use the heading "Your year". Checked by the author in the browser: light and dark mode, German, 320 px. Not checked: a real phone, a screen reader; the contrast of the muted labels and sub lines is not measured; the horizontal label layout was adjusted by sight.
+
+### "Where your money goes" (categories)
+
+Issue #65. The section `aria-labelledby="categories-title"` is one card. Its `h2` sits inside the card and reads "Where your money goes" (`dashboard.categories.title`, no year in the heading; German "Wo Dein Geld hin geht"). The rows come from `categoryBreakDown` for `shownYear`.
+
+- The `ul` is a grid, `grid-cols-[repeat(auto-fill,minmax(13.75rem,1fr))]`: one column on a phone, several on a wide screen.
+- Each row has a `CategoryBadge` (36 px), the bold name and, right-aligned, the amount in whole euros (bold) with the percentage below it. The percentage is `n(percent / 100, { style: 'percent' })`, so it reads "86%" in English and "86 %" in German.
+- `percent` is whole numbers that add up to 100 (largest-remainder rounding, see [calculation core](../backend/calculation-core.md)). A year without costs shows 0% everywhere.
+- The old bar per row was removed. The stacked bar of #66 replaces it. `share` is still returned by `categoryBreakDown`, but the dashboard does not read it any more. It stays in the core for now, with no consumer; it can be dropped later, and #66 can use `percent` for segment widths.
+
+Tests: `tests/nuxt/dashboard-page.test.ts` (heading, name, amount and percentage per row, sum 100, no bar, German, badge 36 px) and `tests/nuxt/costs.test.ts` (`categoryBreakDown percentages`). Checked by the author in the browser: light and dark mode, German, 320 px, the grid columns. Not checked: a real phone, a screen reader; the contrast of the muted percentage text is not measured.
 
 ### Dashboard links to month pages
 

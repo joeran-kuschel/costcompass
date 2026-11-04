@@ -70,7 +70,20 @@ export function annualSummary(recurring: RecurringCost[], purchases: Purchase[],
 export function categoryBreakDown (recurring: RecurringCost[], purchases: Purchase[], year: number): CategoryTotal[] {
     const totals = totalsByCategory(recurring, purchases, year)
     const largest = Math.max(...CATEGORIES.map(category => totals[category]))
-    return CATEGORIES.map(category => ({ category, total: totals[category], share: largest > 0 ? totals[category] / largest : 0}))
+    const sum = CATEGORIES.reduce((acc, c) => acc + totals[c], 0)
+    const exact = CATEGORIES.map(c => sum > 0 ? totals[c] / sum * 100 : 0)
+    const floors = exact.map(Math.floor)
+    let leftover = sum > 0 ? 100 - floors.reduce((a,b) => a + b, 0) : 0
+    const order = exact.map((_, i) => i).sort((a, b) => (exact[b]! - floors[b]!) - (exact[a]! - floors[a]!))
+    const percents = [...floors]
+    for (const index of order.slice(0, leftover)) percents[index]! += 1
+
+    return CATEGORIES.map((category, index) => ({
+        category,
+        total: totals[category],
+        share: largest > 0 ? totals[category] / largest : 0,
+        percent: percents[index]!
+    }))
         .sort((a,b) => b.total - a.total)
 }
 export function splitPercentages(summary: AnnualSummary): SplitPercentages {
