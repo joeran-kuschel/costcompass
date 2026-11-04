@@ -256,6 +256,10 @@ nav [data-slot="link"][aria-current="page"]::before {
   background-color: #262a45;
   color: #ffffff;
 }
+/* The icon of the current item has the colour of its text (white, as in the mocks); Nuxt UI gives it the primary colour, which is too dark on the pill. */
+nav [data-slot="link"][aria-current="page"] [data-slot="linkLeadingIcon"] {
+  color: inherit;
+}
 /* Hover: the tinted pill of the mocks. Nuxt UI draws its own hover fill with ::before, which is hidden so the two do not add up. */
 nav [data-slot="link"]:not([aria-current="page"]):hover {
   background-color: var(--ui-bg-accented);
