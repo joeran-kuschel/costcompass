@@ -118,7 +118,7 @@ async function onSaved() {
                         <div class="min-w-0">
                             <p class="break-words font-bold">
                                 {{ row.name }}
-                                <UBadge v-if="row.business" :label="t('month.business')" variant="outline" size="sm" />
+                                <BusinessBadge v-if="row.business" />
                             </p>
                             <p class="text-sm text-muted">{{ row.subline }}</p>
                         </div>

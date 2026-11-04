@@ -102,6 +102,7 @@ Checked so far at 320 px in English and German. Dark mode is not checked yet *(t
 | --- | --- |
 | `CostForm.vue` | Add and edit form for both kinds, in a `UModal`. Props: optional `cost` (`Stored<Cost>`; set means edit, the kind is locked and submit sends `PATCH`) and optional `month` (`{ year, month }`; starts a purchase on the first day of that month and limits the date field to it). Emits `saved` and `cancel`. Failed saves show a toast. |
 | `YearSelect.vue` | `v-model` year select with a visible label; takes a `years` list |
+| `BusinessBadge.vue` | The "Business" badge with a briefcase icon, no props. See [Business badge](colour-scheme.md#business-badge) |
 | `LanguageSwitcher.vue` | `USelect` that calls `setLocale()`; accessible name from `language.label`. Sits in the `#right` slot of the header, see [Header and navigation on small screens](#header-and-navigation-on-small-screens) |
 
 The form validates with the Zod schemas from `shared/utils/validation.ts`, so the browser and the API apply the same rules, except that the date field limit of the `month` prop is a browser limit only.

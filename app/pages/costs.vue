@@ -21,7 +21,7 @@ const columns = computed<TableColumn<Stored<Cost>>[]>(()  => [
     { accessorKey: 'kind', header: sortableHeader(t('costs.columns.kind')), sortingFn: (a, b) => t(`kind.${a.original.kind}`).localeCompare(t(`kind.${b.original.kind}`), locale.value) },
     { id: 'when', header: t('costs.columns.when') },
     { accessorKey: 'amount', header: sortableHeader(t('costs.columns.amount')) },
-    { accessorKey: 'business', header: sortableHeader(t('costs.columns.business')) },
+    { accessorKey: 'business', header: sortableHeader(t('business.label')) },
     { id: 'actions', header: t('costs.columns.actions') },
 ])
 const open = ref(false)

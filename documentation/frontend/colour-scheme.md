@@ -16,7 +16,7 @@ Everything is in one file, `app/assets/css/main.css`, after the two imports (`ta
 - `:root` holds the light values. The `.dark` block holds the dark values. Nuxt UI puts the `dark` class on `<html>` in dark mode.
 - The rules are unlayered. Nuxt UI declares its defaults in `@layer theme`, and unlayered CSS wins over layered CSS, so no `!important` is needed.
 - Primary is the cobalt scale `--ui-color-primary-50` to `-950`. `--ui-primary` points at a step of it: 500 in light mode, 400 in dark mode (a brighter cobalt on navy).
-- Secondary (`--ui-secondary`) is the business orange. It is used by the "Business" badge (`UBadge color="secondary"`) and by the household-versus-business bar and its legend (`bg-secondary`) on the dashboard.
+- Secondary (`--ui-secondary`) is the business orange. It is used by the "Business" badge (`BusinessBadge`, see [Business badge](#business-badge)) and by the household-versus-business bar and its legend (`bg-secondary`) on the dashboard.
 - Greys and borders (`--ui-bg*`, `--ui-text*`, `--ui-border*`) are tinted navy instead of neutral grey.
 - Error (`--ui-error`) and warning (`--ui-warning`) follow the states of the mocks. Nuxt UI uses them for the `error` and `warning` colours, for example the delete button and failed-save messages.
 - Corners: `--ui-radius` is `0.75rem`. Nuxt UI derives its radii from it: `md` (fields, buttons) is 1.5 times the base, so 18 px, and `lg` (cards) is 2 times, so 24 px. The mocks use 16 px and 28 px, so this is an approximation.
@@ -69,6 +69,21 @@ The cobalt scale (light, set in `:root` only; the dark mode reuses it):
 5. If the change is a design decision, update the "Colour scheme" decision in `CLAUDE.md` and the table above.
 
 To colour a new element, use the Nuxt UI colour props (`color="primary"`, `color="secondary"`, `color="neutral"`) or the matching utility classes (`bg-primary`, `text-muted`) instead of hex values, so both modes follow.
+
+## Business badge
+
+Issue #52. `app/components/BusinessBadge.vue` is the one place that renders the "Business" badge. It takes no props and wraps `UBadge` with `variant="soft"`, `color="secondary"`, bold text and the icon `i-lucide-briefcase` at 14 px (`:ui` `leadingIcon: 'size-3.5'`). The soft variant has no border; the earlier `subtle` and `outline` variants had a ring.
+
+- It is used in the "This month" card on the dashboard and in the rows of the month page. No other badge markup for business costs is left.
+- The text is the shared key `business.label` ("Business" / "Geschäftlich"). The same key is now the column header of the costs table and the label in the split legend. `costs.columns.business`, `dashboard.split.business`, `dashboard.thisMonth.business` and `month.business` were removed. `form.business` ("Business cost") and `dashboard.summary.business` (read as `dashboard.summary.${key}`) stay.
+- The icon is decoration (`aria-hidden`). The word stays as text, so the meaning does not depend on the icon or the colour.
+- Test: `tests/nuxt/BusinessBadge.test.ts` (text, German after a language switch, one hidden icon, the icon adds no text).
+
+### Contrast
+
+The soft variant alone (text on `--ui-secondary` at 10 % opacity) depends on the surface behind it: 4.72:1 on a white card, but 4.40:1 on the page background and 4.27:1 on the muted month page rows, below the 4.5:1 that issue #52 requires. So the badge has an opaque fill, the class `business-badge` in `main.css`, which reads the token `--business-tint`: `#FEF0E3` in light mode (4.86:1 with `#B54708`) and `#3A2410` in dark mode (8.6:1 with `#FDBA74`). Both values are the ones of the mocks, and the contrast no longer depends on the surface.
+
+Checked in the browser at a 320 px wide viewport (an iframe of the dev server), in English and German, light and dark: the computed fill and text colours are the values above, there is no ring, and the badge (87 px wide in English, 109 px in German, 24 px high) stays inside the viewport. In German the page itself scrolls sideways by about 5 px at 320 px; the badge is not the cause, the source is not found yet.
 
 ## Check it in the browser
 

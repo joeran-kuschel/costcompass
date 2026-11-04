@@ -28,6 +28,8 @@
 
   --ui-primary: var(--ui-color-primary-500);
   --ui-secondary: #b54708;
+  /* The solid fill behind the business badge (mock: #FEF0E3). A tint of the text colour would let the contrast depend on the surface and drop below 4.5:1 on the muted rows. */
+  --business-tint: #fef0e3;
   --ui-error: #b42318;
   --ui-warning: #dc6803;
 
@@ -57,6 +59,7 @@
 .dark {
   --ui-primary: var(--ui-color-primary-400);
   --ui-secondary: #fdba74;
+  --business-tint: #3a2410;
   --ui-error: #f97066;
   --ui-warning: #f59e0b;
 
@@ -247,6 +250,11 @@ nav [data-slot="link"][aria-current="page"]::before {
   width: 2.75rem;
   height: 2.75rem;
   justify-content: center;
+}
+
+/* The business badge has an opaque fill, so its contrast is the same on every surface. */
+.business-badge {
+  background-color: var(--business-tint);
 }
 
 /* On navy the action colours are too dark for text, so links, the active menu item and error text use lighter tones. */

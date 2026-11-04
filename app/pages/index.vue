@@ -18,7 +18,7 @@ const categoryRows = computed (() => categoryBreakDown(recurring.value ?? [], pu
 })))
 const tiles = computed(() => (['total', 'household', 'business', 'averagePerMonth'] as const).map(key => ({
     key,
-    label: t(`dashboard.summary.${key}`),
+    label: key === 'business' ? t('business.label') : t(`dashboard.summary.${key}`),
     value: euros(summary.value[key]),
 })))
 const split = computed(() => splitPercentages(summary.value))
@@ -88,7 +88,7 @@ async function onSaved() {
                     <li v-for="row in thisMonth.rows" :key="row.key" class="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
                         <span class="min-w-0 flex-[1_1_8rem] break-words">{{ row.name }}</span>
                         <UBadge :label="row.kind" color="neutral" variant="subtle" />
-                        <UBadge v-if="row.business" :label="t('dashboard.thisMonth.business')" color="secondary" variant="subtle" />
+                        <BusinessBadge v-if="row.business" />
                         <span class="w-24 text-right">{{ row.amount }}</span>
                     </li>
                 </ul>
@@ -156,7 +156,7 @@ async function onSaved() {
                     </li>
                     <li class="flex items-center gap-2">
                         <span class="size-3 rounded-sm bg-secondary" aria-hidden="true" />
-                        {{ t('dashboard.split.business') }} {{ split.business }}%
+                        {{ t('business.label') }} {{ split.business }}%
                     </li>
                 </ul>
             </UCard>

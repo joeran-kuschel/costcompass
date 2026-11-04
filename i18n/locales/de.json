@@ -27,7 +27,6 @@
       "category": "Kategorie",
       "kind": "Art",
       "amount": "Betrag",
-      "business": "Geschäftlich",
       "when": "Wann",
       "actions": "Aktionen"
     },
@@ -54,6 +53,9 @@
   },
   "language": {
     "label": "Sprache"
+  },
+  "business": {
+    "label": "Geschäftlich"
   },
   "year": {
     "label": "Jahr"
@@ -91,7 +93,6 @@
       "title": "Übersicht {year}",
       "total": "Jahressumme",
       "household": "Haushalt",
-      "business": "Geschäftlich",
       "averagePerMonth": "Durchschnitt pro Monat"
     },
     "categories": {
@@ -114,7 +115,6 @@
         "same": "Genauso viel wie im {previous}",
         "none": "Keine Kosten im {previous} zum Vergleichen",
         "list": "Kosten im {month}",
-        "business": "Geschäftlich",
         "empty": "In diesem Monat gibt es noch keine Kosten.",
         "view": "{month} ansehen"
     },
@@ -131,7 +131,6 @@
     "total": "Summe für {month}",
     "recurring": "Wiederkehrend",
     "purchases": "Anschaffungen",
-    "business": "Geschäftlich",
     "previous": "Vorheriger Monat, {month}",
     "next": "Nächster Monat, {month}",
     "emptyTitle": "Keine Kosten im {month}",

@@ -27,7 +27,6 @@
       "category": "Category",
       "kind": "Kind",
       "amount": "Amount",
-      "business": "Business",
       "when": "When",
       "actions": "Actions"
     },
@@ -54,6 +53,9 @@
   },
   "language": {
     "label": "Language"
+  },
+  "business": {
+    "label": "Business"
   },
   "year": {
     "label": "Year"
@@ -91,7 +93,6 @@
       "title": "Summary for {year}",
       "total": "Annual total",
       "household": "Household",
-      "business": "Business",
       "averagePerMonth": "Average per month"
     },
     "categories": {
@@ -114,7 +115,6 @@
       "same": "Same as {previous}",
       "none": "No costs in {previous} to compare with",
       "list": "Costs in {month}",
-      "business": "Business",
       "empty": "No costs this month yet.",
       "view": "View {month}"
     },
@@ -131,7 +131,6 @@
     "total": "Total for {month}",
     "recurring": "Recurring",
     "purchases": "Purchases",
-    "business": "Business",
     "previous": "Previous month, {month}",
     "next": "Next month, {month}",
     "emptyTitle": "No costs in {month}",
