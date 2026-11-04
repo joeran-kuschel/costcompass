@@ -13,7 +13,6 @@ const { monthName, monthYear, monthPath } = useMonth()
 const title = computed(() => monthYear(year, month))
 const euros = useMoney({ cents: true })
 const monthRef: MonthRef = { year, month: month as Month }
-const open = ref(false)
 const isCurrentMonth = computed(() => year === currentYear.value && month === currentMonth.value)
 const neighbours = computed(() => monthNeighbours(monthRef, availableYears(purchases.value ?? [], currentYear.value)))
 const groups = computed(() => groupMonthCosts<Stored<RecurringCost>, Stored<Purchase>>(costsInMonth(recurring.value ?? [], purchases.value ?? [], year, month as Month)))
@@ -25,6 +24,7 @@ const sections = computed(() => [
 ].filter(section => section.rows.length > 0))
 const formatDate = (date:string) => new Intl.DateTimeFormat(locale.value, { day: 'numeric', month: 'short', timeZone: 'UTC'}).format(new Date(date))
 const heading = useTemplateRef<HTMLElement>('heading')
+const { openAdd } = useCostDialog()
 
 
 useHead({ title: () => title.value })
@@ -53,14 +53,11 @@ async function onRetry() {
     await nextTick()
     heading.value?.focus()
 }
-async function onSaved() {
-    await retry()
-    open.value = false
-}
+
 </script>
 <template>
     <UButton to="/" :label="t('nav.dashboard')" icon="i-lucide-arrow-left" variant="link" color="neutral" class="mb-2 px-0" />
-    <div class="flex items-center gap-2">
+    <div class="flex flex-wrap items-center gap-2">
         <UButton
             v-if="neighbours.previous"
             :to="monthPath(neighbours.previous.year, neighbours.previous.month)"
@@ -68,7 +65,7 @@ async function onSaved() {
             icon="i-lucide-chevron-left"
             variant="ghost"
             color="neutral"
-            class="size-9 justify-center"
+            class="pill-icon"
         />
         <h1 ref="heading" tabindex="-1">{{ title }}</h1>
         <UBadge v-if="isCurrentMonth" :label="t('month.thisMonth')" variant="outline" />
@@ -79,9 +76,8 @@ async function onSaved() {
             icon="i-lucide-chevron-right"
             variant="ghost"
             color="neutral"
-            class="size-9 justify-center"
+            class="pill-icon"
         />
-        <UButton v-if="!loading && !failed" :label="t('costs.add')" icon="i-lucide-plus" class="ml-auto" @click="open = true" />
     </div>
     <div :aria-busy="loading">
         <template v-if="loading">
@@ -98,39 +94,34 @@ async function onSaved() {
             :actions="[{ label: t('dashboard.retry'), onClick: onRetry }]"
         />
         <template v-else>
-            <UCard variant="subtle" class="mt-4" aria-labelledby="month-total-title">
+            <UCard variant="subtle" class="card card-hero mt-4" aria-labelledby="month-total-title">
                 <h2 id="month-total-title">{{ t('month.total', { month: monthName(month) }) }}</h2>
                 <p>{{ euros(groups.total) }}</p>
             </UCard>
-            <UCard v-if="sections.length === 0" variant="subtle" class="mt-6 text-center">
+            <UCard v-if="sections.length === 0" variant="subtle" class="card mt-6 text-center">
                 <UIcon name="i-lucide-calendar-x" class="size-8" aria-hidden="true" />
                 <h2>{{ t('month.emptyTitle', { month: monthName(month) }) }}</h2>
                 <p>{{ t('month.emptyText') }}</p>
-                <UButton :label="t('costs.add')" class="mt-4" @click="open = true" />
+                <UButton :label="t('costs.add')" class="pill mt-4" @click="openAdd(monthRef)" />
             </UCard>
-            <section v-for="section in sections" :key="section.id" :aria-labelledby="`${section.id}-title`" class="mt-6">
+            <section v-for="section in sections" :key="section.id" :aria-labelledby="`${section.id}-title`" class="card mt-6 px-6 py-5">
                 <div class="flex items-baseline justify-between gap-4">
                     <h2 :id="`${section.id}-title`">{{ section.title }}</h2>
-                    <p>{{ section.total }}</p>
+                    <p class="font-extrabold tabular-nums">{{ section.total }}</p>
                 </div>
-                <ul>
-                    <li v-for="row in section.rows" :key="row.key" class="flex items-start justify-between gap-4 py-2">
+                <ul class="mt-3 flex flex-col gap-1.5">
+                    <li v-for="row in section.rows" :key="row.key" class="flex items-center justify-between gap-4 rounded-[18px] bg-muted px-3 py-2.5">
                         <div class="min-w-0">
-                            <p class="break-words">
+                            <p class="break-words font-bold">
                                 {{ row.name }}
-                                <UBadge v-if="row.business" :label="t('month.business')" variant="outline" size="sm" />
+                                <BusinessBadge v-if="row.business" />
                             </p>
                             <p class="text-sm text-muted">{{ row.subline }}</p>
                         </div>
-                        <p class="shrink-0 text-right tabular-nums">{{ row.amount }}</p>
+                        <p class="shrink-0 text-right font-extrabold tabular-nums">{{ row.amount }}</p>
                     </li>
                 </ul>
             </section>
         </template>
     </div>
-    <UModal v-model:open="open" :title="t('costs.add')">
-        <template #body>
-            <CostForm :month="monthRef" @saved="onSaved" @cancel="open = false" />
-        </template>
-    </UModal>
 </template>

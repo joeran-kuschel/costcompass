@@ -1,2 +1,396 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
+
+/* Manrope, as in the mocks. Nuxt UI's font module downloads it at build time and serves it from our own server. */
+@theme {
+  --font-sans: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+}
+
+/*
+ * Cobalt colour scheme (mockups/cobalt).
+ * Only Nuxt UI's variables are set here, so the templates stay as they are:
+ * primary is cobalt, secondary is the business orange, the greys are navy-tinted,
+ * error and warning follow the states of the mocks.
+ * Unlayered rules win over Nuxt UI's `@layer theme` defaults.
+ */
+:root {
+  --ui-color-primary-50: #edf0fd;
+  --ui-color-primary-100: #dce3fb;
+  --ui-color-primary-200: #b9c5f6;
+  --ui-color-primary-300: #8ea2f0;
+  --ui-color-primary-400: #3b5beb;
+  --ui-color-primary-500: #2d4bd8;
+  --ui-color-primary-600: #2238b0;
+  --ui-color-primary-700: #1b2c8c;
+  --ui-color-primary-800: #162369;
+  --ui-color-primary-900: #111b4f;
+  --ui-color-primary-950: #0b1136;
+
+  --ui-primary: var(--ui-color-primary-500);
+  --ui-secondary: #b54708;
+  /* The solid fill behind the business badge (mock: #FEF0E3). A tint of the text colour would let the contrast depend on the surface and drop below 4.5:1 on the muted rows. */
+  --business-tint: #fef0e3;
+
+  /* The disc behind each category icon (white icon on top), values of the mocks. */
+  --category-housing: #6941c6;
+  --category-insurance: #344054;
+  --category-appliances: #c11574;
+  --category-food: #15803d;
+  --category-mobility: #0369a1;
+  --ui-error: #b42318;
+  --ui-warning: #dc6803;
+
+  /* Rounder corners: Nuxt UI's `md` (fields, buttons) is 1.5x and `lg` (cards) 2x this value, so 18 px and 24 px (the mocks use 16 and 28). */
+  --ui-radius: 0.75rem;
+
+  --ui-bg: #f7f7fb;
+  --ui-bg-muted: #f2f3f8;
+  --ui-bg-elevated: #ffffff;
+  --ui-bg-accented: #edf0fd;
+  --ui-bg-inverted: #14162b;
+
+  --ui-text-dimmed: #6b6f8c;
+  --ui-text-muted: #4a4e69;
+  --ui-text-toned: #4a4e69;
+  --ui-text: #14162b;
+  --ui-text-highlighted: #14162b;
+  --ui-text-inverted: #ffffff;
+
+  --ui-border: #ecedf3;
+  --ui-border-muted: #ecedf3;
+  --ui-border-accented: #c9cde0;
+  --ui-border-inverted: #14162b;
+}
+
+/* Cobalt midnight: navy surfaces, brighter cobalt, lighter business orange. */
+.dark {
+  --ui-primary: var(--ui-color-primary-400);
+  --ui-secondary: #fdba74;
+  --business-tint: #3a2410;
+
+  --category-housing: #7f56d9;
+  --category-insurance: #667085;
+  --category-appliances: #d21f83;
+  --category-food: #15803d;
+  --category-mobility: #0284c7;
+  --ui-error: #f97066;
+  --ui-warning: #f59e0b;
+
+  --ui-bg: #0b0c14;
+  --ui-bg-muted: #15172a;
+  --ui-bg-elevated: #15172a;
+  --ui-bg-accented: #1e2340;
+  --ui-bg-inverted: #ecedf7;
+
+  --ui-text-dimmed: #8387a6;
+  --ui-text-muted: #a3a7c2;
+  --ui-text-toned: #a3a7c2;
+  --ui-text: #ecedf7;
+  --ui-text-highlighted: #ffffff;
+  --ui-text-inverted: #ffffff;
+
+  --ui-border: #24273d;
+  --ui-border-muted: #24273d;
+  --ui-border-accented: #666d9c;
+  --ui-border-inverted: #ecedf7;
+}
+
+/* Type scale of the mocks: headings in weight 800 with tight tracking. */
+h1 {
+  font-size: clamp(1.75rem, 8vw, 2.125rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+h2 {
+  font-size: 1.125rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+}
+[data-slot="labelWrapper"] [data-slot="label"] {
+  font-size: 0.8125rem;
+  font-weight: 800;
+  color: var(--ui-text-muted);
+}
+
+/* Page spacing: 32 px above, 64 px below, 24 px between sections; the container is 1160 px wide. */
+:root {
+  --ui-container: 72.5rem;
+}
+main {
+  padding-block: 2rem 4rem;
+}
+/* Phone layout (below `lg`): the tab bar is fixed 28 px above the bottom and 68 px high, so the page ends 112 px above the bottom edge, plus the safe area of a notched phone. */
+@media (width < 64rem) {
+  main {
+    padding-bottom: calc(7rem + env(safe-area-inset-bottom));
+  }
+}
+main > div > h1 {
+  margin-bottom: 1rem;
+}
+main section {
+  margin-top: 1.5rem;
+}
+/* Space below headings: 16 px between a section heading and its card, 8 px inside a card. */
+main section > h2 {
+  margin-bottom: 1rem;
+}
+.card h2 {
+  margin-bottom: 0.5rem;
+}
+
+/* Cards: solid surface, soft shadow, no ring, 28 px corners and padding. */
+.card {
+  border-radius: 1.75rem;
+  background-color: var(--ui-bg-elevated);
+  box-shadow: 0 1px 2px rgb(20 22 43 / 0.05), 0 8px 24px -12px rgb(20 22 43 / 0.12);
+}
+.card > [data-slot="body"] {
+  padding: 1.25rem;
+}
+@media (min-width: 40rem) {
+  .card > [data-slot="body"] {
+    padding: 1.75rem;
+  }
+}
+
+/*
+ * Dashboard as flex rows, like the desktop mock: "This month" next to the add tile and the
+ * categories next to the split, wrapping on narrow screens. The sections sit directly in the
+ * layout's container, so the rows are made with :has() on the sections' own ids.
+ */
+main > div:has(#this-month-title) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 1.5rem;
+}
+main > div:has(#this-month-title) > * {
+  flex: 1 1 100%;
+  min-width: 0;
+  margin-top: 0;
+}
+/* The heading and the year picker share the first row, the picker floated to the right. */
+main > div:has(#this-month-title) > h1 {
+  /* Everything but the room for the picker, so the picker fits beside it and the cards wrap below. */
+  flex: 1 1 calc(100% - 8rem);
+  margin-bottom: 0;
+}
+main > div:has(#this-month-title) > div {
+  flex: 0 0 auto;
+}
+main > div:has(#this-month-title) > section[aria-labelledby="this-month-title"],
+main > div:has(#this-month-title) > section[aria-labelledby="categories-title"] {
+  flex: 3 1 27.5rem;
+}
+main > div:has(#this-month-title) > section[aria-labelledby="add-cost-title"],
+main > div:has(#this-month-title) > section[aria-labelledby="split-title"] {
+  flex: 2 1 18.75rem;
+}
+
+/* A card with the action colour behind it, for the month's total (white text, big number). */
+.card-hero {
+  background-color: var(--ui-color-primary-500);
+  color: #ffffff;
+}
+.card-hero h2 {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  color: #dce2fb;
+}
+.card-hero p {
+  margin-top: 0.375rem;
+  font-size: clamp(2.25rem, 12vw, 3.5rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Costs page: the heading and the add button share a row, the table card takes the full width below. */
+main > div:has(table) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem 1.5rem;
+}
+main > div:has(table) > h1 {
+  flex: 1 1 0;
+  margin-bottom: 0;
+}
+main > div:has(table) > button {
+  flex: 0 0 auto;
+}
+main > div:has(table) > div {
+  flex: 1 1 100%;
+  min-width: 0;
+}
+
+/* The sortable column headers look like the plain ones: small capitals in the muted colour. */
+th button,
+th button [data-slot="label"] {
+  font-size: 0.8125rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ui-text-muted);
+}
+
+/* Sidebar navigation as pills: the current page is a filled pill, as in the mocks. */
+nav [data-slot="link"] {
+  border-radius: 9999px;
+  min-height: 3rem;
+  font-weight: 700;
+}
+nav [data-slot="link"][aria-current="page"] {
+  background-color: var(--ui-bg-inverted);
+  color: var(--ui-text-inverted);
+}
+nav [data-slot="link"][aria-current="page"]::before {
+  display: none;
+}
+.dark nav [data-slot="link"][aria-current="page"] {
+  background-color: #262a45;
+  color: #ffffff;
+}
+/* Hover: the tinted pill of the mocks. Nuxt UI draws its own hover fill with ::before, which is hidden so the two do not add up. */
+nav [data-slot="link"]:not([aria-current="page"]):hover {
+  background-color: var(--ui-bg-accented);
+  color: #2238b0;
+}
+nav [data-slot="link"]:not([aria-current="page"]):hover::before {
+  display: none;
+}
+.dark nav [data-slot="link"]:not([aria-current="page"]):hover {
+  color: #afc0ff;
+}
+
+/* Pill-shaped buttons with a 44 px target, as in the mocks: `pill` for buttons with a label, `pill-icon` for icon buttons. */
+.pill {
+  border-radius: 9999px;
+  min-height: 2.75rem;
+  padding-inline: 1.25rem;
+  font-weight: 700;
+}
+/* The primary button of the sidebar floats above the page with a soft cobalt shadow, the same in light and dark mode. */
+.pill-shadow {
+  box-shadow: 0 12px 28px -10px rgba(45, 75, 216, 0.6);
+}
+.pill-icon {
+  border-radius: 9999px;
+  width: 2.75rem;
+  height: 2.75rem;
+  justify-content: center;
+}
+
+/* The tab bar of the phone layout: a dark pill with three tabs, the current one filled with the primary colour (mocks: BPhoneDashboard, BDarkPhoneDashboard). */
+.mobile-tabs {
+  flex: 1;
+  display: flex;
+  padding: 0.375rem;
+  background-color: #14162b;
+  border-radius: 9999px;
+  box-shadow: 0 12px 28px -8px rgba(20, 22, 43, 0.45);
+}
+.dark .mobile-tabs {
+  background-color: #262a45;
+}
+.mobile-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.125rem;
+  min-height: 3.5rem;
+  border-radius: 9999px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: #b8bcd3;
+  text-decoration: none;
+}
+.mobile-tab[aria-current="page"] {
+  background-color: var(--ui-primary);
+  color: #ffffff;
+}
+.mobile-tab:focus-visible {
+  outline: 3px solid #ffffff;
+  outline-offset: -3px;
+}
+/* The round add button next to the tab bar: 68 px, primary colour, a 28 px plus (mocks: BPhoneDashboard, BDarkPhoneDashboard). */
+.mobile-add {
+  flex: none;
+  width: 4.25rem;
+  height: 4.25rem;
+  justify-content: center;
+  border-radius: 9999px;
+  background-color: var(--ui-primary);
+  color: #ffffff;
+  box-shadow: 0 12px 28px -8px rgba(45, 75, 216, 0.6);
+}
+.mobile-add [data-slot="leadingIcon"] {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+/* The compact language button of the phone layout: a white pill with the language code, at least 44 px high (mocks: BPhoneDashboard, BDarkPhoneDashboard). */
+.language-compact {
+  min-height: 2.75rem;
+  padding-inline: 0.875rem;
+  border-radius: 9999px;
+  background-color: #ffffff;
+  color: #14162b;
+  font-size: 0.8125rem;
+  font-weight: 800;
+  box-shadow: 0 1px 2px rgba(20, 22, 43, 0.08);
+}
+.language-compact:hover {
+  background-color: var(--ui-bg-accented);
+  color: #14162b;
+}
+.dark .language-compact {
+  background-color: #15172a;
+  color: #ecedf7;
+}
+.dark .language-compact:hover {
+  background-color: var(--ui-bg-accented);
+  color: #ecedf7;
+}
+
+/* A round disc with a white icon, one per category. The colour comes from the `bg-[var(--category-*)]` class, the size from `--category-size`. */
+.category-disc {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--category-size);
+  height: var(--category-size);
+  border-radius: 9999px;
+  color: #ffffff;
+}
+.category-disc > * {
+  width: calc(var(--category-size) * 0.5);
+  height: calc(var(--category-size) * 0.5);
+}
+
+/* The business badge has an opaque fill, so its contrast is the same on every surface. */
+.business-badge {
+  background-color: var(--business-tint);
+}
+
+/* On navy the action colours are too dark for text, so links, the active menu item and error text use lighter tones. */
+.dark .text-primary {
+  color: #afc0ff;
+}
+.dark .text-primary:is(:hover, :active, :focus-visible) {
+  color: #dce3fb;
+}
+.dark .text-error {
+  color: #fca5a5;
+}
+/* A solid error button (delete) keeps the deep red with white text, as in the mocks. */
+.dark .bg-error {
+  background-color: #b42318;
+}

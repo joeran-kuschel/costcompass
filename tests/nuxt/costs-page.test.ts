@@ -37,6 +37,7 @@ beforeEach(async () => {
 })
 afterEach(() => {
   wrapper.unmount()
+  useCostDialog().close()
 })
 
 // Modals are teleported to the body, so their content is not inside the wrapper.
@@ -75,40 +76,51 @@ describe('costs page table', () => {
   })
 })
 
+describe('costs page name column', () => {
+  // Rows are sorted by name: Laptop, Liability insurance, Rent.
+  const nameCell = (index: number) => wrapper.findAll('tbody tr')[index]!.findAll('td')[0]!
+  it('shows a hidden category badge, the name and the category as a caption', async () => {
+    await vi.waitFor(() => expect(wrapper.findAll('tbody tr')).toHaveLength(3))
+    const cell = nameCell(2)
+    expect(cell.find('.category-disc').attributes('aria-hidden')).toBe('true')
+    expect(cell.find('.category-disc').attributes('style')).toContain('--category-size: 40px')
+    expect(cell.find('p').text()).toBe('Rent')
+    expect(cell.findAll('p')[1]!.text()).toBe('Housing')
+  })
+  it('marks business costs with the business badge and no other row', async () => {
+    await vi.waitFor(() => expect(wrapper.findAll('tbody tr')).toHaveLength(3))
+    expect(nameCell(0).find('p').text()).toContain('Business')
+    expect(nameCell(1).find('p').text()).toContain('Business')
+    expect(nameCell(2).text()).not.toContain('Business')
+  })
+})
+
 describe('costs page add and edit', () => {
-  it('opens an empty form titled "Add cost"', async () => {
+  // The dialog itself lives in the layout (see CostDialog.test.ts); the page only asks for it.
+  const dialogState = () => {
+    const { open, cost, month } = useCostDialog()
+    return { open: open.value, cost: cost.value, month: month.value }
+  }
+  const addButton = () => wrapper.findAll('button').find(b => b.text() === 'Add cost')
+  it('does not ask for the dialog until a button is pressed', async () => {
     await vi.waitFor(() => expect(wrapper.findAll('tbody tr')).toHaveLength(3))
-    await click(wrapper.findAll('button').find(b => b.text() === 'Add cost')?.element)
-    await vi.waitFor(() => expect(input('name')).toBeTruthy())
-    expect(input('name')!.value).toBe('')
-    expect(body().textContent).toContain('Add cost')
+    expect(dialogState().open).toBe(false)
   })
-  it('opens the form pre-filled and titled with the name when a row is edited', async () => {
+  it('has no "Add cost" button of its own, the sidebar of the layout has it', async () => {
     await vi.waitFor(() => expect(wrapper.findAll('tbody tr')).toHaveLength(3))
-    await click(wrapper.find('button[aria-label="Edit Laptop"]').element)
-    await vi.waitFor(() => expect(input('name')).toBeTruthy())
-    expect(input('name')!.value).toBe('Laptop')
-    expect(input('amount')!.value).toBe('1200.5')
-    expect(body().textContent).toContain('Edit Laptop')
-    expect(button('Save')).toBeTruthy()
+    expect(addButton()).toBeUndefined()
   })
-  it('closes the form on Cancel without sending anything', async () => {
+  it('asks for the edit dialog with the stored cost of the row when a row is edited', async () => {
     await vi.waitFor(() => expect(wrapper.findAll('tbody tr')).toHaveLength(3))
-    await click(wrapper.find('button[aria-label="Edit Rent"]').element)
-    await vi.waitFor(() => expect(input('name')).toBeTruthy())
-    await click(button('Cancel'))
-    await vi.waitFor(() => expect(input('name')).toBeNull())
+    await wrapper.find('button[aria-label="Edit Laptop"]').trigger('click')
+    const { open, cost } = dialogState()
+    expect(open).toBe(true)
+    expect(cost).toMatchObject({ id: 2, kind: 'purchase', name: 'Laptop', amount: 1200.5 })
+  })
+  it('does not send anything when a dialog is asked for', async () => {
+    await vi.waitFor(() => expect(wrapper.findAll('tbody tr')).toHaveLength(3))
+    await wrapper.find('button[aria-label="Edit Rent"]').trigger('click')
     expect(deleteCalls).toEqual([])
-  })
-  it('does not keep the edited cost around: the next "Add cost" starts empty', async () => {
-    await vi.waitFor(() => expect(wrapper.findAll('tbody tr')).toHaveLength(3))
-    await click(wrapper.find('button[aria-label="Edit Rent"]').element)
-    await vi.waitFor(() => expect(input('name')).toBeTruthy())
-    await click(button('Cancel'))
-    await vi.waitFor(() => expect(input('name')).toBeNull())
-    await click(wrapper.findAll('button').find(b => b.text() === 'Add cost')?.element)
-    await vi.waitFor(() => expect(input('name')).toBeTruthy())
-    expect(input('name')!.value).toBe('')
   })
 })
 

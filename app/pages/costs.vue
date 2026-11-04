@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui'
 
+const { openAdd, openEdit } = useCostDialog()
+
 type SortableColumn = {
     getIsSorted: () => false | 'asc' | 'desc'
     toggleSorting: (desc?: boolean) => void
 }
 
 const { t, n, locale } = useI18n()
-const { data: recurring, refresh: refreshRecurring } = await useFetch<Stored<RecurringCost>[]>('/api/recurring-costs')
-const { data: purchases, refresh: refreshPurchases } = await useFetch<Stored<Purchase>[]>('/api/purchases')
+const { recurring, purchases, failed, loading, retry } = useCostLists()
 const toast = useToast()
 const UButton = resolveComponent('UButton')
 const costs = computed<Stored<Cost>[]>(() => [
@@ -21,14 +22,10 @@ const columns = computed<TableColumn<Stored<Cost>>[]>(()  => [
     { accessorKey: 'kind', header: sortableHeader(t('costs.columns.kind')), sortingFn: (a, b) => t(`kind.${a.original.kind}`).localeCompare(t(`kind.${b.original.kind}`), locale.value) },
     { id: 'when', header: t('costs.columns.when') },
     { accessorKey: 'amount', header: sortableHeader(t('costs.columns.amount')) },
-    { accessorKey: 'business', header: sortableHeader(t('costs.columns.business')) },
+    { accessorKey: 'business', header: sortableHeader(t('business.label')) },
     { id: 'actions', header: t('costs.columns.actions') },
 ])
-const open = ref(false)
 const toDelete = ref<Stored<Cost> | null>(null)
-const toEdit = ref<Stored<Cost> | null>(null)
-
-watch(open, (isOpen) => { if (!isOpen) toEdit.value = null })
 useHead({ title: () => t('costs.title') })
 
 function monthName(month: number): string {
@@ -45,20 +42,11 @@ function whenLabel(cost: Cost): string {
     return `${interval}, ${monthName(cost.dueMonth)}`
 }
 
-async function refreshAll() {
-    await Promise.all([refreshRecurring(), refreshPurchases()])
-}
-
-async function onSaved() {
-    await refreshAll()
-    open.value = false
-}
-
 async function onDelete (cost: Stored<Cost>) {
     const url = cost.kind === 'recurring' ? '/api/recurring-costs' : '/api/purchases'
     try {
         await $fetch(`${url}/${cost.id}`, { method: 'DELETE' })
-        await refreshAll()
+        await retry()
     } catch {
         toast.add({ title: t('costs.deleteError'), color: 'error'})
     }
@@ -86,32 +74,38 @@ function sortableHeader(label: string) {
 </script>
 <template>
     <h1>{{ t('costs.title') }}</h1>
-    <UModal v-model:open="open" :title="toEdit ? t('costs.edit', { name: toEdit.name }) : t('costs.add')">
-        <UButton :label="t('costs.add')" />
-        <template #body>
-            <CostForm :cost="toEdit" @saved="onSaved" @cancel="open = false" />
+    <UTable :data="costs" :columns="columns" class="card" :ui="{ root: 'overflow-x-auto px-5 pb-2 pt-1', th: 'px-2 pb-2.5 pt-3.5 text-[13px] font-extrabold uppercase tracking-wide text-muted', td: 'px-2 py-2.5 text-sm text-default' }">
+        <template #name-cell="{ row }">
+            <div class="flex items-center gap-3">
+                <CategoryBadge :category="row.original.category" :size="40" />
+                <div>
+                    <p class="flex items-center gap-2 font-bold">
+                        {{ row.original.name }}
+                        <BusinessBadge v-if="row.original.business" />
+                    </p>
+                    <p class="text-sm text-muted">{{ t(`category.${row.original.category}`) }}</p>
+                </div>
+            </div>
         </template>
-    </UModal>
-    <UTable :data="costs" :columns="columns">
         <template #category-cell="{ row }">{{ t(`category.${row.original.category}`) }}</template>
         <template #kind-cell="{ row }">{{ t(`kind.${row.original.kind}`) }}</template>
         <template #amount-cell="{ row }">{{ n(row.original.amount, { style: 'currency', currency: 'EUR' }) }}</template>
         <template #when-cell="{ row }">{{ whenLabel(row.original) }}</template>
         <template #business-cell="{ row }">{{ row.original.business ? t('common.yes') : t('common.no') }}</template>
         <template #actions-cell="{ row }">
-            <UButton icon="i-lucide-trash-2" color="error" variant="ghost" @click="toDelete = row.original" :aria-label="t('costs.delete', { name: row.original.name })"/>
-            <UButton icon="i-lucide-pencil" color="neutral" variant="ghost" @click="toEdit = row.original; open=true" :aria-label="t('costs.edit', { name: row.original.name })"/>
+            <UButton icon="i-lucide-trash-2" color="error" variant="ghost" class="pill-icon" @click="toDelete = row.original" :aria-label="t('costs.delete', { name: row.original.name })"/>
+            <UButton icon="i-lucide-pencil" color="neutral" variant="ghost" class="pill-icon" @click="openEdit(row.original)" :aria-label="t('costs.edit', { name: row.original.name })"/>
         </template>
     </UTable>
-    <UModal
+    <UModal :ui="{ content: 'rounded-[2rem] bg-elevated' }"
         :open="toDelete !== null"
         :title="t('costs.confirmTitle')"
         :description="t('costs.confirmText', { name: toDelete?.name ?? '' })"
         @update:open="(isOpen: boolean) => { if (!isOpen) toDelete = null }"
     >
         <template #footer>
-            <UButton color="neutral" variant="outline" :label="t('common.cancel')" @click="toDelete = null" />
-            <UButton color="error" :label="t('common.delete')" @click="confirmDelete" />
+            <UButton color="neutral" variant="outline" :label="t('common.cancel')" class="pill" @click="toDelete = null" />
+            <UButton color="error" :label="t('common.delete')" class="pill" @click="confirmDelete" />
         </template>
     </UModal>
 

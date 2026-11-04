@@ -17,6 +17,7 @@
   "costs": {
     "title": "Kosten",
     "add": "Kosten hinzufügen",
+    "addToMonth": "Kosten zu {month} hinzufügen",
     "edit": "{name} editieren",
     "delete": "{name} löschen",
     "deleteError": "Die Kosten konnten nicht gelöscht werden. Bitte versuche es erneut.",
@@ -27,7 +28,6 @@
       "category": "Kategorie",
       "kind": "Art",
       "amount": "Betrag",
-      "business": "Geschäftlich",
       "when": "Wann",
       "actions": "Aktionen"
     },
@@ -50,10 +50,18 @@
   },
   "nav": {
     "dashboard": "Dashboard",
-    "costs": "Kosten"
+    "costs": "Kosten",
+    "thisMonth": "Dieser Monat",
+    "month": "Monat",
+    "label": "Hauptnavigation",
+    "skip": "Zum Inhalt springen"
   },
   "language": {
-    "label": "Sprache"
+    "label": "Sprache",
+    "current": "Sprache: {language}"
+  },
+  "business": {
+    "label": "Geschäftlich"
   },
   "year": {
     "label": "Jahr"
@@ -91,7 +99,6 @@
       "title": "Übersicht {year}",
       "total": "Jahressumme",
       "household": "Haushalt",
-      "business": "Geschäftlich",
       "averagePerMonth": "Durchschnitt pro Monat"
     },
     "categories": {
@@ -114,7 +121,6 @@
         "same": "Genauso viel wie im {previous}",
         "none": "Keine Kosten im {previous} zum Vergleichen",
         "list": "Kosten im {month}",
-        "business": "Geschäftlich",
         "empty": "In diesem Monat gibt es noch keine Kosten.",
         "view": "{month} ansehen"
     },
@@ -131,7 +137,6 @@
     "total": "Summe für {month}",
     "recurring": "Wiederkehrend",
     "purchases": "Anschaffungen",
-    "business": "Geschäftlich",
     "previous": "Vorheriger Monat, {month}",
     "next": "Nächster Monat, {month}",
     "emptyTitle": "Keine Kosten im {month}",

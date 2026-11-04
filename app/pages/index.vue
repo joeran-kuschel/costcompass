@@ -5,6 +5,7 @@ const { t } = useI18n()
 const { year, currentYear, currentMonth } = useYear()
 const { monthName, monthYear, monthPath } = useMonth()
 const { recurring, purchases, failed, loading, retry } = useCostLists()
+const { openAdd } = useCostDialog()
 const years = computed(() => availableYears(purchases.value ?? [], currentYear.value))
 const shownYear = computed(() => years.value.includes(year.value) ? year.value : currentYear.value)
 const empty = computed(() => !failed.value && !loading.value && recurring.value?.length === 0 && purchases.value?.length === 0)
@@ -18,7 +19,7 @@ const categoryRows = computed (() => categoryBreakDown(recurring.value ?? [], pu
 })))
 const tiles = computed(() => (['total', 'household', 'business', 'averagePerMonth'] as const).map(key => ({
     key,
-    label: t(`dashboard.summary.${key}`),
+    label: key === 'business' ? t('business.label') : t(`dashboard.summary.${key}`),
     value: euros(summary.value[key]),
 })))
 const split = computed(() => splitPercentages(summary.value))
@@ -51,13 +52,8 @@ const thisMonth = computed(() => {
         }))
     }
 })
-const open = ref(false)
 
 useHead({ title: () => t('nav.dashboard') })
-async function onSaved() {
-    await retry()
-    open.value = false
-}
 </script>
 <template>
     <h1>{{ t('nav.dashboard') }}</h1>
@@ -72,29 +68,29 @@ async function onSaved() {
     <div v-else-if="empty">
         <h2>{{ t('dashboard.emptyTitle') }}</h2>
         <p>{{ t('dashboard.emptyText') }}</p>
-        <UButton to="/costs" :label="t('costs.add')" />
+        <UButton to="/costs" :label="t('costs.add')" class="pill" />
     </div>
     <template v-else>
         <YearSelect :model-value="shownYear" @update:model-value="year = $event" :years="years"/>
         <section aria-labelledby="this-month-title">
-            <UCard variant="subtle">
+            <UCard variant="subtle" class="card">
                 <h2 id="this-month-title">{{ thisMonth.title }}</h2>
-                <p class="text-3xl font-medium">{{ thisMonth.total }}</p>
+                <p class="text-5xl font-extrabold tracking-tight tabular-nums">{{ thisMonth.total }}</p>
                 <p class="flex items-center gap-2">
                     <UIcon :name="thisMonth.icon" aria-hidden="true" />
                     {{ thisMonth.comparison }}
                 </p>
                 <ul v-if="thisMonth.rows.length" :aria-label="thisMonth.listLabel" class="mt-4 divide-y divide-default">
                     <li v-for="row in thisMonth.rows" :key="row.key" class="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
-                        <span class="min-w-0 flex-1 break-words">{{ row.name }}</span>
+                        <span class="min-w-0 flex-[1_1_8rem] break-words">{{ row.name }}</span>
                         <UBadge :label="row.kind" color="neutral" variant="subtle" />
-                        <UBadge v-if="row.business" :label="t('dashboard.thisMonth.business')" color="secondary" variant="subtle" />
+                        <BusinessBadge v-if="row.business" />
                         <span class="w-24 text-right">{{ row.amount }}</span>
                     </li>
                 </ul>
                 <div v-else class="mt-4">
                     <p>{{ t('dashboard.thisMonth.empty') }}</p>
-                    <UButton :label="t('costs.add')" class="mt-2" @click="open = true" />
+                    <UButton :label="t('costs.add')" class="pill mt-2" @click="openAdd()" />
                 </div>
                 <UButton
                     :to="monthPath(currentYear, currentMonth)"
@@ -106,33 +102,27 @@ async function onSaved() {
             </UCard>
         </section>
         <section aria-labelledby="add-cost-title">
-            <UCard variant="subtle">
+            <UCard variant="subtle" class="card">
                 <h2 id="add-cost-title">{{ t('dashboard.addCost.title') }}</h2>
                 <p class="font-medium">{{ t('dashboard.addCost.text') }}</p>
-                <p>
-                    <UModal v-model:open="open" :title="t('costs.add')">
-                        <UButton :label="t('costs.add')" />
-                        <template #body>
-                            <CostForm @saved="onSaved" @cancel="open = false" />
-                        </template>
-                    </UModal>
-                </p>
+                <p><UButton :label="t('costs.add')" class="pill" @click="openAdd()" /></p>
             </UCard>
         </section>
         <section aria-labelledby="summary-title">
             <h2 id="summary-title">{{ t('dashboard.summary.title', { year: shownYear }) }}</h2>
             <div class="grid grid-cols-[repeat(auto-fit,minmax(10rem,1fr))] gap-3">
-                <UCard v-for="tile in tiles" :key="tile.key" variant="subtle" :title="tile.label">
+                <UCard v-for="tile in tiles" :key="tile.key" variant="subtle" :title="tile.label" class="card">
                     <p class="text-2xl font-medium">{{ tile.value }}</p>
                 </UCard>
             </div>
         </section>
         <section aria-labelledby="categories-title">
             <h2 id="categories-title">{{ t('dashboard.categories.title', { year: shownYear }) }}</h2>
-            <UCard variant="subtle">
+            <UCard variant="subtle" class="card">
                 <ul>
                     <li v-for="row in categoryRows" :key="row.category"
                         class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 py-1 sm:grid-cols-[7rem_minmax(0,1fr)_5rem]">
+                        <CategoryBadge :category="row.category" :size="36"/>
                         <span class="break-words">{{ row.label }}</span>
                         <span class="text-right sm:order-3">{{ row.amount }}</span>
                         <span class="col-span-2 h-2.5 rounded bg-accented sm:order-2 sm:col-span-1" aria-hidden="true">
@@ -144,7 +134,7 @@ async function onSaved() {
         </section>
         <section aria-labelledby="split-title" class="mt-6">
             <h2 id="split-title">{{ t('dashboard.split.title', { year: shownYear } )}}</h2>
-            <UCard variant="subtle">
+            <UCard variant="subtle" class="card">
                 <div class="flex h-3 overflow-hidden rounded bg-accented" role="img" :aria-label="t('dashboard.split.alt', { household: split.household, business: split.business })">
                     <div v-if="split.household > 0" class="bg-primary" :style="{ width: `${split.household}%` }" />
                     <div v-if="split.business > 0" class="bg-secondary" :style="{ width: `${split.business}%` }" />
@@ -156,15 +146,15 @@ async function onSaved() {
                     </li>
                     <li class="flex items-center gap-2">
                         <span class="size-3 rounded-sm bg-secondary" aria-hidden="true" />
-                        {{ t('dashboard.split.business') }} {{ split.business }}%
+                        {{ t('business.label') }} {{ split.business }}%
                     </li>
                 </ul>
             </UCard>
         </section>
         <section aria-labelledby="months-title" class="mt-6">
             <h2 id="months-title">{{ t('dashboard.months.title', { year: shownYear }) }}</h2>
-            <UCard variant="subtle">
-                <div class="overflow-x-auto p-1">
+            <UCard variant="subtle" class="card">
+                <div class="relative overflow-x-auto p-1">
                     <ol class="grid grid-cols-[repeat(12,minmax(1.5rem,1fr))] gap-1">
                         <li v-for="row in monthRows" :key="row.month" class="min-w-0">
                             <NuxtLink :to="row.to"  class="flex flex-col items-center gap-1 rounded focus-visible:outline-2 focus-visible:outline-primary">

@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
 import type { VueWrapper } from '@vue/test-utils'
 import DashboardPage from '~/pages/index.vue'
-import CostForm from '~/components/CostForm.vue'
 
 // What each fake API endpoint does; reset before every test.
 const api = {
@@ -41,6 +40,7 @@ beforeEach(() => {
 })
 afterEach(async () => {
   wrapper.unmount()
+  useCostDialog().close()
   await setLanguage('en')
 })
 
@@ -240,7 +240,7 @@ describe('dashboard page category rows', () => {
   const rows = () => section().findAll('li')
   const plain = (text: string) => text.replace(/\u00A0/g, ' ')
   const rowTexts = () => rows().map(row => plain(row.text()))
-  const widths = () => rows().map(row => /width:\s*([0-9.]+%)/.exec(row.find('[style]').attributes('style') ?? '')?.[1])
+  const widths = () => rows().map(row => /width:\s*([0-9.]+%)/.exec(row.find('span[style*="width"]').attributes('style') ?? '')?.[1])
 
   it('has a heading for the current year that labels the section', async () => {
     costs()
@@ -261,6 +261,16 @@ describe('dashboard page category rows', () => {
     await mountPage()
     await vi.waitFor(() => expect(rows()).toHaveLength(5))
     expect(widths()).toEqual(['100%', '12.5%', '3.125%', '0%', '0%'])
+  })
+  it('shows a hidden category badge of 36 px in every row', async () => {
+    costs()
+    await mountPage()
+    await vi.waitFor(() => expect(rows()).toHaveLength(5))
+    for (const row of rows()) {
+      const badge = row.find('.category-disc')
+      expect(badge.attributes('aria-hidden')).toBe('true')
+      expect(badge.attributes('style')).toContain('--category-size: 36px')
+    }
   })
   it('counts only the purchases of the current year', async () => {
     costs()
@@ -711,16 +721,14 @@ describe('dashboard page this month cost list', () => {
 })
 
 describe('dashboard page add cost', () => {
+  // The dialog itself lives in the layout (see CostDialog.test.ts); the page only asks for it.
   const year = new Date().getUTCFullYear()
   const tile = () => wrapper.find('section[aria-labelledby="add-cost-title"]')
   const tileButton = () => tile().find('button')
-  // The dialog is teleported to the body, so its content is not inside the wrapper.
-  const dialog = () => document.body.querySelector('[role="dialog"]')
-  const nameInput = () => document.body.querySelector<HTMLInputElement>('input[name="name"]')
   const summaryTotal = () => wrapper.find('section[aria-labelledby="summary-title"]').text()
-  const openDialog = async () => {
-    await tileButton().trigger('click')
-    await vi.waitFor(() => expect(nameInput()).toBeTruthy())
+  const dialogState = () => {
+    const { open, cost, month } = useCostDialog()
+    return { open: open.value, cost: cost.value, month: month.value }
   }
 
   it('has a heading, a hint and an "Add cost" button', async () => {
@@ -740,33 +748,20 @@ describe('dashboard page add cost', () => {
     expect(tile().text()).toContain('Eine wiederkehrende Ausgabe oder eine einmalige Anschaffung.')
     expect(tileButton().text()).toBe('Kosten hinzufügen')
   })
-  it('does not open a dialog until the button is pressed', async () => {
+  it('does not ask for the dialog until the button is pressed', async () => {
     api.recurring.rows = [rent]
     await mountPage()
     await vi.waitFor(() => expect(tile().exists()).toBe(true))
-    expect(dialog()).toBeNull()
+    expect(dialogState().open).toBe(false)
   })
-  it('opens an empty add form in a dialog when the button is pressed', async () => {
+  it('asks for an empty add dialog when the button is pressed', async () => {
     api.recurring.rows = [rent]
     await mountPage()
     await vi.waitFor(() => expect(tile().exists()).toBe(true))
-    await openDialog()
-    expect(dialog()).toBeTruthy()
-    expect(dialog()!.textContent).toContain('Add cost')
-    expect(nameInput()!.value).toBe('')
+    await tileButton().trigger('click')
+    expect(dialogState()).toEqual({ open: true, cost: null, month: null })
   })
-  it('closes the dialog on cancel without changing the page', async () => {
-    api.recurring.rows = [rent]
-    await mountPage()
-    await vi.waitFor(() => expect(tile().exists()).toBe(true))
-    await openDialog()
-    const cancel = [...document.body.querySelectorAll('button')].find(b => b.textContent?.trim() === 'Cancel')
-    expect(cancel).toBeTruthy()
-    cancel!.click()
-    await vi.waitFor(() => expect(dialog()).toBeNull())
-    expect(summaryTotal()).toContain('€9,600')
-  })
-  it('opens the same dialog from the button of an empty month', async () => {
+  it('asks for the same dialog from the button of an empty month', async () => {
     const today = new Date()
     const previous = today.getUTCMonth() === 0 ? `${year - 1}-12-15` : `${year}-${String(today.getUTCMonth()).padStart(2, '0')}-15`
     api.purchases.rows = [{ id: 2, kind: 'purchase', name: 'Lamp', amount: 300, category: 'appliances', business: false, date: previous }]
@@ -774,20 +769,17 @@ describe('dashboard page add cost', () => {
     const card = () => wrapper.find('section[aria-labelledby="this-month-title"]')
     await vi.waitFor(() => expect(card().find('button').exists()).toBe(true))
     await card().find('button').trigger('click')
-    await vi.waitFor(() => expect(nameInput()).toBeTruthy())
-    expect(dialog()!.textContent).toContain('Add cost')
+    expect(dialogState()).toEqual({ open: true, cost: null, month: null })
   })
-  it('refreshes both lists and closes the dialog after a cost was saved', async () => {
+  it('shows the new numbers when the lists are refreshed, as the layout does after a save', async () => {
     api.recurring.rows = [rent]
     await mountPage()
     await vi.waitFor(() => expect(tile().exists()).toBe(true))
     expect(summaryTotal()).toContain('€9,600')
-    await openDialog()
-    // what the API will return once the form has saved a new monthly cost
+    // what the API will return once a new monthly cost was saved
     api.recurring.rows = [rent, { ...rent, id: 2, name: 'Gym', amount: 100 }]
-    wrapper.findComponent(CostForm).vm.$emit('saved')
+    await refreshNuxtData()
     await vi.waitFor(() => expect(summaryTotal()).toContain('€10,800'))
-    await vi.waitFor(() => expect(dialog()).toBeNull())
   })
   it('shows no add tile while the lists are loading', async () => {
     api.recurring.rows = [rent]

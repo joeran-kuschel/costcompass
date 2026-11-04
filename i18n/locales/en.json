@@ -17,6 +17,7 @@
   "costs": {
     "title": "Costs",
     "add": "Add cost",
+    "addToMonth": "Add cost to {month}",
     "edit": "Edit {name}",
     "delete": "Delete {name}",
     "deleteError": "Could not delete the cost. Please try again.",
@@ -27,7 +28,6 @@
       "category": "Category",
       "kind": "Kind",
       "amount": "Amount",
-      "business": "Business",
       "when": "When",
       "actions": "Actions"
     },
@@ -50,10 +50,18 @@
   },
   "nav": {
     "dashboard": "Dashboard",
-    "costs": "Costs"
+    "costs": "Costs",
+    "thisMonth": "This month",
+    "month": "Month",
+    "label": "Main nav",
+    "skip": "Skip to content"
   },
   "language": {
-    "label": "Language"
+    "label": "Language",
+    "current": "Language: {language}"
+  },
+  "business": {
+    "label": "Business"
   },
   "year": {
     "label": "Year"
@@ -91,7 +99,6 @@
       "title": "Summary for {year}",
       "total": "Annual total",
       "household": "Household",
-      "business": "Business",
       "averagePerMonth": "Average per month"
     },
     "categories": {
@@ -114,7 +121,6 @@
       "same": "Same as {previous}",
       "none": "No costs in {previous} to compare with",
       "list": "Costs in {month}",
-      "business": "Business",
       "empty": "No costs this month yet.",
       "view": "View {month}"
     },
@@ -131,7 +137,6 @@
     "total": "Total for {month}",
     "recurring": "Recurring",
     "purchases": "Purchases",
-    "business": "Business",
     "previous": "Previous month, {month}",
     "next": "Next month, {month}",
     "emptyTitle": "No costs in {month}",
