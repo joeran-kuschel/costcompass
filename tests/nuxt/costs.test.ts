@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import type { RecurringCost, Purchase, CostItem, Month, AnnualSummary, Stored } from '~~/shared/types/calculation'
 import { CATEGORIES } from '~~/shared/types/calculation'
-import { totalAnnualRecurring, totalAnnualPurchases, totalAnnualCost, filterByBusiness, totalsByCategory, occursInMonth, totalMonthlyCost, monthlyTotals, costsInMonth, annualSummary, categoryBreakDown, splitPercentages, monthBreakdown, monthChange, availableYears, monthNeighbours, groupMonthCosts } from '~~/shared/utils/costs'
+import { totalAnnualRecurring, totalAnnualPurchases, totalAnnualCost, filterByBusiness, totalsByCategory, occursInMonth, totalMonthlyCost, monthlyTotals, costsInMonth, annualSummary, categoryBreakDown, splitPercentages, monthBreakdown, monthChange, availableYears, monthNeighbours, groupMonthCosts, largestCosts } from '~~/shared/utils/costs'
 
 const YEAR = 2026
 
@@ -802,5 +802,75 @@ describe('groupMonthCosts', () => {
     expect(grouped.recurringTotal).toBe(700)
     expect(grouped.purchasesTotal).toBe(300)
     expect(grouped.total).toBe(monthlyTotals(recurringCosts, purchases, YEAR)[2])
+  })
+})
+
+describe('largestCosts', () => {
+  const names = (costs: { name: string }[]) => costs.map(cost => cost.name)
+  const five = [
+    recurring({ name: 'Gym', amount: 30 }),
+    purchase({ name: 'Desk', amount: 210 }),
+    recurring({ name: 'Rent', amount: 1200 }),
+    purchase({ name: 'Lamp', amount: 90 }),
+    recurring({ name: 'Phone', amount: 25 }),
+  ]
+
+  it('sorts by amount, largest first', () => {
+    expect(names(largestCosts(five))).toEqual(['Rent', 'Desk', 'Lamp', 'Gym'])
+  })
+  it('returns four costs by default and drops the smallest', () => {
+    const result = largestCosts(five)
+    expect(result).toHaveLength(4)
+    expect(names(result)).not.toContain('Phone')
+  })
+  it('returns the number of costs that is asked for', () => {
+    expect(names(largestCosts(five, 2))).toEqual(['Rent', 'Desk'])
+    expect(largestCosts(five, 5)).toHaveLength(5)
+  })
+  it('returns all costs, sorted, when there are fewer than n', () => {
+    expect(names(largestCosts([five[0]!, five[2]!]))).toEqual(['Rent', 'Gym'])
+    expect(largestCosts(five, 10)).toHaveLength(5)
+  })
+  it('returns an empty list for no costs', () => {
+    expect(largestCosts([])).toEqual([])
+  })
+  it('puts a recurring cost before a purchase of the same amount', () => {
+    const tie = [
+      purchase({ name: 'Aardvark', amount: 100 }),
+      recurring({ name: 'Zebra', amount: 100 }),
+    ]
+    expect(names(largestCosts(tie))).toEqual(['Zebra', 'Aardvark'])
+  })
+  it('sorts costs of the same amount and kind by name', () => {
+    const tie = [
+      recurring({ name: 'Water', amount: 50 }),
+      recurring({ name: 'Gas', amount: 50 }),
+      recurring({ name: 'Electricity', amount: 50 }),
+    ]
+    expect(names(largestCosts(tie))).toEqual(['Electricity', 'Gas', 'Water'])
+  })
+  it('lets the amount decide before the kind and the name', () => {
+    const mixed = [
+      recurring({ name: 'Zebra', amount: 10 }),
+      purchase({ name: 'Aardvark', amount: 20 }),
+    ]
+    expect(names(largestCosts(mixed))).toEqual(['Aardvark', 'Zebra'])
+  })
+  it('sorts the names the same way whatever the order of the input', () => {
+    const tie = [
+      recurring({ name: 'b', amount: 5 }),
+      recurring({ name: 'a', amount: 5 }),
+      recurring({ name: 'c', amount: 5 }),
+    ]
+    expect(names(largestCosts(tie))).toEqual(names(largestCosts([...tie].reverse())))
+  })
+  it('keeps the id of stored items', () => {
+    const stored: Stored<RecurringCost>[] = [{ ...recurring({ name: 'Rent', amount: 1200 }), id: 7 }]
+    expect(largestCosts(stored)[0]?.id).toBe(7)
+  })
+  it('does not change the list it is given', () => {
+    const costs = [...five]
+    largestCosts(costs)
+    expect(names(costs)).toEqual(['Gym', 'Desk', 'Rent', 'Lamp', 'Phone'])
   })
 })

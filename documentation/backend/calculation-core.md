@@ -59,6 +59,7 @@ Edge case: a yearly or quarterly cost without `dueMonth` (untyped input, old row
 | --- | --- | --- |
 | `monthNeighbours({ year, month }, validYears)` | `{ previous, next }` | The adjacent months as `{ year, month }`. January goes back to December of the previous year, December on to January of the next. A neighbour whose year is not in `validYears` is `null`. It does not bridge gaps between valid years. |
 | `groupMonthCosts(costs)` | `{ recurring, purchases, recurringTotal, purchasesTotal, total }` | Splits the output of `costsInMonth` by `kind`. A group without entries is an empty list with subtotal 0. `total` equals the matching entry of `monthlyTotals`. Generic, so `id` survives. |
+| `largestCosts(costs, n = 4)` | The first `n` of the costs | Sorts by amount, largest first. Ties: recurring before purchase, then by name (`localeCompare` with the fixed locale `en`, so the result does not depend on the runtime locale). Fewer than `n` costs gives all of them, none gives an empty list. Does not change its input. Generic, so `id` survives. Takes the output of `costsInMonth`. |
 
 ## Dates
 

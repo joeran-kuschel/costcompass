@@ -124,9 +124,9 @@
       "empty": "No costs this month yet.",
       "view": "View {month}"
     },
-    "addCost": {
-      "title": "Add a cost",
-      "text": "A recurring cost or a one-off purchase."
+    "largest": {
+      "title": "Largest this month",
+      "text": "The biggest costs of this month."
     }
   },
   "month": {

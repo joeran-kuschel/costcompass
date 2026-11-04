@@ -15,7 +15,7 @@ Every cost has a name, an amount in euros, and a category: Housing, Insurance, A
 
 ## Add a cost
 
-1. Select **Add cost** in the sidebar. (On the Dashboard you can use the **Add cost** button in the "Add a cost" box.)
+1. Select **Add cost** in the sidebar. (The round plus button does the same on a phone.)
 2. Under **Type**, choose Recurring or Purchase.
 3. Fill in **Name**, **Amount** and **Category**. Tick **Business cost** if it belongs to your business.
 4. For a purchase, pick the **Date**.
@@ -44,8 +44,8 @@ The table is sorted by name. Select the header of Name, Category, Kind, Amount o
 The Dashboard (**Dashboard** in the sidebar) gives you the overview. It has these parts, from top to bottom:
 
 - **Year**: choose which year to look at. The list contains the current year and every year in which you bought something. If the year you chose has no purchases any more (for example because you deleted the last one), Costcompass shows the current year instead. This changes the sections from "Summary" down; "This month" always shows the current month.
-- **This month**: the total for the current month, a comparison with the month before (for example "50% more than September"), the two parts **Recurring** and **Purchases** with their amounts, and a list of this month's costs. Without costs it says "No costs this month yet." and offers **Add cost**. The two parts show cents (for example €819.99), the total shows whole euros, so the parts can differ from the total by a few cents. A part without costs shows €0.00. At the end of the card is a link such as **View March 2026**. It opens the month page of the current month, whichever year you selected, also when the month has no costs.
-- **Add a cost**: a shortcut to the form.
+- **This month**: the total for the current month, a comparison with the month before (for example "50% more than September"), the two parts **Recurring** and **Purchases** with their amounts. The two parts show cents (for example €819.99), the total shows whole euros, so the parts can differ from the total by a few cents. A part without costs shows €0.00. At the end of the card is a link such as **View March 2026**. It opens the month page of the current month, whichever year you selected, also when the month has no costs.
+- **Largest this month**: the four biggest costs of the current month, largest first, each with its category icon, name, a "Business" badge where it applies, a short description such as "Housing · Monthly" or "Appliances · 8 Nov", and the amount. Without costs it says "No costs this month yet." For the full list, use the **View** link in the "This month" card.
 - **Summary for the year**: four tiles with the annual total, the household part, the business part and the average per month.
 - **Costs by category**: each category with its amount and a bar, largest first.
 - **Household versus business**: one bar and a text with both percentages.
