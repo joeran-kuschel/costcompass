@@ -6,7 +6,7 @@ Reference and conventions for `app/` (pages, components, composables, texts). Wr
 
 | Route | File | State | What it does |
 | --- | --- | --- | --- |
-| `/` | `app/pages/index.vue` | Exists | Dashboard: "This month" hero card with the recurring and purchases subtotals, "Largest this month" card, summary card with the year select in its header, household and business ring, "Where your money goes" (categories), costs per month |
+| `/` | `app/pages/index.vue` | Exists | Dashboard: "This month" hero card with the recurring and purchases subtotals, "Largest this month" card, summary card with the year select in its header, household and business ring, "Where your money goes" (categories), "Month by month" |
 | `/costs` | `app/pages/costs.vue` | Exists | One sortable table of both kinds, add, edit and delete |
 | `/months/[year]/[month]` | `app/pages/months/[year]/[month].vue` | Exists | Costs of one month, total, previous and next links, add cost in the empty month (pre-filled for the month) |
 | `/calculator` | - | Planned | Rate calculator |
@@ -115,19 +115,20 @@ Two places on `app/pages/index.vue` link to `/months/[year]/[month]` (issues #18
 | Link | Target | Year used | Why |
 | --- | --- | --- | --- |
 | "View <month year>" at the end of the "This month" card (`dashboard.thisMonth.view`, e.g. "View March 2026") | Today's month: `monthPath(currentYear, currentMonth)` | Always `currentYear` | The card always shows today's month, so its link has to agree with it. Shown also when the month has no costs. |
-| Each of the 12 items in "Costs per month" | `monthPath(shownYear.value, month)` | The shown year (`shownYear`, see below) | The chart shows that year, so a bar leads to that year's month. |
+| Each of the 12 items in "Month by month" | `monthPath(shownYear.value, month)` | The shown year (`shownYear`, see below) | The chart shows that year, so a bar leads to that year's month. |
 
 Notes on the months chart:
 
+- Issue #69: the card holds the `h2` "Month by month" (`dashboard.months.title`, no year; German "Monat für Monat") and the hint `dashboard.months.hint` ("Select a month to open it") in one row (`flex flex-wrap items-baseline justify-between gap-2`). The bars are 32 px pills (`w-8 rounded-full`, centred in the column). The current month of the shown year is `bg-primary` with a bold `text-primary` value and a bold label; the other months use `bg-[var(--chart-soft)]`. Colour is not the only carrier: the bold label and value stay. The light soft colour has 1.70:1 against the card, see [Months chart colours](colour-scheme.md#months-chart-colours).
 - Each `li` holds a `NuxtLink` (a real `<a>`, works without JavaScript). The `li` has no layout of its own, so the link fills the grid column and the bars keep their width.
 - Link name: the `sr-only` text from `dashboard.months.alt` ("March: €1,100"). The bar, the short value and the short label are `aria-hidden`; the bar has a hover `title`.
-- Short value above each bar (`span.text-xs.tabular-nums`, `aria-hidden`; bold for the current month, `text-muted` for the others). `monthRows` carries it as `value`, built by `shortAmount(total)`: if `Math.round(total) < 1000` it is the whole number from `n(...)` ("800"); otherwise `n(total / 1000, { maximumFractionDigits: 1 })` inside the key `dashboard.months.thousand` (`"{value}k"` in en and de), so "2.3k" in English, "2,3k" in German, "2k" for 2,000 and "12.6k". 999.60 rounds to 1000 and reads "1k". A month of 0 shows "0" and keeps its baseline.
-- Decision: the value is hand-built, not `Intl.NumberFormat` with `notation: 'compact'` (what issue #68 asked for). The author checked it: German short compact does not abbreviate thousands ("2100", "12.600"), the long form is "2,1 Tausend" (too wide for a 24 px column), and the mock builds "2.1k" by hand too. The full amount stays in the link's `sr-only` text.
+- Short value above each bar (`span.text-xs.tabular-nums`, `aria-hidden`; bold and `text-primary` for the current month, `text-muted` for the others). `monthRows` carries it as `value`, built by `shortAmount(total)`: if `Math.round(total) < 1000` it is the whole number from `n(...)` ("800"); otherwise `n(total / 1000, { maximumFractionDigits: 1 })` inside the key `dashboard.months.thousand` (`"{value}k"` in en and de), so "2.3k" in English, "2,3k" in German, "2k" for 2,000 and "12.6k". 999.60 rounds to 1000 and reads "1k". A month of 0 shows "0" and keeps its baseline.
+- Decision: the value is hand-built, not `Intl.NumberFormat` with `notation: 'compact'` (what issue #68 asked for). The author checked it: German short compact does not abbreviate thousands ("2100", "12.600"), the long form is "2,1 Tausend" (too wide for a narrow column), and the mock builds "2.1k" by hand too. The full amount stays in the link's `sr-only` text.
 - The scroll area has `pb-4` (16 px) below the month labels.
 - Keyboard focus shows an outline (`focus-visible:outline-2 focus-visible:outline-primary`).
 - The current month's label and value are bold only if the shown year is the current year (`shownYear === currentYear && month === currentMonth`).
-- The grid is `repeat(12, minmax(1.5rem, 1fr))` inside an `overflow-x-auto` wrapper. 1.5rem is 24 px, the minimum target size. Twelve columns plus gaps do not fit on very narrow screens, so the chart scrolls sideways instead of squeezing the targets below 24 px. A check on 320 px screens is still open (to verify).
-- Tests: `tests/nuxt/dashboard-page.test.ts`, the describes "dashboard page month bar links" and "dashboard page "View month" link"; the value above the bars is tested in "dashboard page costs per month".
+- The grid is `repeat(12, minmax(2.75rem, 1fr))` with an 8 px gap (`gap-2`) inside an `overflow-x-auto` wrapper. 2.75rem is 44 px. Twelve columns plus gaps do not fit on narrow screens, so the chart scrolls sideways instead of squeezing the targets. A check on 320 px screens is still open (to verify).
+- Tests: `tests/nuxt/dashboard-page.test.ts`, the describes "dashboard page month bar links" and "dashboard page "View month" link"; the heading, hint, pills, colours, column width and the value above the bars are tested in "dashboard page costs per month".
 
 ### Year fallback on the dashboard
 
@@ -419,7 +420,7 @@ Checked by hand in the browser: the dashboard and month page buttons open the di
 
 - Sections are labelled with `aria-labelledby`; bars and tracks are `aria-hidden` and every value is also real text.
 - The split ring is a `role="img"` with a translated `aria-label`; the rows beside it carry the amounts as text.
-- The month chart items are links named by a visually hidden text ("January: €800"); the bar and the short label are `aria-hidden`; the focused link has an outline; the current month is bold, not only coloured.
+- The month chart items are links named by a visually hidden text ("January: €800"); the bar and the short label are `aria-hidden`; the focused link has an outline; the current month is bold, not only coloured (cobalt against the soft colour).
 - The costs table sets no `aria-sort`, so the sort buttons carry the state in their `aria-label` (`costs.sort.*`).
 - After a successful retry on the month page, focus moves to the `h1`, which has `tabindex="-1"`.
 - `<NuxtRouteAnnouncer />` announces the new title after each navigation.

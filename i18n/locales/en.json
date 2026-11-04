@@ -115,7 +115,8 @@
       "alt": "Household {household} percent, business {business} percent"
     },
     "months": {
-        "title": "Costs per month in {year}",
+        "title": "Month by month",
+        "hint": "Select a month to open it",
         "alt": "{month}: {amount}",
         "thousand": "{value}k"
     },

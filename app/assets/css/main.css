@@ -30,6 +30,8 @@
   --ui-secondary: #b54708;
   /* The solid fill behind the business badge (mock: #FEF0E3). A tint of the text colour would let the contrast depend on the surface and drop below 4.5:1 on the muted rows. */
   --business-tint: #fef0e3;
+  /* The bars of the months other than the current one (mock: Chart soft). 1.70:1 against the white card, below the 3:1 of the issue; kept as in the mock because every amount is also text (the value above the bar, the full text of the link). */
+  --chart-soft: #b9c5f6;
 
   /* The disc behind each category icon (white icon on top), values of the mocks. */
   --category-housing: #6941c6;
@@ -67,6 +69,7 @@
   --ui-primary: var(--ui-color-primary-400);
   --ui-secondary: #fdba74;
   --business-tint: #3a2410;
+  --chart-soft: #5b6ac0;
 
   --category-housing: #7f56d9;
   --category-insurance: #667085;
