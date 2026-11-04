@@ -6,5 +6,5 @@ For end users and for developers working on `app/`. For the server, database and
 | --- | --- | --- |
 | [user-guide.md](user-guide.md) | End users | Track costs, read the dashboard, open a month from it, use the menu and the language list on a phone, change the language |
 | [app-structure.md](app-structure.md) | Developers | Pages, dashboard links to month pages, the sidebar navigation, the central add and edit dialog, components, composables, i18n and accessibility conventions of `app/` |
-| [colour-scheme.md](colour-scheme.md) | Developers | How the Cobalt colour scheme is built in `main.css`, the main variables in light and dark, how to change a colour and check it in both modes, the logo mark, the favicon, app icons and web manifest, known limits |
+| [colour-scheme.md](colour-scheme.md) | Developers | How the Cobalt colour scheme is built in `main.css`, the main variables in light and dark, the hero card, how to change a colour and check it in both modes, the logo mark, the favicon, app icons and web manifest, known limits |
 | [design-system/](design-system/README.md) | Developers, designers | Snapshot of the design system: usage rules in the README and the colour, type, spacing and radius tokens in `tokens.json`. The CSS in `app/assets/css/main.css` stays the source of truth |
