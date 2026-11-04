@@ -1,9 +1,16 @@
 <script setup lang="ts">
     const { t } = useI18n()
+    const { open, cost, month, close } = useCostDialog()
+    const { retry } = useCostLists()
     const navItems = computed(() => [
         {'label': t('nav.dashboard'), to: '/'},
         {'label': t('nav.costs'), to: '/costs'}
     ])
+
+    async function onSaved() {
+        await retry()
+        close()
+    }
 </script>
 <template>
     <UHeader :title="t('app.name')">
@@ -26,4 +33,14 @@
             <slot />
         </UContainer>
     </UMain>
+    <UModal
+        :ui="{ content: 'rounded-[2rem] bg-elevated' }"
+        :open="open"
+        :title="cost ? t('costs.edit', { name: cost.name }) : t('costs.add')"
+        @update:open="(isOpen: boolean) => { if (!isOpen) close() }"
+    >
+        <template #body>
+            <CostForm :cost="cost" :month="month" @saved="onSaved" @cancel="close" />
+        </template>
+    </UModal>
 </template>

@@ -5,6 +5,7 @@ const { t } = useI18n()
 const { year, currentYear, currentMonth } = useYear()
 const { monthName, monthYear, monthPath } = useMonth()
 const { recurring, purchases, failed, loading, retry } = useCostLists()
+const { openAdd } = useCostDialog()
 const years = computed(() => availableYears(purchases.value ?? [], currentYear.value))
 const shownYear = computed(() => years.value.includes(year.value) ? year.value : currentYear.value)
 const empty = computed(() => !failed.value && !loading.value && recurring.value?.length === 0 && purchases.value?.length === 0)
@@ -51,13 +52,8 @@ const thisMonth = computed(() => {
         }))
     }
 })
-const open = ref(false)
 
 useHead({ title: () => t('nav.dashboard') })
-async function onSaved() {
-    await retry()
-    open.value = false
-}
 </script>
 <template>
     <h1>{{ t('nav.dashboard') }}</h1>
@@ -94,7 +90,7 @@ async function onSaved() {
                 </ul>
                 <div v-else class="mt-4">
                     <p>{{ t('dashboard.thisMonth.empty') }}</p>
-                    <UButton :label="t('costs.add')" class="pill mt-2" @click="open = true" />
+                    <UButton :label="t('costs.add')" class="pill mt-2" @click="openAdd()" />
                 </div>
                 <UButton
                     :to="monthPath(currentYear, currentMonth)"
@@ -109,14 +105,7 @@ async function onSaved() {
             <UCard variant="subtle" class="card">
                 <h2 id="add-cost-title">{{ t('dashboard.addCost.title') }}</h2>
                 <p class="font-medium">{{ t('dashboard.addCost.text') }}</p>
-                <p>
-                    <UModal :ui="{ content: 'rounded-[2rem] bg-elevated' }" v-model:open="open" :title="t('costs.add')">
-                        <UButton :label="t('costs.add')" class="pill" />
-                        <template #body>
-                            <CostForm @saved="onSaved" @cancel="open = false" />
-                        </template>
-                    </UModal>
-                </p>
+                <p><UButton :label="t('costs.add')" class="pill" @click="openAdd()" /></p>
             </UCard>
         </section>
         <section aria-labelledby="summary-title">

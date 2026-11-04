@@ -37,6 +37,7 @@ beforeEach(async () => {
 })
 afterEach(() => {
   wrapper.unmount()
+  useCostDialog().close()
 })
 
 // Modals are teleported to the body, so their content is not inside the wrapper.
@@ -95,39 +96,32 @@ describe('costs page name column', () => {
 })
 
 describe('costs page add and edit', () => {
-  it('opens an empty form titled "Add cost"', async () => {
+  // The dialog itself lives in the layout (see CostDialog.test.ts); the page only asks for it.
+  const dialogState = () => {
+    const { open, cost, month } = useCostDialog()
+    return { open: open.value, cost: cost.value, month: month.value }
+  }
+  const addButton = () => wrapper.findAll('button').find(b => b.text() === 'Add cost')
+  it('does not ask for the dialog until a button is pressed', async () => {
     await vi.waitFor(() => expect(wrapper.findAll('tbody tr')).toHaveLength(3))
-    await click(wrapper.findAll('button').find(b => b.text() === 'Add cost')?.element)
-    await vi.waitFor(() => expect(input('name')).toBeTruthy())
-    expect(input('name')!.value).toBe('')
-    expect(body().textContent).toContain('Add cost')
+    expect(dialogState().open).toBe(false)
   })
-  it('opens the form pre-filled and titled with the name when a row is edited', async () => {
+  it('asks for an empty add dialog from the "Add cost" button', async () => {
     await vi.waitFor(() => expect(wrapper.findAll('tbody tr')).toHaveLength(3))
-    await click(wrapper.find('button[aria-label="Edit Laptop"]').element)
-    await vi.waitFor(() => expect(input('name')).toBeTruthy())
-    expect(input('name')!.value).toBe('Laptop')
-    expect(input('amount')!.value).toBe('1200.5')
-    expect(body().textContent).toContain('Edit Laptop')
-    expect(button('Save')).toBeTruthy()
+    await addButton()!.trigger('click')
+    expect(dialogState()).toEqual({ open: true, cost: null, month: null })
   })
-  it('closes the form on Cancel without sending anything', async () => {
+  it('asks for the edit dialog with the stored cost of the row when a row is edited', async () => {
     await vi.waitFor(() => expect(wrapper.findAll('tbody tr')).toHaveLength(3))
-    await click(wrapper.find('button[aria-label="Edit Rent"]').element)
-    await vi.waitFor(() => expect(input('name')).toBeTruthy())
-    await click(button('Cancel'))
-    await vi.waitFor(() => expect(input('name')).toBeNull())
+    await wrapper.find('button[aria-label="Edit Laptop"]').trigger('click')
+    const { open, cost } = dialogState()
+    expect(open).toBe(true)
+    expect(cost).toMatchObject({ id: 2, kind: 'purchase', name: 'Laptop', amount: 1200.5 })
+  })
+  it('does not send anything when a dialog is asked for', async () => {
+    await vi.waitFor(() => expect(wrapper.findAll('tbody tr')).toHaveLength(3))
+    await wrapper.find('button[aria-label="Edit Rent"]').trigger('click')
     expect(deleteCalls).toEqual([])
-  })
-  it('does not keep the edited cost around: the next "Add cost" starts empty', async () => {
-    await vi.waitFor(() => expect(wrapper.findAll('tbody tr')).toHaveLength(3))
-    await click(wrapper.find('button[aria-label="Edit Rent"]').element)
-    await vi.waitFor(() => expect(input('name')).toBeTruthy())
-    await click(button('Cancel'))
-    await vi.waitFor(() => expect(input('name')).toBeNull())
-    await click(wrapper.findAll('button').find(b => b.text() === 'Add cost')?.element)
-    await vi.waitFor(() => expect(input('name')).toBeTruthy())
-    expect(input('name')!.value).toBe('')
   })
 })
 

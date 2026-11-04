@@ -13,7 +13,6 @@ const { monthName, monthYear, monthPath } = useMonth()
 const title = computed(() => monthYear(year, month))
 const euros = useMoney({ cents: true })
 const monthRef: MonthRef = { year, month: month as Month }
-const open = ref(false)
 const isCurrentMonth = computed(() => year === currentYear.value && month === currentMonth.value)
 const neighbours = computed(() => monthNeighbours(monthRef, availableYears(purchases.value ?? [], currentYear.value)))
 const groups = computed(() => groupMonthCosts<Stored<RecurringCost>, Stored<Purchase>>(costsInMonth(recurring.value ?? [], purchases.value ?? [], year, month as Month)))
@@ -25,6 +24,7 @@ const sections = computed(() => [
 ].filter(section => section.rows.length > 0))
 const formatDate = (date:string) => new Intl.DateTimeFormat(locale.value, { day: 'numeric', month: 'short', timeZone: 'UTC'}).format(new Date(date))
 const heading = useTemplateRef<HTMLElement>('heading')
+const { openAdd } = useCostDialog()
 
 
 useHead({ title: () => title.value })
@@ -53,10 +53,7 @@ async function onRetry() {
     await nextTick()
     heading.value?.focus()
 }
-async function onSaved() {
-    await retry()
-    open.value = false
-}
+
 </script>
 <template>
     <UButton to="/" :label="t('nav.dashboard')" icon="i-lucide-arrow-left" variant="link" color="neutral" class="mb-2 px-0" />
@@ -81,7 +78,7 @@ async function onSaved() {
             color="neutral"
             class="pill-icon"
         />
-        <UButton v-if="!loading && !failed" :label="t('costs.add')" icon="i-lucide-plus" class="pill ml-auto" @click="open = true" />
+        <UButton v-if="!loading && !failed" :label="t('costs.add')" icon="i-lucide-plus" class="pill ml-auto" @click="openAdd(monthRef)" />
     </div>
     <div :aria-busy="loading">
         <template v-if="loading">
@@ -106,7 +103,7 @@ async function onSaved() {
                 <UIcon name="i-lucide-calendar-x" class="size-8" aria-hidden="true" />
                 <h2>{{ t('month.emptyTitle', { month: monthName(month) }) }}</h2>
                 <p>{{ t('month.emptyText') }}</p>
-                <UButton :label="t('costs.add')" class="pill mt-4" @click="open = true" />
+                <UButton :label="t('costs.add')" class="pill mt-4" @click="openAdd(monthRef)" />
             </UCard>
             <section v-for="section in sections" :key="section.id" :aria-labelledby="`${section.id}-title`" class="card mt-6 px-6 py-5">
                 <div class="flex items-baseline justify-between gap-4">
@@ -128,9 +125,4 @@ async function onSaved() {
             </section>
         </template>
     </div>
-    <UModal :ui="{ content: 'rounded-[2rem] bg-elevated' }" v-model:open="open" :title="t('costs.add')">
-        <template #body>
-            <CostForm :month="monthRef" @saved="onSaved" @cancel="open = false" />
-        </template>
-    </UModal>
 </template>

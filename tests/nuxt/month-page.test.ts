@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mockNuxtImport, mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
 import type { VueWrapper } from '@vue/test-utils'
 import MonthPage from '~/pages/months/[year]/[month].vue'
-import CostForm from '~/components/CostForm.vue'
 import { monthlyTotals } from '~~/shared/utils/costs'
 
 const { showErrorMock } = vi.hoisted(() => ({ showErrorMock: vi.fn() }))
@@ -46,6 +45,7 @@ beforeEach(() => {
 })
 afterEach(async () => {
   wrapper.unmount()
+  useCostDialog().close()
   showErrorMock.mockReset()
   await setLanguage('en')
 })
@@ -379,17 +379,13 @@ describe('month page empty state', () => {
 })
 
 describe('month page add cost', () => {
-  // The dialog is teleported to the body, so its content is not inside the wrapper.
-  const dialog = () => document.body.querySelector('[role="dialog"]')
-  const nameInput = () => document.body.querySelector<HTMLInputElement>('input[name="name"]')
-  const dateInput = () => document.body.querySelector<HTMLInputElement>('input[name="date"]')
-  const headerButton = () => wrapper.findAll('button').find(button => button.text() === 'Add cost' && button.classes().includes('ml-auto'))
-  const cancelButton = () => [...document.body.querySelectorAll('button')].find(button => button.textContent?.trim() === 'Cancel')
-  const total = () => textOf(totalCard())
-  async function openFromHeader() {
-    await headerButton()!.trigger('click')
-    await vi.waitFor(() => expect(nameInput()).toBeTruthy())
+  // The dialog itself lives in the layout (see CostDialog.test.ts); the page only asks for it, with its month.
+  const dialogState = () => {
+    const { open, cost, month } = useCostDialog()
+    return { open: open.value, cost: cost.value, month: month.value }
   }
+  const headerButton = () => wrapper.findAll('button').find(button => button.text() === 'Add cost' && button.classes().includes('ml-auto'))
+  const total = () => textOf(totalCard())
 
   it('has an "Add cost" button next to the heading once the month is loaded', async () => {
     await mountOctober()
@@ -407,97 +403,53 @@ describe('month page add cost', () => {
     await vi.waitFor(() => expect(alert().exists()).toBe(true))
     expect(wrapper.findAll('button').some(button => button.text() === 'Add cost')).toBe(false)
   })
-  it('does not open a dialog until the button is pressed', async () => {
+  it('does not ask for the dialog until the button is pressed', async () => {
     await mountOctober()
-    expect(dialog()).toBeNull()
+    expect(dialogState().open).toBe(false)
   })
-  it('opens the form for the shown month: a purchase starts on the first day and is limited to the month', async () => {
+  it('asks for an add dialog for the shown month from the button next to the heading', async () => {
     await mountOctober()
-    await openFromHeader()
-    expect(dialog()!.textContent).toContain('Add cost')
-    expect(dateInput()!.value).toBe('2026-10-01')
-    expect(dateInput()!.min).toBe('2026-10-01')
-    expect(dateInput()!.max).toBe('2026-10-31')
-    expect(dialog()!.textContent).toContain('Pre-filled with October 2026. Pick the day.')
+    await headerButton()!.trigger('click')
+    expect(dialogState()).toEqual({ open: true, cost: null, month: { year: 2026, month: 10 } })
   })
   it('uses the month of the address, not the current month', async () => {
     await mountOctober('/months/2025/02')
-    await openFromHeader()
-    expect(dateInput()!.value).toBe('2025-02-01')
-    expect(dateInput()!.max).toBe('2025-02-28')
+    await headerButton()!.trigger('click')
+    expect(dialogState().month).toEqual({ year: 2025, month: 2 })
   })
-  it('opens the same form from the button of an empty month', async () => {
+  it('asks for the same dialog, with the month, from the button of an empty month', async () => {
     api.recurring.rows = []
     api.purchases.rows = [{ ...bike }]
     await mountPage('/months/2026/10')
     await vi.waitFor(() => expect(wrapper.text()).toContain('No costs in October'))
     const emptyButton = wrapper.findAll('button').find(button => button.text() === 'Add cost' && !button.classes().includes('ml-auto'))
     await emptyButton!.trigger('click')
-    await vi.waitFor(() => expect(nameInput()).toBeTruthy())
-    expect(dateInput()!.value).toBe('2026-10-01')
+    expect(dialogState()).toEqual({ open: true, cost: null, month: { year: 2026, month: 10 } })
   })
-  it('closes the dialog on cancel without changing the page', async () => {
-    await mountOctober()
-    const before = total()
-    await openFromHeader()
-    cancelButton()!.click()
-    await vi.waitFor(() => expect(dialog()).toBeNull())
-    expect(total()).toBe(before)
-  })
-  it('starts fresh each time it is opened, with the defaults again', async () => {
-    await mountOctober()
-    await openFromHeader()
-    nameInput()!.value = 'Half typed'
-    nameInput()!.dispatchEvent(new Event('input'))
-    cancelButton()!.click()
-    await vi.waitFor(() => expect(dialog()).toBeNull())
-    await openFromHeader()
-    expect(nameInput()!.value).toBe('')
-    expect(dateInput()!.value).toBe('2026-10-01')
-  })
-  it('refreshes the lists, the subtotals and the total and closes the dialog after a cost was saved', async () => {
+  it('refreshes the subtotals and the total when the lists are refreshed, as the layout does after a save', async () => {
     await mountOctober()
     expect(total()).toContain('€1,863.24')
-    await openFromHeader()
-    // what the API will return once the form has saved a new purchase
+    // what the API will return once a new purchase was saved
     api.purchases.rows = [...october.purchases, { id: 7, kind: 'purchase', name: 'Lamp', amount: 36.76, category: 'appliances', business: false, date: '2026-10-09' }]
-    wrapper.findComponent(CostForm).vm.$emit('saved')
+    await refreshNuxtData()
     await vi.waitFor(() => expect(total()).toContain('€1,900.00'))
     expect(subtotalOf('purchases')).toBe('€949.25')
     expect(section('purchases').text()).toContain('Lamp')
-    await vi.waitFor(() => expect(dialog()).toBeNull())
   })
   it('keeps the page and does not show the loading state while the lists refresh', async () => {
     await mountOctober()
-    await openFromHeader()
     api.purchases.delay = 200
-    wrapper.findComponent(CostForm).vm.$emit('saved')
+    const refreshing = refreshNuxtData()
     await sleep(50)
     expect(status().exists()).toBe(false)
     expect(totalCard().exists()).toBe(true)
-    await vi.waitFor(() => expect(dialog()).toBeNull(), { timeout: 2000 })
+    await refreshing
   })
-  it('gives the focus back to the button when the dialog is cancelled', async () => {
-    api.recurring.rows = october.recurring.map(row => ({ ...row }))
-    api.purchases.rows = october.purchases.map(row => ({ ...row }))
-    wrapper = await mountSuspended(MonthPage, { route: '/months/2026/10', attachTo: document.body })
-    await vi.waitFor(() => expect(status().exists()).toBe(false))
-    const button = headerButton()!
-    ;(button.element as HTMLElement).focus()
-    await button.trigger('click')
-    await vi.waitFor(() => expect(nameInput()).toBeTruthy())
-    cancelButton()!.click()
-    await vi.waitFor(() => expect(dialog()).toBeNull())
-    await vi.waitFor(() => expect(document.activeElement).toBe(button.element))
-  })
-  it('has German texts', async () => {
+  it('has a German button', async () => {
     await setLanguage('de')
     await mountOctober()
     const button = wrapper.findAll('button').find(item => item.classes().includes('ml-auto'))!
     expect(button.text()).toBe('Kosten hinzufügen')
-    await button.trigger('click')
-    await vi.waitFor(() => expect(nameInput()).toBeTruthy())
-    expect(dialog()!.textContent).toContain('Vorbelegt mit Oktober 2026. Wähle den Tag.')
   })
 })
 

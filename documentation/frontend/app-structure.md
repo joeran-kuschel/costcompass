@@ -8,7 +8,7 @@ Reference and conventions for `app/` (pages, components, composables, texts). Wr
 | --- | --- | --- | --- |
 | `/` | `app/pages/index.vue` | Exists | Dashboard: "This month" card with cost list, add tile, year select, summary tiles, household versus business bar, costs by category, costs per month |
 | `/costs` | `app/pages/costs.vue` | Exists | One sortable table of both kinds, add, edit and delete |
-| `/months/[year]/[month]` | `app/pages/months/[year]/[month].vue` | Exists | Costs of one month, total, previous and next links, add cost |
+| `/months/[year]/[month]` | `app/pages/months/[year]/[month].vue` | Exists | Costs of one month, total, previous and next links, add cost (pre-filled for the month) |
 | `/calculator` | - | Planned | Rate calculator |
 
 `app/error.vue` is the error page, not a route. It shows one of three variants (`notFound`, `generic`, `month`), picked by the error. Texts come from `error.<variant>Title` and `error.<variant>Text`. The `month` variant is used when the month page throws an error with `data: { reason: 'month' }`.
@@ -69,7 +69,7 @@ Tests: `tests/nuxt/dashboard-page.test.ts`, describe "dashboard page year select
 
 ## Header and navigation on small screens
 
-Issue #21. The layout is `app/layouts/default.vue`. Nuxt UI's `UHeader` hides its default slot below the `lg` breakpoint (1024 px; the theme sets `hidden lg:flex` on it) and shows a toggle button instead. A navigation in the default slot alone would vanish on a phone, so the layout uses four slots:
+Issue #21. The layout is `app/layouts/default.vue`. Nuxt UI's `UHeader` hides its default slot below the `lg` breakpoint (1024 px; the theme sets `hidden lg:flex` on it) and shows a toggle button instead. A navigation in the default slot alone would vanish on a phone, so the layout uses four slots (the dialog described below sits after `UMain`, outside the header):
 
 | Slot | Content | Visible |
 | --- | --- | --- |
@@ -97,18 +97,64 @@ There is no automated test, because jsdom has no layout and cannot tell a wide f
 
 Checked so far at 320 px in English and German. Dark mode is not checked yet *(to verify)*. Whether the whole bar fits at 320 px with a long German label is covered by that check only for the current texts.
 
+## Add and edit dialog
+
+Groundwork for the sidebar (#53) and the floating add button (#55). `app/layouts/default.vue` renders one `UModal` with `CostForm` for the whole app. A page, or later a sidebar or a floating button, does not own a modal. It asks the layout to open it through `useCostDialog()`.
+
+| Call | Opens | State after |
+| --- | --- | --- |
+| `openAdd()` | Empty add form | `cost` and `month` are `null` |
+| `openAdd(monthRef)` | Add form pre-filled for that month (a purchase starts on its first day, the date field is limited to the month, a hint names the month) | `month` set, `cost` is `null` |
+| `openEdit(cost)` | Edit form for a `Stored<Cost>`; the kind is locked | `cost` set, `month` is `null` |
+| `close()` | Closes the dialog | All three cleared |
+
+Each of `openAdd` and `openEdit` resets the other value, so nothing leaks into the next dialog.
+
+Who calls what:
+
+| Place | Call |
+| --- | --- |
+| Dashboard: "Add a cost" tile and the "Add cost" button of an empty "This month" card | `openAdd()` |
+| `/costs`: "Add cost" button | `openAdd()` |
+| `/costs`: pencil button of a row | `openEdit(row.original)` |
+| Month page: "Add cost" next to the heading and in the empty month card | `openAdd(monthRef)` |
+
+The delete confirmation is not part of this. It stays a modal of the costs page.
+
+What the layout does:
+
+- The title is "Add cost" or "Edit <name>", depending on `cost`.
+- `CostForm` gets `:cost` and `:month`.
+- When the modal closes (close button, backdrop, Escape), `@update:open` calls `close()`. `@cancel` calls `close()` too.
+- On `@saved` the layout awaits `retry()` from `useCostLists()` and then calls `close()`. Every page that shows the lists updates.
+- The layout calls `useCostLists()`. The pages fetch the same lists, so this adds no requests.
+
+State lives in `useState`, not in provide/inject, so any component can open the dialog without being a child of the layout.
+
+### Known limit: the costs table loads on the client
+
+`/costs` used to have its own non-lazy `useFetch` calls. Nuxt gave them different cache keys than the layout's, so after a save from the dialog the table did not update until a reload. The page now uses `useCostLists()`. The table is therefore filled on the client: it is empty while loading, and the page has no loading or error state yet (the dashboard and the month page have).
+
+### Tests
+
+- `tests/nuxt/CostDialog.test.ts` (13 tests, mounted on the layout): opens empty, pre-filled for an edit and for a month (date on the first day, `min` and `max`, hint); Cancel and the close button clear the state; no leftover cost or month in the next dialog; focus returns to the element that had it before the dialog opened; both lists are loaded again and the dialog closes after a save; German.
+- `dashboard-page.test.ts`, `costs-page.test.ts` and `month-page.test.ts` only check that the page asks for the dialog with the right state (`open`, `cost`, `month` of `useCostDialog()`), and that the page shows new numbers after `refreshNuxtData()`.
+- Every file that touches the dialog closes its state after each test, because `useState` outlives a test.
+
+Checked by hand in the browser: the dashboard and month page buttons open the dialog, and the costs table updates after a save. Not checked: use from a sidebar or floating button (they do not exist yet) and the dialog on a phone *(to verify)*.
+
 ## Components
 
 | Component | Purpose |
 | --- | --- |
-| `CostForm.vue` | Add and edit form for both kinds, in a `UModal`. Props: optional `cost` (`Stored<Cost>`; set means edit, the kind is locked and submit sends `PATCH`) and optional `month` (`{ year, month }`; starts a purchase on the first day of that month and limits the date field to it). Emits `saved` and `cancel`. Failed saves show a toast. |
+| `CostForm.vue` | Add and edit form for both kinds. It sits in the layout's one dialog, see [Add and edit dialog](#add-and-edit-dialog). Props: optional `cost` (`Stored<Cost>`; set means edit, the kind is locked and submit sends `PATCH`) and optional `month` (`{ year, month }`; starts a purchase on the first day of that month and limits the date field to it). Emits `saved` and `cancel`. Failed saves show a toast. |
 | `YearSelect.vue` | `v-model` year select with a visible label; takes a `years` list |
 | `BusinessBadge.vue` | The "Business" badge with a briefcase icon, no props. See [Business badge](colour-scheme.md#business-badge) |
 | `CategoryBadge.vue` | Round disc with a white category icon; props `category` and `size` (28, 32, 36, 40, 44, 56). Decoration only (`aria-hidden`), the name is text in the parent. See [Category badge](colour-scheme.md#category-badge) |
 | `LogoMark.vue` | The Costcompass mark (disc, ring, compass needle) as an inline SVG, no props. Decoration only (`aria-hidden`), sized by the parent. Used in the header title. See [Logo mark](colour-scheme.md#logo-mark) |
 | `LanguageSwitcher.vue` | `USelect` that calls `setLocale()`; accessible name from `language.label`. Sits in the `#right` slot of the header, see [Header and navigation on small screens](#header-and-navigation-on-small-screens) |
 
-The form validates with the Zod schemas from `shared/utils/validation.ts`, so the browser and the API apply the same rules, except that the date field limit of the `month` prop is a browser limit only.
+`CostForm` is opened through the [add and edit dialog](#add-and-edit-dialog). It validates with the Zod schemas from `shared/utils/validation.ts`, so the browser and the API apply the same rules, except that the date field limit of the `month` prop is a browser limit only.
 
 ## Composables
 
@@ -117,8 +163,9 @@ The form validates with the Zod schemas from `shared/utils/validation.ts`, so th
 | `useMoney(options?)` | A formatter for euros: whole euros, or cents with `useMoney({ cents: true })` |
 | `useYear()` | `year` (selected, shared state), `currentYear`, `currentMonth` (read once, in UTC) |
 | `useMonth()` | `monthName(month, style?)`, `monthYear(year, month)`, `monthPath(year, month)` |
-| `useCostLists()` | `recurring`, `purchases`, `failed`, `loading`, `retry`. Uses `useFetch` with `lazy: true`, so the dashboard and the month page share the cached data. |
+| `useCostLists()` | `recurring`, `purchases`, `failed`, `loading`, `retry`. Uses `useFetch` with `lazy: true`, so the layout, the dashboard, the costs page and the month page share the cached data. |
 | `useCategory()` | `categoryIcon(category)`, `categoryClass(category)`, `categoryStyle(size)` for `CategoryBadge`; also exports `CATEGORY_SIZES` and `CategorySize` |
+| `useCostDialog()` | `open`, `cost` (`Stored<Cost> \| null`), `month` (`MonthRef \| null`), `openAdd(month?)`, `openEdit(cost)`, `close()`. State in `useState` (keys `costDialogOpen`, `costDialogCost`, `costDialogMonth`). See [Add and edit dialog](#add-and-edit-dialog). |
 | `useAppHead()` | `<html lang>`, `dir` and the title template; called by `app.vue` and `error.vue` |
 
 ## Texts and languages
