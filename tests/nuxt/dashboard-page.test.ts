@@ -436,74 +436,108 @@ describe('dashboard page household versus business split', () => {
     ]
   }
   const section = () => wrapper.find('section[aria-labelledby="split-title"]')
-  const bar = () => section().find('[role="img"]')
-  const widths = () => bar().findAll('div').map(segment => /width:\s*([0-9.]+%)/.exec(segment.attributes('style') ?? '')?.[1])
-  const legend = () => section().findAll('li').map(item => item.text().replace(/\s+/g, ' ').trim())
+  const ring = () => section().find('[role="img"]')
+  const ringStyle = () => ring().attributes('style') ?? ''
+  const centre = () => ring().findAll('span').map(span => span.text())
+  // name and amount of each row, spaces normalised (German puts a no-break space before the euro sign)
+  const rows = () => section().findAll('li').map(item => item.findAll('span').map(span => span.text().replace(/\s+/g, ' ').trim()).filter(Boolean).join(' '))
 
-  it('has a heading for the current year that labels the section', async () => {
+  it('has the heading "Household and business" that labels the section', async () => {
     costs()
     await mountPage()
     await vi.waitFor(() => expect(section().exists()).toBe(true))
-    expect(section().find('h2').text()).toBe(`Household versus business in ${year}`)
+    expect(section().find('h2').text()).toBe('Household and business')
     expect(section().attributes('aria-labelledby')).toBe(section().find('h2').attributes('id'))
   })
-  it('gives the bar a text alternative with both percentages', async () => {
+  it('gives the ring a text alternative with both percentages', async () => {
     costs()
     await mountPage()
-    await vi.waitFor(() => expect(bar().exists()).toBe(true))
-    expect(bar().attributes('aria-label')).toBe('Household 89 percent, business 11 percent')
+    await vi.waitFor(() => expect(ring().exists()).toBe(true))
+    expect(ring().attributes('aria-label')).toBe('Household 89 percent, business 11 percent')
   })
-  it('states the shares as text in the legend, so colour is not the only carrier', async () => {
+  it('shows the household percentage and the word in the middle of the ring', async () => {
     costs()
     await mountPage()
-    await vi.waitFor(() => expect(legend()).toHaveLength(2))
-    expect(legend()).toEqual(['Household 89%', 'Business 11%'])
+    await vi.waitFor(() => expect(ring().exists()).toBe(true))
+    expect(centre()).toEqual(['89%', 'Household'])
   })
-  it('sizes the two bar segments by their percentages', async () => {
+  it('lists household and business with their amounts in euros', async () => {
     costs()
     await mountPage()
-    await vi.waitFor(() => expect(bar().exists()).toBe(true))
-    expect(widths()).toEqual(['89%', '11%'])
+    await vi.waitFor(() => expect(rows()).toHaveLength(2))
+    // 11,100 in total, 1,200 of it business
+    expect(rows()).toEqual(['Household €9,900', 'Business €1,200'])
   })
-  it('hides the colour swatches of the legend from assistive technology', async () => {
+  it('hides the icons of the rows from assistive technology', async () => {
     costs()
     await mountPage()
-    await vi.waitFor(() => expect(legend()).toHaveLength(2))
-    for (const item of section().findAll('li')) {
-      expect(item.find('[aria-hidden="true"]').exists()).toBe(true)
-    }
+    await vi.waitFor(() => expect(rows()).toHaveLength(2))
+    const icons = section().findAll('li [class*="lucide"]')
+    expect(icons).toHaveLength(2)
+    for (const icon of icons) expect(icon.attributes('aria-hidden')).toBe('true')
+  })
+  it('paints the ring with the household and the business colour and a gap between them', async () => {
+    costs()
+    await mountPage()
+    await vi.waitFor(() => expect(ring().exists()).toBe(true))
+    expect(ringStyle()).toContain('conic-gradient')
+    expect(ringStyle()).toContain('var(--ui-primary)')
+    expect(ringStyle()).toContain('var(--ui-warning)')
+    expect(ringStyle()).toContain('var(--ui-bg-elevated)')
   })
   it('is German with German texts when the language is German', async () => {
     await setLanguage('de')
     costs()
     await mountPage()
-    await vi.waitFor(() => expect(bar().exists()).toBe(true))
-    expect(section().find('h2').text()).toBe(`Haushalt und Geschäftliches ${year}`)
-    expect(bar().attributes('aria-label')).toBe('Haushalt 89 Prozent, Geschäftlich 11 Prozent')
-    expect(legend()).toEqual(['Haushalt 89%', 'Geschäftlich 11%'])
+    await vi.waitFor(() => expect(ring().exists()).toBe(true))
+    expect(section().find('h2').text()).toBe('Haushalt und Geschäftliches')
+    expect(ring().attributes('aria-label')).toBe('Haushalt 89 Prozent, Geschäftlich 11 Prozent')
+    expect(centre()).toEqual(['89%', 'Haushalt'])
+    expect(rows()).toEqual(['Haushalt 9.900 €', 'Geschäftlich 1.200 €'])
   })
-  it('shows only a household segment when there are no business costs', async () => {
+  it('draws a full household ring without a gap when there are no business costs', async () => {
     api.recurring.rows = [rent]
     await mountPage()
-    await vi.waitFor(() => expect(bar().exists()).toBe(true))
-    expect(widths()).toEqual(['100%'])
-    expect(legend()).toEqual(['Household 100%', 'Business 0%'])
+    await vi.waitFor(() => expect(ring().exists()).toBe(true))
+    expect(ringStyle()).toContain('var(--ui-primary)')
+    expect(ringStyle()).not.toContain('var(--ui-warning)')
+    expect(ringStyle()).not.toContain('var(--ui-bg-elevated)')
+    expect(centre()[0]).toBe('100%')
+    expect(rows()).toEqual(['Household €9,600', 'Business €0'])
   })
-  it('shows only a business segment when every cost is a business cost', async () => {
+  it('draws a full business ring without a gap when every cost is a business cost', async () => {
     api.recurring.rows = [{ ...rent, business: true }]
     await mountPage()
-    await vi.waitFor(() => expect(bar().exists()).toBe(true))
-    expect(widths()).toEqual(['100%'])
-    expect(legend()).toEqual(['Household 0%', 'Business 100%'])
+    await vi.waitFor(() => expect(ring().exists()).toBe(true))
+    expect(ringStyle()).toContain('var(--ui-warning)')
+    expect(ringStyle()).not.toContain('var(--ui-primary)')
+    expect(ringStyle()).not.toContain('var(--ui-bg-elevated)')
+    expect(centre()[0]).toBe('0%')
+    expect(rows()).toEqual(['Household €0', 'Business €9,600'])
   })
-  it('shows an empty bar with 0 percent when the year has no costs', async () => {
+  it('draws an empty ring and 0 percent when the year has no costs', async () => {
     // Only a purchase of last year: the lists are not empty, but this year's total is 0.
     api.purchases.rows = [{ id: 4, kind: 'purchase', name: 'Old laptop', amount: 500, category: 'appliances', business: true, date: `${year - 1}-03-15` }]
     await mountPage()
-    await vi.waitFor(() => expect(bar().exists()).toBe(true))
-    expect(bar().findAll('div')).toHaveLength(0)
-    expect(bar().attributes('aria-label')).toBe('Household 0 percent, business 0 percent')
-    expect(legend()).toEqual(['Household 0%', 'Business 0%'])
+    await vi.waitFor(() => expect(ring().exists()).toBe(true))
+    expect(ringStyle()).toContain('var(--ui-bg-accented)')
+    expect(ringStyle()).not.toContain('var(--ui-primary)')
+    expect(ringStyle()).not.toContain('var(--ui-warning)')
+    expect(ring().attributes('aria-label')).toBe('Household 0 percent, business 0 percent')
+    expect(centre()[0]).toBe('0%')
+    expect(rows()).toEqual(['Household €0', 'Business €0'])
+  })
+  it('keeps both colours in the ring when one share is only 1 percent', async () => {
+    // 1 of 100 is business: the gaps must not swallow the thin segment
+    api.recurring.rows = [
+      { ...rent, amount: 99 / 12 },
+      { ...rent, id: 5, amount: 1 / 12, business: true },
+    ]
+    await mountPage()
+    await vi.waitFor(() => expect(ring().exists()).toBe(true))
+    expect(ring().attributes('aria-label')).toBe('Household 99 percent, business 1 percent')
+    expect(ringStyle()).toContain('var(--ui-primary)')
+    expect(ringStyle()).toContain('var(--ui-warning)')
   })
   it('shows no split section while the lists are loading', async () => {
     costs()
@@ -1201,7 +1235,8 @@ describe('dashboard page year selector', () => {
     // the categories follow the year: the appliances were 300 this year and 500 last year
     expect(wrapper.find('section[aria-labelledby="categories-title"]').text()).toContain('€500')
     expect(wrapper.find('section[aria-labelledby="categories-title"]').text()).not.toContain('€300')
-    expect(wrapper.find('section[aria-labelledby="split-title"] h2').text()).toBe(`Household versus business in ${year - 1}`)
+    // the split follows the year: 300 + 800 x 12 = 9,900 this year, 10,100 last year, business 0 in both
+    expect(wrapper.find('section[aria-labelledby="split-title"] [role="img"]').attributes('aria-label')).toBe('Household 100 percent, business 0 percent')
     expect(months().find('h2').text()).toBe(`Costs per month in ${year - 1}`)
   })
   it('keeps the this-month card on today when another year is chosen', async () => {

@@ -6,7 +6,7 @@ Reference and conventions for `app/` (pages, components, composables, texts). Wr
 
 | Route | File | State | What it does |
 | --- | --- | --- | --- |
-| `/` | `app/pages/index.vue` | Exists | Dashboard: "This month" hero card with the recurring and purchases subtotals, "Largest this month" card, summary card with the year select in its header, household versus business bar, "Where your money goes" (categories), costs per month |
+| `/` | `app/pages/index.vue` | Exists | Dashboard: "This month" hero card with the recurring and purchases subtotals, "Largest this month" card, summary card with the year select in its header, household and business ring, "Where your money goes" (categories), costs per month |
 | `/costs` | `app/pages/costs.vue` | Exists | One sortable table of both kinds, add, edit and delete |
 | `/months/[year]/[month]` | `app/pages/months/[year]/[month].vue` | Exists | Costs of one month, total, previous and next links, add cost in the empty month (pre-filled for the month) |
 | `/calculator` | - | Planned | Rate calculator |
@@ -95,6 +95,18 @@ Issue #65. The section `aria-labelledby="categories-title"` is one card. Its `h2
 - Whole percentages can make a thin segment (3% of the width) very narrow on a phone.
 
 Tests: `tests/nuxt/dashboard-page.test.ts` (heading, name, amount and percentage per row, sum 100, no bar per row, German, badge 36 px; the stacked bar: decorative and without text above the list, widths 86/11/3% in list order, colour tokens, no visible segment for 0%, empty track) and `tests/nuxt/costs.test.ts` (`categoryBreakDown percentages`). Checked by the author in the browser: light and dark mode, German, 320 px, the grid columns (the list, #65). The stacked bar (#66) was checked in the browser in light mode, including the segment shape; dark mode, German and 320 px were not checked for it. Not checked: a real phone, a screen reader; the contrast of the muted percentage text is not measured; the contrast of the segments was computed from the colour tokens, not measured in the browser: against the gap (the track colour) at least 4.41:1 in light mode and 3.06:1 to 3.74:1 in dark mode, so 3:1 against the gap holds in both; against their neighbours they are close (1.0:1 to 2.1:1, insurance next to housing 1.58:1 in light and 1.00:1 in dark), so the gap does the separating.
+
+### "Household and business" (split ring)
+
+Issue #67. The section `aria-labelledby="split-title"` is one card. Its `h2` reads "Household and business" (`dashboard.split.title`, no year in the heading as in the mock; German "Haushalt und Geschäftliches").
+
+- The ring is a 140 px `div` with `role="img"` and the `aria-label` `dashboard.split.alt` ("Household 89 percent, business 11 percent"). It is drawn with a CSS `conic-gradient` from the computed `splitRing`, so there is no chart library and no JavaScript; it renders on the server. Colours and contrast: [Household and business ring](colour-scheme.md#household-and-business-ring).
+- The gaps between the colours are surface-coloured stops centred on the boundaries (half a gap, `GAP` = 0.6% of the ring, on each side). The colours keep their size and a 1% share stays visible.
+- Special cases: 100% household or 100% business is one full ring in one colour without a gap; a summary total of 0 (checked before the percentages) is an empty ring in `--ui-bg-accented` with 0%.
+- A 96 px hole in the surface colour shows the household percentage (22 px, bold, tabular figures) and the word "household" (`dashboard.split.household`).
+- Beside the ring, two rows: house icon, "Household", amount; briefcase icon, "Business", amount (whole euros, `useMoney()`). The icons are `aria-hidden` and coloured `text-primary` and `text-secondary`. The ring and the rows sit in a wrapping flex row, so on a phone the rows stack under the ring. The percentage legend of the old bar is gone; the business percentage is only in the ring's label.
+
+Tests: `tests/nuxt/dashboard-page.test.ts`, "dashboard page household versus business split" (11 tests: heading, label, centre text, rows with amounts, hidden icons, ring colours and gap, German, full household ring, full business ring, empty ring and 0%, a 1% share). Not checked: the look of the ring and the gaps, light and dark mode, German, 320 px and the layout next to the categories card in the browser; a real phone; a screen reader.
 
 ### Dashboard links to month pages
 
@@ -403,7 +415,7 @@ Checked by hand in the browser: the dashboard and month page buttons open the di
 ## Accessibility conventions
 
 - Sections are labelled with `aria-labelledby`; bars and tracks are `aria-hidden` and every value is also real text.
-- The split bar is a `role="img"` with a translated `aria-label`.
+- The split ring is a `role="img"` with a translated `aria-label`; the rows beside it carry the amounts as text.
 - The month chart items are links named by a visually hidden text ("January: €800"); the bar and the short label are `aria-hidden`; the focused link has an outline; the current month is bold, not only coloured.
 - The costs table sets no `aria-sort`, so the sort buttons carry the state in their `aria-label` (`costs.sort.*`).
 - After a successful retry on the month page, focus moves to the `h1`, which has `tabindex="-1"`.

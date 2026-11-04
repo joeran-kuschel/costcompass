@@ -20,6 +20,21 @@ const categoryRows = computed (() => categoryBreakDown(recurring.value ?? [], pu
     value: percent
 })))
 const split = computed(() => splitPercentages(summary.value))
+const GAP = 0.6   // the gap between the two colours, in percent of the ring
+const splitRing = computed(() => {
+    const { household, business } = split.value
+    const filled = (color: string) => `conic-gradient(${color} 0 100%)`
+    const half = GAP / 2
+    if (summary.value.total === 0) return filled('var(--ui-bg-accented)')   // empty year: an empty track
+    if (business === 0) return filled('var(--ui-primary)')                  // 100% household
+    if (household === 0) return filled('var(--ui-warning)')                 // 100% business
+    return `conic-gradient(
+        var(--ui-bg-elevated) 0 ${half}%,
+        var(--ui-primary) ${half}% ${household - half}%,
+        var(--ui-bg-elevated) ${household - half}% ${household + half}%,
+        var(--ui-warning) ${household + half}% ${100 - half}%,
+        var(--ui-bg-elevated) ${100 - half}% 100%)`
+})
 const tiles = computed(() => [
     { key: 'total', value: summary.value.total, label: t('dashboard.summary.total'), sub: t('dashboard.summary.perYear'),  dot: 'bg-inverted' },
     { key: 'average', value: summary.value.averagePerMonth, label: t('dashboard.summary.average'), sub: t('dashboard.summary.perMonth'), dot: 'bg-accented' },
@@ -162,23 +177,32 @@ useHead({ title: () => t('nav.dashboard') })
                 </ul>
             </UCard>
         </section>
-        <section aria-labelledby="split-title" class="mt-6">
+        <section aria-labelledby="split-title">
             <UCard variant="subtle" class="card">
-                <h2 id="split-title">{{ t('dashboard.split.title', { year: shownYear }) }}</h2>
-                <div class="flex h-3 overflow-hidden rounded bg-accented" role="img" :aria-label="t('dashboard.split.alt', { household: split.household, business: split.business })">
-                    <div v-if="split.household > 0" class="bg-primary" :style="{ width: `${split.household}%` }" />
-                    <div v-if="split.business > 0" class="bg-secondary" :style="{ width: `${split.business}%` }" />
+                <h2 id="split-title">{{ t('dashboard.split.title') }}</h2>
+                <div class="flex flex-wrap items-center gap-6">
+                    <div role="img"
+                        :aria-label="t('dashboard.split.alt', { household: split.household, business: split.business })"
+                        class="flex size-35 shrink-0 items-center justify-center rounded-full"
+                        :style="{ background: splitRing }">
+                        <div class="flex size-24 flex-col items-center justify-center rounded-full bg-elevated">
+                            <span class="text-[1.375rem] font-extrabold tabular-nums">{{ split.household }}%</span>
+                            <span class="text-[0.6875rem] font-semibold text-muted">{{ t('dashboard.split.household') }}</span>
+                        </div>
+                    </div>
+                    <ul class="flex min-w-[8.75rem] flex-1 flex-col gap-3">
+                        <li class="flex items-center gap-2.5">
+                            <UIcon name="i-lucide-house" class="size-5 text-primary" aria-hidden="true" />
+                            <span class="flex-1 font-bold">{{ t('dashboard.split.household') }}</span>
+                            <span class="font-extrabold tabular-nums">{{ euros(summary.household) }}</span>
+                        </li>
+                        <li class="flex items-center gap-2.5">
+                            <UIcon name="i-lucide-briefcase" class="size-5 text-secondary" aria-hidden="true" />
+                            <span class="flex-1 font-bold">{{ t('business.label') }}</span>
+                            <span class="font-extrabold tabular-nums">{{ euros(summary.business) }}</span>
+                        </li>
+                    </ul>
                 </div>
-                <ul class="mt-3 flex flex-wrap gap-x-6 gap-y-1">
-                    <li class="flex items-center gap-2">
-                        <span class="size-3 rounded-sm bg-primary" aria-hidden="true" />
-                        {{ t('dashboard.split.household') }} {{ split.household }}%
-                    </li>
-                    <li class="flex items-center gap-2">
-                        <span class="size-3 rounded-sm bg-secondary" aria-hidden="true" />
-                        {{ t('business.label') }} {{ split.business }}%
-                    </li>
-                </ul>
             </UCard>
         </section>
         <section aria-labelledby="months-title" class="mt-6">
