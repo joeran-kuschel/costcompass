@@ -515,6 +515,89 @@ describe('categoryBreakDown', () => {
   })
 })
 
+describe('categoryBreakDown percentages', () => {
+  // One purchase per category and amount, in the order of CATEGORIES: housing, insurance, appliances, food, mobility.
+  const purchasesOf = (amounts: number[]) => amounts.map((amount, index) => purchase({ amount, category: CATEGORIES[index]! }))
+  const percents = (amounts: number[]) => categoryBreakDown([], purchasesOf(amounts), YEAR).map((entry) => entry.percent)
+  const byCategory = (amounts: number[]) => Object.fromEntries(categoryBreakDown([], purchasesOf(amounts), YEAR).map((entry) => [entry.category, entry.percent]))
+  const sum = (values: number[]) => values.reduce((total, value) => total + value, 0)
+
+  it('gives every category its share of the total as a percentage', () => {
+    // 600 of 1,200 is exactly 50%
+    expect(byCategory([600, 300, 300, 0, 0])).toEqual({ housing: 50, insurance: 25, appliances: 25, food: 0, mobility: 0 })
+  })
+  it('gives a single category 100% and the others 0', () => {
+    expect(byCategory([0, 0, 0, 40, 0])).toEqual({ housing: 0, insurance: 0, appliances: 0, food: 100, mobility: 0 })
+  })
+  it('gives the remaining point to the category with the largest remainder', () => {
+    // 1,200 / 600 / 300 of 2,100 are 57.14%, 28.57% and 14.29%: rounded down 57 + 28 + 14 = 99, and the 28.57 has the largest remainder
+    expect(byCategory([1200, 600, 300, 0, 0])).toEqual({ housing: 57, insurance: 29, appliances: 14, food: 0, mobility: 0 })
+  })
+  it('gives the extra point of equal remainders to the first category of the category list', () => {
+    // three equal thirds: 33.33% each, so one of them gets 34
+    expect(byCategory([100, 100, 100, 0, 0])).toEqual({ housing: 34, insurance: 33, appliances: 33, food: 0, mobility: 0 })
+  })
+  it('gives two points when two remainders are left over', () => {
+    // 1, 1, 1, 1 and 3 of 7 are 14.29% four times and 42.86%: rounded down 14 x 4 + 42 = 98, so two points are left over
+    const result = byCategory([1, 1, 1, 1, 3])
+    expect(sum(Object.values(result))).toBe(100)
+    // the 42.86 has the largest remainder, then the first of the equal ones
+    expect(result).toEqual({ housing: 15, insurance: 14, appliances: 14, food: 14, mobility: 43 })
+  })
+  it('adds up to exactly 100 for any mix of amounts', () => {
+    const cases = [
+      [1, 1, 1, 1, 1],
+      [1, 2, 3, 4, 5],
+      [7, 11, 13, 17, 19],
+      [333, 333, 334, 0, 0],
+      [0.01, 0.02, 0.03, 0.04, 0.05],
+      [1000000, 1, 1, 1, 1],
+      [99, 1, 0, 0, 0],
+    ]
+    for (const amounts of cases) {
+      expect(sum(percents(amounts)), JSON.stringify(amounts)).toBe(100)
+    }
+  })
+  it('returns whole numbers', () => {
+    for (const value of percents([7, 11, 13, 17, 19])) {
+      expect(Number.isInteger(value)).toBe(true)
+    }
+  })
+  it('returns 0 for every category when the year has no costs', () => {
+    expect(percents([0, 0, 0, 0, 0])).toEqual([0, 0, 0, 0, 0])
+    expect(percents([0, 0, 0, 0, 0]).some(Number.isNaN)).toBe(false)
+  })
+  it('returns 0 for every category without any costs at all', () => {
+    const result = categoryBreakDown([], [], YEAR)
+    expect(result.map((entry) => entry.percent)).toEqual([0, 0, 0, 0, 0])
+  })
+  it('keeps the categories sorted by total, largest first', () => {
+    const result = categoryBreakDown([], purchasesOf([300, 100, 500, 0, 200]), YEAR)
+    expect(result.map((entry) => entry.category)).toEqual(['appliances', 'housing', 'mobility', 'insurance', 'food'])
+    // 500 / 300 / 200 / 100 of 1,100: 45.45%, 27.27%, 18.18%, 9.09% round down to 45 + 27 + 18 + 9 = 99; the 45.45 has the largest remainder
+    expect(result.map((entry) => entry.percent)).toEqual([46, 27, 18, 9, 0])
+  })
+  it('never gives a smaller category a bigger percentage than a larger one', () => {
+    const result = categoryBreakDown([], purchasesOf([7, 11, 13, 17, 19]), YEAR).map((entry) => entry.percent)
+    expect(result).toEqual([...result].sort((a, b) => b - a))
+  })
+  it('counts only the costs of the given year', () => {
+    const purchases = [
+      purchase({ amount: 100, category: 'housing' }),
+      purchase({ amount: 300, category: 'food', date: `${YEAR - 1}-06-15` }),
+    ]
+    const result = categoryBreakDown([], purchases, YEAR)
+    expect(result.find((entry) => entry.category === 'housing')?.percent).toBe(100)
+    expect(result.find((entry) => entry.category === 'food')?.percent).toBe(0)
+  })
+  it('counts recurring costs and purchases together', () => {
+    const recurringCosts = [recurring({ amount: 10, category: 'housing' })]
+    const purchases = [purchase({ amount: 120, category: 'food' })]
+    // 120 a year for housing and 120 for food
+    expect(categoryBreakDown(recurringCosts, purchases, YEAR).filter((entry) => entry.total > 0).map((entry) => entry.percent)).toEqual([50, 50])
+  })
+})
+
 describe('splitPercentages', () => {
   const summary = (total: number, business: number): AnnualSummary =>
     ({ total, household: total - business, business, averagePerMonth: total / 12 })

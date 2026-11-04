@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { annualSummary, categoryBreakDown, splitPercentages, monthBreakdown, monthChange, costsInMonth, groupMonthCosts, largestCosts} from '~~/shared/utils/costs'
 
-const { t } = useI18n()
+const { t, n } = useI18n()
 const { year, currentYear, currentMonth } = useYear()
 const { monthName, monthYear, monthPath, toRow } = useMonth()
 const { recurring, purchases, failed, loading, retry } = useCostLists()
@@ -11,11 +11,11 @@ const empty = computed(() => !failed.value && !loading.value && recurring.value?
 const summary = computed (() => annualSummary(recurring.value ?? [], purchases.value ?? [], shownYear.value))
 const euros = useMoney()
 const cents = useMoney({ cents: true })
-const categoryRows = computed (() => categoryBreakDown(recurring.value ?? [], purchases.value ?? [], shownYear.value).map(({ category, total, share}) => ({
+const categoryRows = computed (() => categoryBreakDown(recurring.value ?? [], purchases.value ?? [], shownYear.value).map(({ category, total, percent}) => ({
     category,
     label: t(`category.${category}`),
     amount: euros(total),
-    width: `${share*100}%`,
+    percent: n(percent / 100, { style: 'percent' })
 })))
 const split = computed(() => splitPercentages(summary.value))
 const tiles = computed(() => [
@@ -143,24 +143,23 @@ useHead({ title: () => t('nav.dashboard') })
             </UCard>
         </section>
         <section aria-labelledby="categories-title">
-            <h2 id="categories-title">{{ t('dashboard.categories.title', { year: shownYear }) }}</h2>
             <UCard variant="subtle" class="card">
-                <ul>
-                    <li v-for="row in categoryRows" :key="row.category"
-                        class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 py-1 sm:grid-cols-[7rem_minmax(0,1fr)_5rem]">
-                        <CategoryBadge :category="row.category" :size="36"/>
-                        <span class="break-words">{{ row.label }}</span>
-                        <span class="text-right sm:order-3">{{ row.amount }}</span>
-                        <span class="col-span-2 h-2.5 rounded bg-accented sm:order-2 sm:col-span-1" aria-hidden="true">
-                            <span class="block h-full rounded bg-primary" :style="{ width: row.width }" />
+                <h2 id="categories-title">{{ t('dashboard.categories.title') }}</h2>
+                <ul class="grid grid-cols-[repeat(auto-fill,minmax(13.75rem,1fr))] gap-x-6 gap-y-1.5">
+                    <li v-for="row in categoryRows" :key="row.category" class="flex items-center gap-3 py-2">
+                        <CategoryBadge :category="row.category" :size="36" />
+                        <span class="min-w-0 flex-1 break-words font-bold">{{ row.label }}</span>
+                        <span class="shrink-0 text-right tabular-nums">
+                            <b class="block font-extrabold">{{ row.amount }}</b>
+                            <span class="text-xs text-muted">{{ row.percent }}</span>
                         </span>
                     </li>
                 </ul>
             </UCard>
         </section>
         <section aria-labelledby="split-title" class="mt-6">
-            <h2 id="split-title">{{ t('dashboard.split.title', { year: shownYear } )}}</h2>
             <UCard variant="subtle" class="card">
+                <h2 id="split-title">{{ t('dashboard.split.title', { year: shownYear }) }}</h2>
                 <div class="flex h-3 overflow-hidden rounded bg-accented" role="img" :aria-label="t('dashboard.split.alt', { household: split.household, business: split.business })">
                     <div v-if="split.household > 0" class="bg-primary" :style="{ width: `${split.household}%` }" />
                     <div v-if="split.business > 0" class="bg-secondary" :style="{ width: `${split.business}%` }" />

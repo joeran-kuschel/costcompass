@@ -107,7 +107,7 @@ Issue #51. `app/components/CategoryBadge.vue` shows a round disc with a white ic
 - The component is a `span.category-disc` with `aria-hidden="true"` and one `UIcon`. It renders no text. The category name (`category.<id>`) is always shown as text next to it by the parent, so the disc is decoration.
 - `useCategory()` holds the lookups: `categoryIcon(category)`, `categoryClass(category)` and `categoryStyle(size)` (sets `--category-size`). The icon map and the class map are `Record<Category, string>`, so TypeScript fails when a category is added to `CATEGORIES` without an entry. The classes are written out in full (`bg-[var(--category-housing)]`), because Tailwind finds classes by scanning for complete strings.
 - `.category-disc` in `main.css` draws the round disc of `var(--category-size)` and sets the icon to half that size.
-- Used in the "Costs by category" rows on the dashboard (36 px) and in the name cell of the costs table (40 px).
+- Used in the "Where your money goes" rows on the dashboard (36 px) and in the name cell of the costs table (40 px).
 
 | Category | Icon (Lucide) | Light | Dark |
 | --- | --- | --- | --- |
