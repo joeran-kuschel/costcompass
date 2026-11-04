@@ -85,6 +85,45 @@ The soft variant alone (text on `--ui-secondary` at 10 % opacity) depends on the
 
 Checked in the browser at a 320 px wide viewport (an iframe of the dev server), in English and German, light and dark: the computed fill and text colours are the values above, there is no ring, and the badge (87 px wide in English, 109 px in German, 24 px high) stays inside the viewport. In German the page itself scrolls sideways by about 5 px at 320 px; the badge is not the cause, the source is not found yet.
 
+## Category badge
+
+Issue #51. `app/components/CategoryBadge.vue` shows a round disc with a white icon for a category. Props: `category` and `size` (`CategorySize`: 28, 32, 36, 40, 44 or 56 px, from `CATEGORY_SIZES` in `app/composables/useCategory.ts`).
+
+- The component is a `span.category-disc` with `aria-hidden="true"` and one `UIcon`. It renders no text. The category name (`category.<id>`) is always shown as text next to it by the parent, so the disc is decoration.
+- `useCategory()` holds the lookups: `categoryIcon(category)`, `categoryClass(category)` and `categoryStyle(size)` (sets `--category-size`). The icon map and the class map are `Record<Category, string>`, so TypeScript fails when a category is added to `CATEGORIES` without an entry. The classes are written out in full (`bg-[var(--category-housing)]`), because Tailwind finds classes by scanning for complete strings.
+- `.category-disc` in `main.css` draws the round disc of `var(--category-size)` and sets the icon to half that size.
+- Used in the "Costs by category" rows on the dashboard (36 px) and in the name cell of the costs table (40 px).
+
+| Category | Icon (Lucide) | Light | Dark |
+| --- | --- | --- | --- |
+| `housing` | `i-lucide-house` | `#6941C6` | `#7F56D9` |
+| `insurance` | `i-lucide-shield-check` | `#344054` | `#667085` |
+| `appliances` | `i-lucide-washing-machine` | `#C11574` | `#D21F83` |
+| `food` | `i-lucide-shopping-basket` | `#15803D` | `#15803D` |
+| `mobility` | `i-lucide-car` | `#0369A1` | `#0284C7` |
+
+The colours are the tokens `--category-<id>` in `main.css` (light in `:root`, dark in `.dark`), taken from the mocks. To change one, edit the token; to add a category, add it to `CATEGORIES`, then to both maps and to both token sets.
+
+Tests: `tests/nuxt/useCategory.test.ts`, `tests/nuxt/CategoryBadge.test.ts`, and new cases in `costs-page.test.ts` and `dashboard-page.test.ts`. The component test relies on the rendered icon class `iconify i-lucide:<name>` (with a colon).
+
+### Contrast (decision)
+
+White on the disc, ratio per category:
+
+| Mode | housing | insurance | appliances | food | mobility |
+| --- | --- | --- | --- | --- | --- |
+| Light | 6.62 | 10.46 | 5.79 | 5.02 | 5.93 |
+| Dark | 4.96 | 4.97 | 4.92 | 5.02 | 4.10 |
+
+The acceptance criteria of #51 ask for 4.5:1 between icon and disc in both modes, but the "Always" section of the issue asks only 3:1 for icons. Dark-mode mobility (`#0284C7`) is 4.10:1. The author decided to keep the colour of the mock: the icon is purely decorative, because the category name is always text, so the 3:1 for non-text content applies, and 4.10:1 meets it.
+
+### Checked and not checked
+
+- Checked in the browser (dev server): disc and icon sizes for all six sizes, and the five colours in light and dark mode.
+- Not checked: the costs table at the 40 px row height, 320 px screens, German.
+- Not verified: the icons come from Lucide through Nuxt Icon. Lucide is not installed as its own package, and the generated server bundle fetches the collection remotely. Whether the production build or the cluster needs internet access to show the icons is open; check it in roadmap steps 7 and 8 (Docker, Kubernetes) *(to verify)*.
+- Open: the costs table still has its own Category and Business columns. Whether they go away is not decided.
+
 ## Check it in the browser
 
 1. Run `pnpm dev` and open the app.
@@ -100,7 +139,7 @@ Not done yet (later steps of #50). These need template changes, not only CSS:
 - Pill-shaped buttons with a height of 44 px.
 - Light fields without a border, and the dark field fill of the mocks.
 - A white dialog on the grey page.
-- The category badges.
+- The segmented type control and the business row of the form (the category badges are done, see [Category badge](#category-badge)).
 - The phone layouts of the mocks.
 - The logo and favicon (`mockups/cobalt/brand`).
 - The font Manrope. CSS can set it, but Nuxt UI's font module would download it from Google at build time. Whether to use it, and how, is undecided.

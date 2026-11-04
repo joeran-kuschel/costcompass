@@ -133,6 +133,7 @@ async function onSaved() {
                 <ul>
                     <li v-for="row in categoryRows" :key="row.category"
                         class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 py-1 sm:grid-cols-[7rem_minmax(0,1fr)_5rem]">
+                        <CategoryBadge :category="row.category" :size="36"/>
                         <span class="break-words">{{ row.label }}</span>
                         <span class="text-right sm:order-3">{{ row.amount }}</span>
                         <span class="col-span-2 h-2.5 rounded bg-accented sm:order-2 sm:col-span-1" aria-hidden="true">

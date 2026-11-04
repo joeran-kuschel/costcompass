@@ -28,7 +28,15 @@ async function mountTable() {
   await vi.waitFor(() => expect(wrapper.findAll('tbody tr')).toHaveLength(4))
 }
 const column = (index: number) => wrapper.findAll('tbody tr').map((row: DOMWrapper<Element>) => row.findAll('td')[index]!.text())
-const headerCell = (index: number) => wrapper.findAll('thead th')[index]!
+// The name cell holds a badge, the name with an optional "Business" badge, and the category as a caption.
+// Only the name itself is read: the text nodes of its paragraph, without the business badge.
+const names = () => wrapper.findAll('tbody tr').map((row: DOMWrapper<Element>) =>
+  [...row.findAll('td')[NAME]!.find('p').element.childNodes]
+    .filter(node => node.nodeType === Node.TEXT_NODE)
+    .map(node => node.textContent)
+    .join('')
+    .trim())
+const headerCell = (index: number) =>wrapper.findAll('thead th')[index]!
 const headerButton = (index: number) => headerCell(index).find('button')
 async function clickHeader(index: number) {
   await headerButton(index).trigger('click')
@@ -45,7 +53,7 @@ afterEach(async () => {
 describe('costs table default order', () => {
   it('is sorted by name, ignoring case and treating umlauts as their base letter', async () => {
     await mountTable()
-    expect(column(NAME)).toEqual(['Äpfel', 'Laptop', 'Liability insurance', 'Rent'])
+    expect(names()).toEqual(['Äpfel', 'Laptop', 'Liability insurance', 'Rent'])
   })
 })
 
@@ -53,9 +61,9 @@ describe('costs table sort buttons', () => {
   it('sorts by name ascending, then descending', async () => {
     await mountTable()
     await clickHeader(NAME)
-    await vi.waitFor(() => expect(column(NAME)).toEqual(['Äpfel', 'Laptop', 'Liability insurance', 'Rent']))
+    await vi.waitFor(() => expect(names()).toEqual(['Äpfel', 'Laptop', 'Liability insurance', 'Rent']))
     await clickHeader(NAME)
-    await vi.waitFor(() => expect(column(NAME)).toEqual(['Rent', 'Liability insurance', 'Laptop', 'Äpfel']))
+    await vi.waitFor(() => expect(names()).toEqual(['Rent', 'Liability insurance', 'Laptop', 'Äpfel']))
   })
   it('sorts amounts numerically, not as text', async () => {
     await mountTable()

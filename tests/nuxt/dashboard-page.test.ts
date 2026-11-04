@@ -240,7 +240,7 @@ describe('dashboard page category rows', () => {
   const rows = () => section().findAll('li')
   const plain = (text: string) => text.replace(/\u00A0/g, ' ')
   const rowTexts = () => rows().map(row => plain(row.text()))
-  const widths = () => rows().map(row => /width:\s*([0-9.]+%)/.exec(row.find('[style]').attributes('style') ?? '')?.[1])
+  const widths = () => rows().map(row => /width:\s*([0-9.]+%)/.exec(row.find('span[style*="width"]').attributes('style') ?? '')?.[1])
 
   it('has a heading for the current year that labels the section', async () => {
     costs()
@@ -261,6 +261,16 @@ describe('dashboard page category rows', () => {
     await mountPage()
     await vi.waitFor(() => expect(rows()).toHaveLength(5))
     expect(widths()).toEqual(['100%', '12.5%', '3.125%', '0%', '0%'])
+  })
+  it('shows a hidden category badge of 36 px in every row', async () => {
+    costs()
+    await mountPage()
+    await vi.waitFor(() => expect(rows()).toHaveLength(5))
+    for (const row of rows()) {
+      const badge = row.find('.category-disc')
+      expect(badge.attributes('aria-hidden')).toBe('true')
+      expect(badge.attributes('style')).toContain('--category-size: 36px')
+    }
   })
   it('counts only the purchases of the current year', async () => {
     costs()

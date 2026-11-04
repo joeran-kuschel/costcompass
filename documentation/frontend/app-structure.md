@@ -103,6 +103,7 @@ Checked so far at 320 px in English and German. Dark mode is not checked yet *(t
 | `CostForm.vue` | Add and edit form for both kinds, in a `UModal`. Props: optional `cost` (`Stored<Cost>`; set means edit, the kind is locked and submit sends `PATCH`) and optional `month` (`{ year, month }`; starts a purchase on the first day of that month and limits the date field to it). Emits `saved` and `cancel`. Failed saves show a toast. |
 | `YearSelect.vue` | `v-model` year select with a visible label; takes a `years` list |
 | `BusinessBadge.vue` | The "Business" badge with a briefcase icon, no props. See [Business badge](colour-scheme.md#business-badge) |
+| `CategoryBadge.vue` | Round disc with a white category icon; props `category` and `size` (28, 32, 36, 40, 44, 56). Decoration only (`aria-hidden`), the name is text in the parent. See [Category badge](colour-scheme.md#category-badge) |
 | `LanguageSwitcher.vue` | `USelect` that calls `setLocale()`; accessible name from `language.label`. Sits in the `#right` slot of the header, see [Header and navigation on small screens](#header-and-navigation-on-small-screens) |
 
 The form validates with the Zod schemas from `shared/utils/validation.ts`, so the browser and the API apply the same rules, except that the date field limit of the `month` prop is a browser limit only.
@@ -115,6 +116,7 @@ The form validates with the Zod schemas from `shared/utils/validation.ts`, so th
 | `useYear()` | `year` (selected, shared state), `currentYear`, `currentMonth` (read once, in UTC) |
 | `useMonth()` | `monthName(month, style?)`, `monthYear(year, month)`, `monthPath(year, month)` |
 | `useCostLists()` | `recurring`, `purchases`, `failed`, `loading`, `retry`. Uses `useFetch` with `lazy: true`, so the dashboard and the month page share the cached data. |
+| `useCategory()` | `categoryIcon(category)`, `categoryClass(category)`, `categoryStyle(size)` for `CategoryBadge`; also exports `CATEGORY_SIZES` and `CategorySize` |
 | `useAppHead()` | `<html lang>`, `dir` and the title template; called by `app.vue` and `error.vue` |
 
 ## Texts and languages

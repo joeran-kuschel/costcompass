@@ -30,6 +30,13 @@
   --ui-secondary: #b54708;
   /* The solid fill behind the business badge (mock: #FEF0E3). A tint of the text colour would let the contrast depend on the surface and drop below 4.5:1 on the muted rows. */
   --business-tint: #fef0e3;
+
+  /* The disc behind each category icon (white icon on top), values of the mocks. */
+  --category-housing: #6941c6;
+  --category-insurance: #344054;
+  --category-appliances: #c11574;
+  --category-food: #15803d;
+  --category-mobility: #0369a1;
   --ui-error: #b42318;
   --ui-warning: #dc6803;
 
@@ -60,6 +67,12 @@
   --ui-primary: var(--ui-color-primary-400);
   --ui-secondary: #fdba74;
   --business-tint: #3a2410;
+
+  --category-housing: #7f56d9;
+  --category-insurance: #667085;
+  --category-appliances: #d21f83;
+  --category-food: #15803d;
+  --category-mobility: #0284c7;
   --ui-error: #f97066;
   --ui-warning: #f59e0b;
 
@@ -250,6 +263,22 @@ nav [data-slot="link"][aria-current="page"]::before {
   width: 2.75rem;
   height: 2.75rem;
   justify-content: center;
+}
+
+/* A round disc with a white icon, one per category. The colour comes from the `bg-[var(--category-*)]` class, the size from `--category-size`. */
+.category-disc {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--category-size);
+  height: var(--category-size);
+  border-radius: 9999px;
+  color: #ffffff;
+}
+.category-disc > * {
+  width: calc(var(--category-size) * 0.5);
+  height: calc(var(--category-size) * 0.5);
 }
 
 /* The business badge has an opaque fill, so its contrast is the same on every surface. */

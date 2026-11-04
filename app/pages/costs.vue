@@ -93,6 +93,18 @@ function sortableHeader(label: string) {
         </template>
     </UModal>
     <UTable :data="costs" :columns="columns" class="card" :ui="{ root: 'overflow-x-auto px-5 pb-2 pt-1', th: 'px-2 pb-2.5 pt-3.5 text-[13px] font-extrabold uppercase tracking-wide text-muted', td: 'px-2 py-2.5 text-sm text-default' }">
+        <template #name-cell="{ row }">
+            <div class="flex items-center gap-3">
+                <CategoryBadge :category="row.original.category" :size="40" />
+                <div>
+                    <p class="flex items-center gap-2 font-bold">
+                        {{ row.original.name }}
+                        <BusinessBadge v-if="row.original.business" />
+                    </p>
+                    <p class="text-sm text-muted">{{ t(`category.${row.original.category}`) }}</p>
+                </div>
+            </div>
+        </template>
         <template #category-cell="{ row }">{{ t(`category.${row.original.category}`) }}</template>
         <template #kind-cell="{ row }">{{ t(`kind.${row.original.kind}`) }}</template>
         <template #amount-cell="{ row }">{{ n(row.original.amount, { style: 'currency', currency: 'EUR' }) }}</template>

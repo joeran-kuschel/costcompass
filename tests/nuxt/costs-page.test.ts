@@ -75,6 +75,25 @@ describe('costs page table', () => {
   })
 })
 
+describe('costs page name column', () => {
+  // Rows are sorted by name: Laptop, Liability insurance, Rent.
+  const nameCell = (index: number) => wrapper.findAll('tbody tr')[index]!.findAll('td')[0]!
+  it('shows a hidden category badge, the name and the category as a caption', async () => {
+    await vi.waitFor(() => expect(wrapper.findAll('tbody tr')).toHaveLength(3))
+    const cell = nameCell(2)
+    expect(cell.find('.category-disc').attributes('aria-hidden')).toBe('true')
+    expect(cell.find('.category-disc').attributes('style')).toContain('--category-size: 40px')
+    expect(cell.find('p').text()).toBe('Rent')
+    expect(cell.findAll('p')[1]!.text()).toBe('Housing')
+  })
+  it('marks business costs with the business badge and no other row', async () => {
+    await vi.waitFor(() => expect(wrapper.findAll('tbody tr')).toHaveLength(3))
+    expect(nameCell(0).find('p').text()).toContain('Business')
+    expect(nameCell(1).find('p').text()).toContain('Business')
+    expect(nameCell(2).text()).not.toContain('Business')
+  })
+})
+
 describe('costs page add and edit', () => {
   it('opens an empty form titled "Add cost"', async () => {
     await vi.waitFor(() => expect(wrapper.findAll('tbody tr')).toHaveLength(3))
