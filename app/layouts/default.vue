@@ -9,10 +9,11 @@
     }
 </script>
 <template>
-    <div class="lg:flex lg:min-h-screen">
+    <div class="relative lg:flex lg:min-h-screen">
         <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:m-2 focus:rounded-full focus:bg-default focus:px-4 focus:py-2">
             {{ t('nav.skip') }}
         </a>
+        <LanguageSwitcher compact class="absolute right-4 top-4 z-30 lg:hidden" />
         <USidebar :title="t('app.name')" collapsible="none" as="div" breakpoint="lg" class="hidden shrink-0 lg:block [--sidebar-width:15.5rem]">
             <template #title>
                 <NuxtLink to="/">

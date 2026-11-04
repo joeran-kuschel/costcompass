@@ -74,8 +74,8 @@ On the page you see:
 - The month and year as heading, with a "This month" label if it is the current month.
 - Links to the previous and the next month, and a **Dashboard** link above the heading. A link is missing if it would lead to a year without any data.
 - "Total for <month>" and two groups, **Recurring** and **Purchases**, each with its subtotal. Each row shows the name, a "Business" label where it applies, the category with the interval or the day, and the amount with cents.
-- For a month without costs: "No costs in <month>" and an **Add cost** button.
-- An **Add cost** button next to the heading. The date of a new purchase is pre-filled with the first day of that month and limited to it.
+- For a month without costs: "No costs in <month>" and an **Add cost** button (it also pre-fills the month).
+- To add a cost to this month, use **Add cost** in the sidebar or the round plus button on a phone. The date of a new purchase is pre-filled with the first day of that month and limited to it.
 
 If the month cannot be loaded you see "Couldn't load the costs of <month>" and "Your data has not changed. Please try again." with a **Try again** button.
 
@@ -83,17 +83,17 @@ If you open a month in a year that has no data and is not the current year, or a
 
 ## Find your way around
 
-On a wide screen (about 1024 pixels or more) the sidebar on the left holds the app name, the **Add cost** button, the links to **Dashboard**, **Costs** and **This month**, and the language list.
+On a wide screen (about 1024 pixels or more) the sidebar on the left holds the app name, the **Add cost** button, the links to **Dashboard**, **Costs** and **This month**, and the language list at the bottom.
 
 On a narrower screen, such as a phone, the sidebar is replaced by a tab bar that floats above the bottom edge of the screen. It has three tabs: **Dashboard**, **Costs** and **Month** (today's month). The tab for the page you are on is filled with colour and the others are plain, so you can tell them apart. Tap a tab to go there.
 
 Next to the tab bar sits a round button with a plus sign. Tap it to add a cost, on any page. On a month page it adds the cost to that month: a purchase starts on the first day of the month and its date is limited to that month. While the add or edit window is open the button is hidden, and it comes back when you close the window.
 
-On a narrow screen there is no language list yet. It is planned. Until then, switch the language on a wide screen.
+On a narrow screen the language button sits at the top right of the page. It shows the code of the current language, for example **EN**. It scrolls away with the page.
 
 ## Change the language
 
-Use the language list at the bottom of the sidebar. English and Deutsch are available. The page changes at once and Costcompass remembers your choice. On your first visit it uses your browser's language, or English if it does not support yours.
+On a wide screen use the language list at the bottom of the sidebar. On a narrow screen select the round button at the top right (**EN** or **DE**) and choose **English** or **Deutsch** in the menu. The current language is ticked. The page changes at once and Costcompass remembers your choice. On your first visit it uses your browser's language, or English if it does not support yours.
 
 ## Use it with a keyboard or screen reader
 

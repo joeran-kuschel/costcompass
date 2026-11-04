@@ -335,6 +335,29 @@ nav [data-slot="link"]:not([aria-current="page"]):hover::before {
   width: 1.75rem;
   height: 1.75rem;
 }
+/* The compact language button of the phone layout: a white pill with the language code, at least 44 px high (mocks: BPhoneDashboard, BDarkPhoneDashboard). */
+.language-compact {
+  min-height: 2.75rem;
+  padding-inline: 0.875rem;
+  border-radius: 9999px;
+  background-color: #ffffff;
+  color: #14162b;
+  font-size: 0.8125rem;
+  font-weight: 800;
+  box-shadow: 0 1px 2px rgba(20, 22, 43, 0.08);
+}
+.language-compact:hover {
+  background-color: var(--ui-bg-accented);
+  color: #14162b;
+}
+.dark .language-compact {
+  background-color: #15172a;
+  color: #ecedf7;
+}
+.dark .language-compact:hover {
+  background-color: var(--ui-bg-accented);
+  color: #ecedf7;
+}
 
 /* A round disc with a white icon, one per category. The colour comes from the `bg-[var(--category-*)]` class, the size from `--category-size`. */
 .category-disc {

@@ -384,12 +384,13 @@ describe('month page add cost', () => {
     const { open, cost, month } = useCostDialog()
     return { open: open.value, cost: cost.value, month: month.value }
   }
-  const headerButton = () => wrapper.findAll('button').find(button => button.text() === 'Add cost' && button.classes().includes('ml-auto'))
+  // The only "Add cost" button of the page is the one of the empty month; otherwise the sidebar and the phone button of the layout have it.
+  const addButtons = (text = 'Add cost') => wrapper.findAll('button').filter(button => button.text() === text)
   const total = () => textOf(totalCard())
 
-  it('has an "Add cost" button next to the heading once the month is loaded', async () => {
+  it('has no "Add cost" button next to the heading: the sidebar and the phone button of the layout have it', async () => {
     await mountOctober()
-    expect(headerButton()).toBeTruthy()
+    expect(addButtons()).toHaveLength(0)
   })
   it('has no button while the lists load or after a failure', async () => {
     api.purchases.delay = 300
@@ -407,14 +408,12 @@ describe('month page add cost', () => {
     await mountOctober()
     expect(dialogState().open).toBe(false)
   })
-  it('asks for an add dialog for the shown month from the button next to the heading', async () => {
-    await mountOctober()
-    await headerButton()!.trigger('click')
-    expect(dialogState()).toEqual({ open: true, cost: null, month: { year: 2026, month: 10 } })
-  })
-  it('uses the month of the address, not the current month', async () => {
-    await mountOctober('/months/2025/02')
-    await headerButton()!.trigger('click')
+  it('uses the month of the address, not the current month, in the dialog it asks for', async () => {
+    api.recurring.rows = []
+    api.purchases.rows = [{ ...bike, date: '2025-06-01' }]
+    await mountPage('/months/2025/02')
+    await vi.waitFor(() => expect(addButtons()).toHaveLength(1))
+    await addButtons()[0]!.trigger('click')
     expect(dialogState().month).toEqual({ year: 2025, month: 2 })
   })
   it('asks for the same dialog, with the month, from the button of an empty month', async () => {
@@ -422,8 +421,8 @@ describe('month page add cost', () => {
     api.purchases.rows = [{ ...bike }]
     await mountPage('/months/2026/10')
     await vi.waitFor(() => expect(wrapper.text()).toContain('No costs in October'))
-    const emptyButton = wrapper.findAll('button').find(button => button.text() === 'Add cost' && !button.classes().includes('ml-auto'))
-    await emptyButton!.trigger('click')
+    expect(addButtons()).toHaveLength(1)
+    await addButtons()[0]!.trigger('click')
     expect(dialogState()).toEqual({ open: true, cost: null, month: { year: 2026, month: 10 } })
   })
   it('refreshes the subtotals and the total when the lists are refreshed, as the layout does after a save', async () => {
@@ -445,11 +444,12 @@ describe('month page add cost', () => {
     expect(totalCard().exists()).toBe(true)
     await refreshing
   })
-  it('has a German button', async () => {
+  it('has a German button in the empty month', async () => {
     await setLanguage('de')
-    await mountOctober()
-    const button = wrapper.findAll('button').find(item => item.classes().includes('ml-auto'))!
-    expect(button.text()).toBe('Kosten hinzufügen')
+    api.recurring.rows = []
+    api.purchases.rows = [{ ...bike }]
+    await mountPage('/months/2026/10')
+    await vi.waitFor(() => expect(addButtons('Kosten hinzufügen')).toHaveLength(1))
   })
 })
 

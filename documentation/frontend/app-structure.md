@@ -8,7 +8,7 @@ Reference and conventions for `app/` (pages, components, composables, texts). Wr
 | --- | --- | --- | --- |
 | `/` | `app/pages/index.vue` | Exists | Dashboard: "This month" card with cost list, add tile, year select, summary tiles, household versus business bar, costs by category, costs per month |
 | `/costs` | `app/pages/costs.vue` | Exists | One sortable table of both kinds, add, edit and delete |
-| `/months/[year]/[month]` | `app/pages/months/[year]/[month].vue` | Exists | Costs of one month, total, previous and next links, add cost (pre-filled for the month) |
+| `/months/[year]/[month]` | `app/pages/months/[year]/[month].vue` | Exists | Costs of one month, total, previous and next links, add cost in the empty month (pre-filled for the month) |
 | `/calculator` | - | Planned | Rate calculator |
 
 `app/error.vue` is the error page, not a route. It shows one of three variants (`notFound`, `generic`, `month`), picked by the error. Texts come from `error.<variant>Title` and `error.<variant>Text`. The `month` variant is used when the month page throws an error with `data: { reason: 'month' }`.
@@ -98,11 +98,13 @@ The items come from `useNavItems()` (one `computed`; labels from `nav.dashboard`
 | This month | `monthPath(currentYear, currentMonth)` | `i-lucide-calendar` |
 
 - Add a new page to `useNavItems` once. Only today's month page is in the navigation (see below); other month pages stay out of it.
-- The "Add cost" button is the only add entry on desktop. `/costs` has no button of its own any more (author's decision). The dashboard tile and the month page buttons stay, see [Add and edit dialog](#add-and-edit-dialog).
+- The "Add cost" button is the only add entry on desktop. `/costs` has no button of its own any more (author's decision). The dashboard tile and the button of an empty month card stay, see [Add and edit dialog](#add-and-edit-dialog).
 - Styling is in `app/assets/css/main.css`: nav links are pills at least 48 px high. A link that is not the current page gets the tint `--ui-bg-accented` and the text colour `#2238b0` (dark mode `#afc0ff`) on hover; Nuxt UI's own hover fill is hidden so the two do not add up. `.pill-shadow` gives the add button a soft cobalt shadow, the same in light and dark mode.
 - The language select has a visible label: `LanguageSwitcher` wraps the `USelect` in a `UFormField` with the text `language.label` ("Language" / "Sprache"), connected to the select by `for` and `id`. It has no `aria-label` any more.
 
 ### Keyboard order
+
+From `lg` up:
 
 1. Skip link (appears on the first Tab; Enter moves to `#main`)
 2. Logo link
@@ -111,9 +113,11 @@ The items come from `useNavItems()` (one `computed`; labels from `nav.dashboard`
 5. Language select
 6. The page content
 
+Below `lg` the order is: skip link, [language button](#compact-language-button-on-phones), the page content, then the tab bar and its add button.
+
 ### Below the `lg` breakpoint
 
-Below 1024 px the sidebar is hidden and the [bottom tab bar](#bottom-tab-bar) is the navigation. The round [add button](#add-button-on-phones) (#55) sits next to it. Still missing on small screens: the compact language button (#59), which comes as its own issue. The menu button and the mobile menu of the old header are gone.
+Below 1024 px the sidebar is hidden and the [bottom tab bar](#bottom-tab-bar) is the navigation. The round [add button](#add-button-on-phones) (#55) sits next to it, and the [compact language button](#compact-language-button-on-phones) (#59) sits at the top right. With these three the phone layout is complete. The menu button and the mobile menu of the old header are gone.
 
 `USidebar` has `hidden lg:block`. With `collapsible="none"` it has no mobile behaviour of its own, and `breakpoint="lg"` only matters for the collapsible modes, so before this change the sidebar also showed on phones. Now below 1024 px only the tab bar shows, from 1024 px only the sidebar. The DOM holds two `nav` landmarks, both named "Main nav" (`nav.label`); one of them is always `display: none`, so a screen reader meets only one.
 
@@ -188,6 +192,35 @@ Checked in the browser (dev server, iframes): the button is 68 x 68 px, radius 9
 
 Not checked *(to verify)*: the label on a month page in a real screen reader, the German label in the browser, dark mode, a real phone, whether the button covers page content (the pages have 112 px bottom padding below 1024 px since #54, and the button does not change the row's height), and the keyboard focus order and a visible focus style on the round button (the tabs have a white outline; the button has only Nuxt UI's default).
 
+### Compact language button on phones
+
+Issue #59. Written for developers. Below 1024 px the sidebar and its language select are hidden, so `LanguageSwitcher` has a second look: a round button with the code of the active language ("EN" / "DE") that opens a small menu.
+
+- Prop `compact` (optional boolean). Without it nothing changes: the `USelect` with the visible `UFormField` label, used in the sidebar. With it the component renders a `UDropdownMenu` around a `UButton` (`color="neutral"`, `variant="ghost"`, class `language-compact`). The locale logic (`locale`, `locales`, `setLocale`, the item list) is shared; only the template differs.
+- The menu lists the languages by name ("English", "Deutsch") as checkbox items (`menuitemcheckbox`). The active one has `aria-checked="true"`. Choosing one calls `setLocale()` and closes the menu.
+- The accessible name of the button is `language.current`: "Language: English" / "Sprache: Deutsch". The code on the button is not its name. `language.label` stays for the select.
+- The compact branch is wrapped in a `div`, because `UDropdownMenu` has no root element of its own and a `class` passed from outside must land somewhere.
+- Placement: `layouts/default.vue` renders `<LanguageSwitcher compact class="absolute right-4 top-4 z-30 lg:hidden" />` as the second child of the wrapper, after the skip link and before the sidebar. The wrapper has `relative`. Below `lg` the button is 16 px from the top and the right of the page and scrolls away with the page; from `lg` up it is not displayed and the sidebar's select is used.
+- Style in `main.css`: `.language-compact` is at least 44 px high, has 14 px side padding, is fully rounded, 13 px at weight 800. Light: white fill, text `#14162b`, shadow `0 1px 2px rgba(20, 22, 43, .08)`. Dark: fill `#15172a`, text `#ecedf7`. Hover uses `--ui-bg-accented`. The values come from the mocks `BPhoneDashboard` and `BDarkPhoneDashboard`; the hover is not in the mocks.
+
+Decisions (author unless noted):
+
+- **Own element in the layout**, not inside each page's heading row, so every page gets it once.
+- **Reuse the component** with a `compact` prop instead of a second component.
+- **`absolute`, not `fixed`**: it scrolls away with the page and does not cover content.
+- **Menu, not a toggle** (the assistant chose, the author left it open). A menu names both languages and still works with a third; a toggle between two codes would not.
+- The month page lost its "Add cost" button next to the heading. The sidebar on desktop and the round button next to the tab bar on phones are the entry points, and the phone button already passes the month on a month page. This also keeps the top right of the heading row free for the language button. The button in the empty-month card stays.
+
+Tests:
+
+- `tests/nuxt/LanguageSwitcher.test.ts` (compact): one round button with the code and no select; named "Language: English"; class `language-compact`; the menu lists both languages and marks the active one; switching to Deutsch without a reload updates the code and the name, and back. The tests open the menu with Enter on the button, because the test environment does not open it from a simulated pointer event. A real browser opens it with a click too (checked).
+- `tests/nuxt/DefaultLayout.test.ts`: keyboard order on a desktop and on a phone; the compact button is `lg:hidden` and `absolute`.
+- `tests/nuxt/month-page.test.ts`: no add button next to the heading; the empty-month button asks for the dialog with the month of the address; its German label.
+
+Checked in the browser (dev server, iframes): at 390 and 320 px the button is 45 x 44 px, 16 px from the right and the top, white (`rgb(255, 255, 255)`) with text `rgb(20, 22, 43)` in light mode and `rgb(21, 23, 42)` with text `rgb(236, 237, 247)` in dark mode. No sideways overflow. At 1024 px it is not displayed. On `/` and on month pages its box does not overlap the heading. On `/costs` the full-width box of the `h1` overlaps the button's box, but the short text "Costs" does not reach it. The menu opens with English ticked; choosing Deutsch sets `<html lang>` to "de", the button reads "DE", its name is "Sprache: Deutsch", the menu closes and the choice is stored in the language cookie. The menu stays inside the viewport.
+
+Not checked *(to verify)*: a real phone, the menu with a screen reader, the keyboard focus outline of the button, long headings under the button at 320 px (the month page heading starts lower, but this was not measured with a long one).
+
 ### The "This month" navigation entry
 
 Issue #56. `navItems` has a third entry after Dashboard and Costs: "This month" (German "Dieser Monat", key `nav.thisMonth`). It links to `monthPath(currentYear, currentMonth)`, with `currentYear` and `currentMonth` from `useYear()` and `monthPath` from `useMonth()`. The address has a two-digit month, for example `/months/2026/11`. 
@@ -236,7 +269,7 @@ Who calls what:
 | Sidebar: "Add cost" button | `openAdd()` |
 | Phone: round add button next to the tab bar | `openAdd(monthRef)`, `monthRef` is `null` outside month pages |
 | `/costs`: pencil button of a row | `openEdit(row.original)` |
-| Month page: "Add cost" next to the heading and in the empty month card | `openAdd(monthRef)` |
+| Month page: "Add cost" in the empty month card (no button next to the heading since #59) | `openAdd(monthRef)` |
 
 The delete confirmation is not part of this. It stays a modal of the costs page.
 
@@ -260,7 +293,7 @@ State lives in `useState`, not in provide/inject, so any component can open the 
 - `dashboard-page.test.ts`, `costs-page.test.ts` and `month-page.test.ts` only check that the page asks for the dialog with the right state (`open`, `cost`, `month` of `useCostDialog()`), and that the page shows new numbers after `refreshNuxtData()`.
 - Every file that touches the dialog closes its state after each test, because `useState` outlives a test.
 
-Checked by hand in the browser: the dashboard and month page buttons open the dialog, and the costs table updates after a save. The sidebar button opens the dialog (test in `CostDialog.test.ts`). Not checked: use from a floating button (does not exist yet) and the dialog on a phone *(to verify)*.
+Checked by hand in the browser: the dashboard and month page buttons open the dialog, and the costs table updates after a save. The sidebar button opens the dialog (test in `CostDialog.test.ts`). Not checked: the dialog on a phone *(to verify)*.
 
 ## Components
 
@@ -272,7 +305,7 @@ Checked by hand in the browser: the dashboard and month page buttons open the di
 | `CategoryBadge.vue` | Round disc with a white category icon; props `category` and `size` (28, 32, 36, 40, 44, 56). Decoration only (`aria-hidden`), the name is text in the parent. See [Category badge](colour-scheme.md#category-badge) |
 | `LogoMark.vue` | The Costcompass mark (disc, ring, compass needle) as an inline SVG, no props. Decoration only (`aria-hidden`), sized by the parent. Used in the sidebar title. See [Logo mark](colour-scheme.md#logo-mark) |
 | `MobileBar.vue` | The bottom tab bar below `lg`: a named `nav` with three tab links from `useNavItems()`, and the round add button. No props. See [Bottom tab bar](#bottom-tab-bar) |
-| `LanguageSwitcher.vue` | `USelect` that calls `setLocale()`. Wrapped in a `UFormField` with the visible label `language.label`. Sits in the footer slot of the sidebar, see [Sidebar navigation](#sidebar-navigation) |
+| `LanguageSwitcher.vue` | Switches the language with `setLocale()`. Without props: a `USelect` in a `UFormField` with the visible label `language.label`, in the footer slot of the sidebar, see [Sidebar navigation](#sidebar-navigation). With `compact`: a round button with the language code and a menu of the languages, at the top right below `lg`, see [Compact language button](#compact-language-button-on-phones) |
 
 `CostForm` is opened through the [add and edit dialog](#add-and-edit-dialog). It validates with the Zod schemas from `shared/utils/validation.ts`, so the browser and the API apply the same rules, except that the date field limit of the `month` prop is a browser limit only.
 
@@ -296,6 +329,7 @@ Checked by hand in the browser: the dashboard and month page buttons open the di
 - Labels that go through `t()` and live in script code must be wrapped in `computed` so they update when the language changes.
 - Month names and dates come from `Intl` through `useMonth()`, in UTC, in the active language.
 - Add button texts: `costs.add` (all pages) and `costs.addToMonth` (month pages, "Add cost to {month}" / "Kosten zu {month} hinzufügen"), used by the [phone add button](#add-button-on-phones).
+- Language texts: `language.label` (the select: "Language" / "Sprache") and `language.current` (the compact button's name, "Language: {language}" / "Sprache: {language}").
 - Navigation texts: `nav.label`, `nav.dashboard`, `nav.costs`, `nav.thisMonth` and `nav.month` (the short label of the tab bar: "Month" / "Monat").
 - Page titles: each page sets `useHead({ title: () => t('...') })`. `app.vue` adds the suffix: "<page> – Costcompass".
 

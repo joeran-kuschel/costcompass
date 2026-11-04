@@ -78,7 +78,6 @@ async function onRetry() {
             color="neutral"
             class="pill-icon"
         />
-        <UButton v-if="!loading && !failed" :label="t('costs.add')" icon="i-lucide-plus" class="pill ml-auto" @click="openAdd(monthRef)" />
     </div>
     <div :aria-busy="loading">
         <template v-if="loading">

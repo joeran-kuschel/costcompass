@@ -149,10 +149,24 @@ describe('default layout skip link and main area', () => {
     expect(wrapper.find('a[href="#main"]').text()).toBe('Zum Inhalt springen')
     await useNuxtApp().$i18n.setLocale('en')
   })
-  it('keeps the keyboard order: skip link, logo, add cost, navigation, language, then the page', async () => {
+  // The compact language button is for phones only (`lg:hidden`); from the lg breakpoint up it is not displayed.
+  const focusable = (wrapper: Mounted) => wrapper.findAll('a, button, [role="combobox"]')
+  it('keeps the keyboard order on a desktop: skip link, logo, add cost, navigation, language, then the page', async () => {
     const wrapper = await mountSuspended(DefaultLayout)
-    const order = wrapper.findAll('a, button, [role="combobox"]').map(item => item.text())
+    const order = focusable(wrapper).filter(item => !item.element.closest('.lg\\:hidden')).map(item => item.text())
     expect(order.slice(0, 7)).toEqual(['Skip to content', 'Costcompass', 'Add cost', 'Dashboard', 'Costs', 'This month', 'English'])
+  })
+  it('keeps the keyboard order on a phone: skip link, language, then the page and the tab bar', async () => {
+    const wrapper = await mountSuspended(DefaultLayout)
+    const order = focusable(wrapper).filter(item => !item.element.closest('.hidden')).map(item => item.text())
+    expect(order.slice(0, 2)).toEqual(['Skip to content', 'EN'])
+  })
+  it('has the compact language button next to the page, only for phones', async () => {
+    const wrapper = await mountSuspended(DefaultLayout)
+    const compact = wrapper.find('button[aria-label^="Language:"]')
+    expect(compact.text()).toBe('EN')
+    expect(compact.element.closest('.lg\\:hidden')).not.toBeNull()
+    expect(compact.element.closest('.absolute')).not.toBeNull()
   })
 })
 

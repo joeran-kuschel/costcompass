@@ -57,7 +57,8 @@
     "skip": "Skip to content"
   },
   "language": {
-    "label": "Language"
+    "label": "Language",
+    "current": "Language: {language}"
   },
   "business": {
     "label": "Business"
