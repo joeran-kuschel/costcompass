@@ -17,12 +17,13 @@ const categoryRows = computed (() => categoryBreakDown(recurring.value ?? [], pu
     amount: euros(total),
     width: `${share*100}%`,
 })))
-const tiles = computed(() => (['total', 'household', 'business', 'averagePerMonth'] as const).map(key => ({
-    key,
-    label: key === 'business' ? t('business.label') : t(`dashboard.summary.${key}`),
-    value: euros(summary.value[key]),
-})))
 const split = computed(() => splitPercentages(summary.value))
+const tiles = computed(() => [
+    { key: 'total', value: summary.value.total, label: t('dashboard.summary.total'), sub: t('dashboard.summary.perYear'),  dot: 'bg-inverted' },
+    { key: 'average', value: summary.value.averagePerMonth, label: t('dashboard.summary.average'), sub: t('dashboard.summary.perMonth'), dot: 'bg-accented' },
+    { key: 'household', value: summary.value.household, label: t('dashboard.summary.household'), sub: t('dashboard.summary.ofYear', { percent: split.value.household }), dot: 'bg-primary' },
+    { key: 'business',  value: summary.value.business, label: t('business.label'), sub: t('dashboard.summary.ofYear', { percent: split.value.business }),  dot: 'bg-secondary' },
+].map(tile => ({ ...tile, value: euros(tile.value) })))
 const monthRows = computed (() => monthBreakdown(recurring.value ?? [], purchases.value ?? [], shownYear.value).map(({ month, total, share}) => {
     return {
         month,
@@ -70,7 +71,6 @@ useHead({ title: () => t('nav.dashboard') })
         <UButton to="/costs" :label="t('costs.add')" class="pill" />
     </div>
     <template v-else>
-        <YearSelect :model-value="shownYear" @update:model-value="year = $event" :years="years"/>
         <section aria-labelledby="this-month-title">
             <UCard variant="subtle" class="card card-hero">
                 <span class="hero-ring" aria-hidden="true" />
@@ -108,16 +108,15 @@ useHead({ title: () => t('nav.dashboard') })
         <section aria-labelledby="largest-title">
             <UCard variant="subtle" class="card">
                 <h2 id="largest-title">{{ t('dashboard.largest.title') }}</h2>
-                <p class="font-medium">{{ t('dashboard.largest.text') }}</p>
-                <ul v-if="thisMonth.largest.length" aria-labelledby="largest-title" class="mt-4 divide-y divide-default">
-                    <li v-for="row in thisMonth.largest" :key="row.key" class="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
+                <ul v-if="thisMonth.largest.length" aria-labelledby="largest-title" class="flex flex-col gap-1.5">
+                    <li v-for="row in thisMonth.largest" :key="row.key" class="flex items-center gap-3 rounded-[1.125rem] bg-muted px-3 py-2.5">
                         <CategoryBadge :category="row.category" :size="40"/>
                         <div class="min-w-0 flex-1">
-                            <p class="break-words font-semibold">
+                            <p class="flex flex-wrap items-center gap-1.5 break-words font-bold">
                                 {{ row.name }}
                                 <BusinessBadge v-if="row.business" />
                             </p>
-                            <p class="text-sm text-muted">{{ row.subline }}</p>
+                            <p class="text-[0.8125rem] text-muted">{{ row.subline }}</p>
                         </div>
                         <p class="shrink-0 text-right font-extrabold tabular-nums">{{ row.amount }}</p>
                     </li>
@@ -126,12 +125,22 @@ useHead({ title: () => t('nav.dashboard') })
             </UCard>
         </section>
         <section aria-labelledby="summary-title">
-            <h2 id="summary-title">{{ t('dashboard.summary.title', { year: shownYear }) }}</h2>
-            <div class="grid grid-cols-[repeat(auto-fit,minmax(10rem,1fr))] gap-3">
-                <UCard v-for="tile in tiles" :key="tile.key" variant="subtle" :title="tile.label" class="card">
-                    <p class="text-2xl font-medium">{{ tile.value }}</p>
-                </UCard>
+            <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <h2 id="summary-title" class="mb-0 text-[1.625rem] font-extrabold tracking-tight">{{ t('dashboard.summary.title', { year: shownYear }) }}</h2>
+                <YearSelect :model-value="shownYear" @update:model-value="year = $event" :years="years"/>
             </div>
+            <UCard variant="subtle" class="card card-flush overflow-hidden">
+                <dl class="grid grid-cols-2 gap-px bg-default lg:grid-cols-4">
+                    <div v-for="tile in tiles" :key="tile.key" class="bg-elevated p-5 sm:p-6">
+                        <dt class="mb-2 flex items-center gap-2 text-sm text-muted">
+                            <span :class="['size-2.5 rounded-full', tile.dot]" aria-hidden="true" />
+                            {{ tile.label }}
+                        </dt>
+                        <dd class="text-3xl font-bold tabular-nums">{{ tile.value }}</dd>
+                        <dd class="mt-1 text-sm text-muted">{{ tile.sub }}</dd>
+                    </div>
+                </dl>
+            </UCard>
         </section>
         <section aria-labelledby="categories-title">
             <h2 id="categories-title">{{ t('dashboard.categories.title', { year: shownYear }) }}</h2>

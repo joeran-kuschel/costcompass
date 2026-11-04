@@ -85,6 +85,10 @@ The soft variant alone (text on `--ui-secondary` at 10 % opacity) depends on the
 
 Checked in the browser at a 320 px wide viewport (an iframe of the dev server), in English and German, light and dark: the computed fill and text colours are the values above, there is no ring, and the badge (87 px wide in English, 109 px in German, 24 px high) stays inside the viewport. In German the page itself scrolls sideways by about 5 px at 320 px; the badge is not the cause, the source is not found yet.
 
+## Flush card and divided tiles
+
+Issue #64. The class `card-flush` is used together with `card` (`.card.card-flush > [data-slot="body"] { padding: 0 }` in `main.css`) for a card whose content brings its own padding. The dashboard's summary card uses it: a `dl` grid with `gap-px bg-default`, so the 1 px gaps show the grid background as dividers, and tiles with an opaque `bg-elevated` fill. The tile dots use the tokens `bg-inverted`, `bg-accented`, `bg-primary` and `bg-secondary`. Contrast of the muted tile text is not measured. Details: [app-structure.md](app-structure.md#summary-card).
+
 ## Hero card
 
 Issue #60. The "This month" card on the dashboard is a solid cobalt card, `class="card card-hero"` in `app/pages/index.vue`. The month page's total card uses the same class.

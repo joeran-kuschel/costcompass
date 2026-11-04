@@ -96,10 +96,14 @@
     "emptyTitle": "Noch keine Kosten",
     "emptyText": "Füge eine wiederkehrende Ausgabe oder eine Anschaffung hinzu, um hier deine Summen zu sehen.",
     "summary": {
-      "title": "Übersicht {year}",
+      "title": "Dein Jahr {year}",
       "total": "Jahressumme",
       "household": "Haushalt",
-      "averagePerMonth": "Durchschnitt pro Monat"
+      "business": "Geschäftlich",
+      "average": "Durchschnitt",
+      "perYear": "pro Jahr",
+      "perMonth": "pro Monat",
+      "ofYear": "{percent} % vom Jahr"
     },
     "categories": {
       "title": "Kosten nach Kategorie {year}"
@@ -125,8 +129,7 @@
         "view": "{month} ansehen"
     },
     "largest": {
-      "title": "Größte Kosten diesen Monat",
-      "text": "Die höchsten Kosten dieses Monats."
+      "title": "Größte Kosten diesen Monat"
     }
   },
   "month": {

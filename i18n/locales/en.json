@@ -96,10 +96,14 @@
     "emptyTitle": "No costs yet",
     "emptyText": "Add a recurring cost or a purchase to see your totals here.",
     "summary": {
-      "title": "Summary for {year}",
+      "title": "Your year {year}",
       "total": "Annual total",
       "household": "Household",
-      "averagePerMonth": "Average per month"
+      "business": "Business",
+      "average": "Average",
+      "perYear": "per year",
+      "perMonth": "per month",
+      "ofYear": "{percent}% of the year"
     },
     "categories": {
       "title": "Costs by category in {year}"
@@ -125,8 +129,7 @@
       "view": "View {month}"
     },
     "largest": {
-      "title": "Largest this month",
-      "text": "The biggest costs of this month."
+      "title": "Largest this month"
     }
   },
   "month": {
