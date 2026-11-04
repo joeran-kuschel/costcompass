@@ -7,6 +7,12 @@
 </script>
 <template>
     <UHeader :title="t('app.name')">
+        <template #title>
+            <span class="flex items-center gap-2.5">
+                <LogoMark class="size-9 shrink-0" />
+                {{ t('app.name') }}
+            </span>
+        </template>
         <UNavigationMenu :items="navItems" />
         <template #right>
             <LanguageSwitcher />

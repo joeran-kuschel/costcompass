@@ -69,10 +69,11 @@ Tests: `tests/nuxt/dashboard-page.test.ts`, describe "dashboard page year select
 
 ## Header and navigation on small screens
 
-Issue #21. The layout is `app/layouts/default.vue`. Nuxt UI's `UHeader` hides its default slot below the `lg` breakpoint (1024 px; the theme sets `hidden lg:flex` on it) and shows a toggle button instead. A navigation in the default slot alone would vanish on a phone, so the layout uses three slots:
+Issue #21. The layout is `app/layouts/default.vue`. Nuxt UI's `UHeader` hides its default slot below the `lg` breakpoint (1024 px; the theme sets `hidden lg:flex` on it) and shows a toggle button instead. A navigation in the default slot alone would vanish on a phone, so the layout uses four slots:
 
 | Slot | Content | Visible |
 | --- | --- | --- |
+| `#title` | `LogoMark` and the app name (`app.name`), see [Logo mark](colour-scheme.md#logo-mark) | At every width |
 | default | `UNavigationMenu` with `navItems` | From `lg` up |
 | `#body` | The same `navItems`, `orientation="vertical"` | In the mobile menu, opened by the toggle |
 | `#right` | `LanguageSwitcher` | At every width |
@@ -104,6 +105,7 @@ Checked so far at 320 px in English and German. Dark mode is not checked yet *(t
 | `YearSelect.vue` | `v-model` year select with a visible label; takes a `years` list |
 | `BusinessBadge.vue` | The "Business" badge with a briefcase icon, no props. See [Business badge](colour-scheme.md#business-badge) |
 | `CategoryBadge.vue` | Round disc with a white category icon; props `category` and `size` (28, 32, 36, 40, 44, 56). Decoration only (`aria-hidden`), the name is text in the parent. See [Category badge](colour-scheme.md#category-badge) |
+| `LogoMark.vue` | The Costcompass mark (disc, ring, compass needle) as an inline SVG, no props. Decoration only (`aria-hidden`), sized by the parent. Used in the header title. See [Logo mark](colour-scheme.md#logo-mark) |
 | `LanguageSwitcher.vue` | `USelect` that calls `setLocale()`; accessible name from `language.label`. Sits in the `#right` slot of the header, see [Header and navigation on small screens](#header-and-navigation-on-small-screens) |
 
 The form validates with the Zod schemas from `shared/utils/validation.ts`, so the browser and the API apply the same rules, except that the date field limit of the `month` prop is a browser limit only.
