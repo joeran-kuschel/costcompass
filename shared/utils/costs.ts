@@ -142,13 +142,17 @@ export function monthCategoryTotals<T extends Cost>(costs: T[]): MonthCategoryTo
 }
 export function monthSummary<R extends RecurringCost, P extends Purchase>(recurring: R[], purchases: P[], year: number, month: Month): MonthSummary<R, P> {
     const costs = costsInMonth(recurring, purchases, year, month)
+    const businessTotal = costs.filter(cost => cost.business).reduce((sum, cost) => sum + cost.amount, 0)
+    const groups = groupMonthCosts<R, P>(costs)
     return {
         costs,
-        groups: groupMonthCosts<R, P>(costs),
+        groups,
         change: monthChange(recurring, purchases, year, month),
         largest: largestCosts(costs),
         empty: costs.length === 0,
         count: costs.length,
+        businessTotal,
+        householdTotal: groups.total - businessTotal,
         businessCount: costs.filter(cost => cost.business).length,
         categories: monthCategoryTotals(costs)
     }

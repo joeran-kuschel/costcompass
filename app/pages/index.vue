@@ -210,18 +210,7 @@ async function onRetry() {
                             <span class="text-[0.6875rem] font-semibold text-muted">{{ t('dashboard.split.household') }}</span>
                         </div>
                     </div>
-                    <ul class="flex min-w-[8.75rem] flex-1 flex-col gap-3">
-                        <li class="flex items-center gap-2.5">
-                            <UIcon name="i-lucide-house" class="size-5 text-primary" aria-hidden="true" />
-                            <span class="flex-1 font-bold">{{ t('dashboard.split.household') }}</span>
-                            <span class="font-extrabold tabular-nums">{{ euros(summary.household) }}</span>
-                        </li>
-                        <li class="flex items-center gap-2.5">
-                            <UIcon name="i-lucide-briefcase" class="size-5 text-secondary" aria-hidden="true" />
-                            <span class="flex-1 font-bold">{{ t('business.label') }}</span>
-                            <span class="font-extrabold tabular-nums">{{ euros(summary.business) }}</span>
-                        </li>
-                    </ul>
+                    <SplitList class="min-w-[8.75rem] flex-1" :householdTotal="euros(summary.household)" :businessTotal="euros(summary.business)" />
                 </div>
             </UCard>
         </section>

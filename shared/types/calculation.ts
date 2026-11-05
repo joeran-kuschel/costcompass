@@ -77,5 +77,7 @@ export interface MonthSummary<R, P> {
     change: MonthChange,
     largest: (R | P)[],
     empty: boolean,
-    categories: MonthCategoryTotal[]
+    categories: MonthCategoryTotal[],
+    businessTotal: number,
+    householdTotal: number
 }

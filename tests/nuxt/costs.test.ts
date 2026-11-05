@@ -1100,6 +1100,37 @@ describe('monthSummary', () => {
   it('has no category totals for an empty month', () => {
     expect(monthSummary([], [lamp], YEAR, 5).categories).toEqual([])
   })
+  it('sums the business costs of the month and gives the rest to the household', () => {
+    const businessGym = recurring({ name: 'Gym', amount: 30, business: true })
+    const businessDesk = purchase({ name: 'Desk', amount: 210, date: `${YEAR}-03-20`, business: true })
+    const result = monthSummary([rent, businessGym], [lamp, businessDesk], YEAR, march)
+    expect(result.businessTotal).toBe(240)
+    expect(result.householdTotal).toBe(1290)
+  })
+  it('makes household and business add up to the month total', () => {
+    const businessYearly = recurring({ name: 'Domain', amount: 20.1, interval: 'yearly', dueMonth: 3, business: true })
+    const businessLamp = purchase({ name: 'Lamp', amount: 90.2, date: `${YEAR}-03-15`, business: true })
+    const result = monthSummary([rent, gym, businessYearly], [businessLamp, desk], YEAR, march)
+    expect(result.householdTotal + result.businessTotal).toBeCloseTo(result.groups.total, 10)
+    expect(result.businessTotal).toBeCloseTo(110.3, 10)
+  })
+  it('counts only business costs that fall in the month in the business total', () => {
+    const businessFebruary = purchase({ name: 'Printer', amount: 150, date: `${YEAR}-02-10`, business: true })
+    const businessJune = recurring({ name: 'Domain', amount: 20, interval: 'yearly', dueMonth: 6, business: true })
+    const result = monthSummary([rent, businessJune], [lamp, businessFebruary], YEAR, march)
+    expect(result.businessTotal).toBe(0)
+    expect(result.householdTotal).toBe(1290)
+  })
+  it('has a business total of 0 when the month has no business costs', () => {
+    const result = monthSummary([rent, gym], [lamp], YEAR, march)
+    expect(result.businessTotal).toBe(0)
+    expect(result.householdTotal).toBe(result.groups.total)
+  })
+  it('has household and business totals of 0 for an empty month', () => {
+    const result = monthSummary([], [lamp], YEAR, 5)
+    expect(result.businessTotal).toBe(0)
+    expect(result.householdTotal).toBe(0)
+  })
   it('does not change its input', () => {
     const recurringList = [rent, gym]
     const purchaseList = [lamp, desk]

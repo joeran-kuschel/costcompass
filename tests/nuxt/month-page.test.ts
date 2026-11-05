@@ -315,7 +315,7 @@ describe('month page content', () => {
   })
   it('marks business costs with a text badge and no other row', async () => {
     await mountOctober()
-    const badges = wrapper.findAll('li').filter(row => row.text().includes('Business'))
+    const badges = [...rowsOf('recurring'), ...rowsOf('purchases')].filter(row => row.text().includes('Business'))
     expect(badges).toHaveLength(2)
     expect(badges.map(row => row.text()).join('|')).toContain('Liability insurance')
     expect(badges.map(row => row.text()).join('|')).toContain('Laptop')
@@ -337,8 +337,8 @@ describe('month page content', () => {
   it('has one h1, the groups as lists with a heading each, and nothing in the lists but the rows', async () => {
     await mountOctober()
     expect(wrapper.findAll('h1')).toHaveLength(1)
-    // Three lists: the two groups and the "By category" card.
-    expect(wrapper.findAll('ul')).toHaveLength(3)
+    // Four lists: the two groups, and the categories and the household and business split in the "By category" card.
+    expect(wrapper.findAll('ul')).toHaveLength(4)
     expect(section('recurring').find('ul').exists()).toBe(true)
     expect(section('purchases').find('ul').exists()).toBe(true)
     expect(wrapper.findAll('h2').map(heading => heading.text())).toEqual(['Total for October', 'Recurring', 'Purchases', 'By category'])
@@ -633,7 +633,9 @@ describe('month page counts', () => {
 describe('month page "By category" card', () => {
   const card = () => wrapper.find('aside[aria-labelledby="categories-title"]')
   // Name and amount of each row; the amount is the bold text on the right.
-  const cardRows = () => card().findAll('li').map(row => [textOf(row.find('span.font-bold')), textOf(row.find('b'))])
+  // The card holds two lists: the categories first, then household and business.
+  const categoryItems = () => card().findAll('ul')[0]!.findAll('li')
+  const cardRows = () => categoryItems().map(row => [textOf(row.find('span.font-bold')), textOf(row.find('b'))])
 
   it('is an aside named by its heading "By category"', async () => {
     await mountOctober()
@@ -657,7 +659,7 @@ describe('month page "By category" card', () => {
   })
   it('starts every row with a 36 px badge of its category, hidden from screen readers', async () => {
     await mountOctober()
-    const badges = card().findAll('li').map(row => row.find('[aria-hidden="true"]'))
+    const badges = categoryItems().map(row => row.find('[aria-hidden="true"]'))
     expect(badges.every(badge => badge.exists())).toBe(true)
     expect(badges.map(badge => badge.attributes('style'))).toSatisfy((styles: (string | undefined)[]) => styles.every(style => style?.includes('36px')))
   })
@@ -685,6 +687,51 @@ describe('month page "By category" card', () => {
     await mountOctober()
     expect(card().find('h2').text()).toBe('Nach Kategorie')
     expect(cardRows()).toEqual([['Geräte', '912,49 €'], ['Wohnen', '830,25 €'], ['Versicherung', '120,50 €']])
+  })
+})
+
+describe('month page household and business totals', () => {
+  const card = () => wrapper.find('aside[aria-labelledby="categories-title"]')
+  const splitList = () => card().findAll('ul')[1]!
+  // Label and amount of each row: the label is bold, the amount extra bold.
+  const splitRows = () => splitList().findAll('li').map(row => [textOf(row.find('span.font-bold')), textOf(row.find('span.font-extrabold'))])
+
+  it('shows household and business below the categories, with cents', async () => {
+    // October: liability (120.50) and laptop (899.99) are business, the rest of the €1,863.24 is household.
+    await mountOctober()
+    expect(splitRows()).toEqual([['Household', '€842.75'], ['Business', '€1,020.49']])
+  })
+  it('adds up to the total of the month', async () => {
+    await mountOctober()
+    const sum = splitRows().reduce((acc, [, amount]) => acc + amountOf(amount!), 0)
+    expect(sum).toBeCloseTo(amountOf(textOf(totalCard().find('.hero-total'))), 2)
+  })
+  it('shows €0.00 for business in a month without business costs', async () => {
+    // Only the laptop in October, not a business cost.
+    await mountPage()
+    await vi.waitFor(() => expect(status().exists()).toBe(false))
+    expect(splitRows()).toEqual([['Household', '€900.00'], ['Business', '€0.00']])
+  })
+  it('keeps the icons decorative, so the words carry the meaning', async () => {
+    await mountOctober()
+    const icons = splitList().findAll('li').map(row => row.find('.iconify, [aria-hidden="true"]'))
+    expect(icons.every(icon => icon.exists() && icon.attributes('aria-hidden') === 'true')).toBe(true)
+  })
+  it('is separated from the categories by a line', async () => {
+    await mountOctober()
+    expect(splitList().classes()).toContain('border-t')
+  })
+  it('is not shown in a month without costs', async () => {
+    api.recurring.rows = [{ ...taxAdvice }]
+    api.purchases.rows = [{ ...bike }]
+    await mountPage()
+    await vi.waitFor(() => expect(status().exists()).toBe(false))
+    expect(wrapper.text()).not.toContain('Household')
+  })
+  it('has German labels and amounts', async () => {
+    await setLanguage('de')
+    await mountOctober()
+    expect(splitRows()).toEqual([['Haushalt', '842,75 €'], ['Geschäftlich', '1.020,49 €']])
   })
 })
 
