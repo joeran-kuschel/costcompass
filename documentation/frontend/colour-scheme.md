@@ -29,7 +29,7 @@ Everything is in one file, `app/assets/css/main.css`, after the two imports (`ta
 | --- | --- | --- | --- |
 | `--ui-primary` | `#2D4BD8` (primary 500) | `#3B5BEB` (primary 400) | Primary buttons, focus rings, active states |
 | `--ui-secondary` | `#B54708` | `#FDBA74` | Business badge, household-versus-business bar |
-| `--ui-error` | `#B42318` | `#F97066` | Delete button, error messages |
+| `--ui-error` | `#B42318` | `#F97066` | Delete button, the icon circle of the delete confirmation (`bg-error/10` with `text-error`), error messages |
 | `--ui-warning` | `#DC6803` | `#F59E0B` | Warnings |
 | `--chart-soft` | `#B9C5F6` | `#5B6AC0` | Bars of the months chart other than the current month (see [Months chart colours](#months-chart-colours)) |
 | `--ui-radius` | `0.75rem` | `0.75rem` | Base for all corner radii (set in `:root` only) |

@@ -31,7 +31,7 @@ Required fields show a message under the field if you leave them empty or enter 
 On the **Costs** page, each row has two buttons.
 
 - **Pencil** ("Edit <name>"): opens the same form with the values filled in. Change what you need and select **Save**. You cannot change the type of a cost (recurring or purchase). If you need a different type, delete the cost and add a new one.
-- **Trash** ("Delete <name>"): asks "Delete cost?" and tells you that the cost "will be permanently deleted". Select **Delete** to confirm or **Cancel** to keep it. A deleted cost cannot be restored.
+- **Trash** ("Delete <name>"): asks "Delete cost?" and names the cost with its amount and its interval or date, for example "Rent (€800.00, monthly) will be permanently deleted." or "Laptop (€1,200.50, March 14) will be permanently deleted." Select **Delete** to confirm, or **Cancel** or the Escape key to keep it. **Cancel** is selected when the window opens. A deleted cost cannot be restored.
 
 ## Read the costs table
 

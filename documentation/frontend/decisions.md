@@ -154,6 +154,16 @@ Details: [Costs page](app-structure.md#costs-page).
 
 Details: [Costs page](app-structure.md#costs-page).
 
+### Delete confirmation (#96)
+
+The confirmation follows the BStateDelete and BDarkStateDelete mocks: a red trash icon in a circle, the title, a message with the amount, Delete above Cancel.
+
+- **Buttons side by side from `lg`, source order kept.** The mock shows the two buttons stacked. The author's choice: stacked and full width below `lg`, side by side from `lg`. Delete stays first in the source, on screen and in the keyboard order. `flex-row-reverse` (Cancel first on wide screens) was avoided, so the visual order and the keyboard order always match. The dialog still opens with the focus on Cancel, so Enter does not delete by accident.
+- **Lowercase interval, no due month.** The message reads "Rent (€800.00, monthly) …". The interval is lowercased with `toLocaleLowerCase(locale)` because it sits in the middle of a sentence. Only the bare interval is used: lowercasing "Yearly, November" would also lowercase the month name, which is wrong in English. Purchases show their long date instead ("March 14").
+- **`alertdialog` through the `content` prop.** `UModal` has no role prop. The role goes in through `:content`, which reka-ui merges over its own `role="dialog"`, so `alertdialog` wins at runtime. The object is a script const (`dialogContent`), because TypeScript's excess-property check rejects `role` in an inline literal for the content props type.
+
+Details: [Costs page](app-structure.md#costs-page).
+
 ## Add/edit form
 
 A modal (`UModal`) with one `CostForm` for both kinds of cost, rendered once by the layout. A modal works better on mobile than a slide-over. Details: [Add and edit dialog](app-structure.md#add-and-edit-dialog).
