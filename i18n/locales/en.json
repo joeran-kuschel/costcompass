@@ -23,7 +23,8 @@
     "delete": "Delete {name}",
     "deleteError": "Could not delete the cost. Please try again.",
     "confirmTitle": "Delete cost?",
-    "confirmText": "{name} will be permanently deleted.",
+    "confirmRecurring": "{name} ({amount}, {interval}) will be permanently deleted.",
+    "confirmPurchase": "{name} ({amount}, {date}) will be permanently deleted.",
     "columns": {
       "name": "Name",
       "kind": "Kind",

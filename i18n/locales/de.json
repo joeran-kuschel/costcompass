@@ -23,7 +23,8 @@
     "delete": "{name} löschen",
     "deleteError": "Die Kosten konnten nicht gelöscht werden. Bitte versuche es erneut.",
     "confirmTitle": "Kosten löschen?",
-    "confirmText": "{name} wird endgültig gelöscht.",
+    "confirmRecurring": "{name} ({amount}, {interval}) wird endgültig gelöscht.",
+    "confirmPurchase": "{name} ({amount}, {date}) wird endgültig gelöscht.",
     "columns": {
       "name": "Name",
       "kind": "Art",
