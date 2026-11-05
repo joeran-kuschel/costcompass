@@ -123,13 +123,16 @@ Issue #64. The class `card-flush` is used together with `card` (`.card.card-flus
 
 Issue #60. The "This month" card on the dashboard is a solid cobalt card, `class="card card-hero"` in `app/pages/index.vue`. The month page's total card uses the same class.
 
-- `.card-hero` is a flex column and its body (`[data-slot="body"]`) is a flex column that fills the card (`flex: 1`, `align-items: flex-start`), so the dashboard hero's bottom row can sit at the bottom of a card that a row has stretched (issue #111, see [Equal heights in a row](app-structure.md#equal-heights-in-a-row)). The month page's total card shares this; its two lines stay at the top.
+- `.card-hero` is a flex column and its body (`[data-slot="body"]`) is a flex column that fills the card (`flex: 1`, `align-items: flex-start`), so the dashboard hero's bottom row can sit at the bottom of a card that a row has stretched (issue #111, see [Equal heights in a row](app-structure.md#equal-heights-in-a-row)). The month page's total card shares this; its two-column row stays at the top.
 - Background: `var(--ui-color-primary-500)` (`#2D4BD8`). The `.dark` block does not change this variable, so the card looks the same in light and dark mode.
 - `.card-hero` sets `position: relative`, `overflow: hidden` and `isolation: isolate`, so the ring is clipped by the card and sits behind the text (`z-index: -1`).
 - Text: white. The heading and the subtotal labels (`dt`) use the light tint `#dce2fb`, the subtotal amounts (`dd`) white.
 - The big number is the rule `.card-hero .hero-total`, not `.card-hero p`, so other text in the card keeps its size. The element needs the class: `index.vue` and `pages/months/[year]/[month].vue` both set `class="hero-total"` on the total. Size is `clamp(2.25rem, 12vw, 3.5rem)`, weight 800, tabular numerals.
-- `.card-hero .hero-ring`: a decorative ring (15 rem, border 2.25 rem in white at 8% opacity) in the top right corner, `pointer-events: none`.
-- Contrast, computed (not measured in a tool): white 6.75:1 and `#dce2fb` 5.25:1 on `#2D4BD8`. Not measured: the "View" and "Add cost" buttons on the cobalt and the white focus outline.
+- `.card-hero .hero-ring`: a decorative ring (15 rem, border 2.25 rem in white at 8% opacity) in the top right corner, `pointer-events: none`. Both heroes have it (the month page since #73).
+- `.card-hero .hero-cents`: the cents of the month page's total (`useMoneyParts()`), at `0.43em` of the big number (about 24 px next to 56 px, as in the mocks) in the soft tint `#c9d2f8`.
+- `.card-hero .hero-pill`: the comparison pill of both heroes. An inline flex row with a 4 px gap, fully rounded, 12 px bold text and small padding; from 40 rem (640 px, the `sm` breakpoint) a 6 px gap, more padding and 14 px text. Background white at 16% opacity in light mode, `#2840BC` (the darker cobalt of the dark mocks) in dark mode. It replaced the dashboard's `bg-white/15` pill.
+- `.card-hero .hero-meta`: the month page's counts line ("5 costs · 2 business"), 14 px, `#dce2fb` in light mode and `#f2f4ff` in dark mode.
+- Contrast, computed (not measured in a tool), on `#2D4BD8`: white 6.75:1, `#dce2fb` 5.25:1, `#c9d2f8` (cents) 4.52:1, `#f2f4ff` (counts, dark mode) 6.16:1. White text on the pill: 4.81:1 on the 16% white tint in light mode, 8.24:1 on `#2840BC` in dark mode. Not measured: the "View" and "Add cost" buttons on the cobalt and the white focus outline. Not checked in a browser: the month hero in light mode and at 320 px.
 
 ## Category badge
 

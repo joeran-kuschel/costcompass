@@ -85,6 +85,10 @@ The "This month" card links to today's month; the month bars link to the selecte
 
 Year and month are in the URL (`/months/2026/03`), the month always with two digits. The page can be bookmarked, the back button works, and every month has exactly one address. Details: [app-structure.md](app-structure.md).
 
+### Month summary from the route
+
+`useMonthSummary()` takes no arguments. It reads the month from the route params (`monthParamsSchema`) and falls back to today's month from `useYear()` when the address has none, so the dashboard hero and the month page hero share one composable without passing a month around. Loading, failed and retry stay in `useCostLists()`: they describe the lists, not the month, and the dashboard needs them for the whole page. Details: [Composables](app-structure.md#composables).
+
 ## Add/edit form
 
 A modal (`UModal`) with one `CostForm` for both kinds of cost, rendered once by the layout. A modal works better on mobile than a slide-over. Details: [Add and edit dialog](app-structure.md#add-and-edit-dialog).

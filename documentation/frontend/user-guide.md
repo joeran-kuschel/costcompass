@@ -74,7 +74,8 @@ On the page you see:
 
 - The month and year as heading, with a "This month" label if it is the current month.
 - Links to the previous and the next month, and a **Dashboard** link above the heading. A link is missing if it would lead to a year without any data.
-- "Total for <month>" and two groups, **Recurring** and **Purchases**, each with its subtotal. Each row shows the name, a "Business" label where it applies, the category with the interval or the day, and the amount with cents.
+- A blue card with "Total for <month>" and a comparison with the month before, for example "46% more than September" (on a phone the shorter "46% more"). On a wider screen it also counts the month's costs, for example "5 costs · 2 business". In a month without costs the card shows only the total.
+- Two groups, **Recurring** and **Purchases**, each with its subtotal. Each row shows the name, a "Business" label where it applies, the category with the interval or the day, and the amount with cents.
 - For a month without costs: "No costs in <month>" and an **Add cost** button (it also pre-fills the month).
 - To add a cost to this month, use **Add cost** in the sidebar or the round plus button on a phone. The date of a new purchase is pre-filled with the first day of that month and limited to it.
 

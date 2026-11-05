@@ -44,7 +44,7 @@ costcompass/
 │   ├── app.vue               # Root component; error.vue is the error page
 │   ├── assets/css/main.css   # Tailwind and Nuxt UI imports, the Cobalt colour scheme (light and dark)
 │   ├── components/           # Reusable Vue components (CostForm, YearSelect, LanguageSwitcher, MobileBar, badges, LogoMark, DashboardSkeleton)
-│   ├── composables/          # Reusable stateful logic (useXxx): money, year, month, cost lists, cost dialog, category, nav items, app head
+│   ├── composables/          # Reusable stateful logic (useXxx): money (useMoney, useMoneyParts), year, month, month summary (useMonthSummary), cost lists, cost dialog, category, nav items, app head
 │   ├── layouts/              # Page layouts (default.vue: sidebar, tab bar, the one add/edit dialog)
 │   ├── middleware/           # (planned) Client route middleware
 │   └── pages/                # Pages (auto-routing): index.vue (dashboard), costs.vue, months/[year]/[month].vue
@@ -112,6 +112,7 @@ One or two lines per function; the full behaviour (rounding, edge cases) is in [
 12. `monthNeighbours({ year, month }, validYears)`: the previous and next month; a neighbour in a year that is not valid is `null`
 13. `groupMonthCosts(costs)`: splits `costsInMonth` into `recurring` and `purchases` with subtotals and the `total`; generic
 14. `largestCosts(costs, n = 4)`: the `n` largest costs, largest first, with a fixed tie order; generic, does not change its input
+15. `monthSummary(recurring, purchases, year, month)`: one month in one call, `{ costs, groups, change, largest, empty, count, businessCount }` from the functions above; generic, keeps ids. The UI reads it through `useMonthSummary()`
 
 ## Rate calculator (later)
 
@@ -221,7 +222,7 @@ Design and dashboard decisions (details in [`documentation/frontend/decisions.md
 - Costs table and year: should the table be filtered by the selected year? Only purchases have a year, recurring costs have none
 ## Current status
 
-Roadmap steps 1-5 are done; step 6 (UI) is in progress. 630 Vitest tests in 28 files pass. The cost core in `shared/`, the Drizzle schema and migration and the API (`GET`, `POST`, `PATCH`, `DELETE` for recurring costs and purchases) are done; the API routes and the real SQL are tested by hand against the local Postgres, not by automated tests (that would need a test Postgres). The UI has the layout with sidebar and tab bar, the central add/edit dialog, `/costs` (sortable table, edit, delete), the dashboard (including its loading, error and empty states) and the month page with its navigation. Details per page: [`documentation/frontend/app-structure.md`](documentation/frontend/app-structure.md); tests: [`documentation/backend/testing.md`](documentation/backend/testing.md).
+Roadmap steps 1-5 are done; step 6 (UI) is in progress. 661 Vitest tests in 28 files pass. The cost core in `shared/`, the Drizzle schema and migration and the API (`GET`, `POST`, `PATCH`, `DELETE` for recurring costs and purchases) are done; the API routes and the real SQL are tested by hand against the local Postgres, not by automated tests (that would need a test Postgres). The UI has the layout with sidebar and tab bar, the central add/edit dialog, `/costs` (sortable table, edit, delete), the dashboard (including its loading, error and empty states) and the month page with its navigation. Details per page: [`documentation/frontend/app-structure.md`](documentation/frontend/app-structure.md); tests: [`documentation/backend/testing.md`](documentation/backend/testing.md).
 
 Next: the "This month" card overflowed sideways at 320 px before the hero restyle (long names broke into single letters, #38; not looked at again since). Still open: the `RecurringCost` union type in the core (the API already enforces `dueMonth`), and the rate calculator (later).
 
