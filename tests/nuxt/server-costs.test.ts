@@ -11,9 +11,9 @@ vi.mock('../../server/utils/db', () => ({ db }))
 import {
   listRecurringCosts,
   listPurchases,
-  createRecurringCosts,
+  createRecurringCost,
   createPurchase,
-  deleteRecurringCosts,
+  deleteRecurringCost,
   deletePurchase,
   updateRecurringCost,
   updatePurchase,
@@ -70,18 +70,18 @@ describe('listPurchases', () => {
   })
 })
 
-describe('createRecurringCosts', () => {
+describe('createRecurringCost', () => {
   const input = { name: 'Rent', amount: 800, category: 'housing', business: false, interval: 'monthly' } as const
   it('returns the stored row as a recurring cost', async () => {
     const q = query([recurringRow()])
     db.insert.mockReturnValueOnce(q)
-    const result = await createRecurringCosts(input)
+    const result = await createRecurringCost(input)
     expect(q.values).toHaveBeenCalledWith(input)
     expect(result).toMatchObject({ id: 1, kind: 'recurring', name: 'Rent' })
   })
   it('throws when the insert returns no row', async () => {
     db.insert.mockReturnValueOnce(query([]))
-    await expect(createRecurringCosts(input)).rejects.toThrow('Insert returned no row')
+    await expect(createRecurringCost(input)).rejects.toThrow('Insert returned no row')
   })
 })
 
@@ -100,14 +100,14 @@ describe('createPurchase', () => {
   })
 })
 
-describe('deleteRecurringCosts', () => {
+describe('deleteRecurringCost', () => {
   it('returns true when a row was deleted', async () => {
     db.delete.mockReturnValueOnce(query([{ id: 1 }]))
-    expect(await deleteRecurringCosts(1)).toBe(true)
+    expect(await deleteRecurringCost(1)).toBe(true)
   })
   it('returns false for an unknown id', async () => {
     db.delete.mockReturnValueOnce(query([]))
-    expect(await deleteRecurringCosts(99)).toBe(false)
+    expect(await deleteRecurringCost(99)).toBe(false)
   })
 })
 

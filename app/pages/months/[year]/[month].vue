@@ -1,18 +1,23 @@
 <script lang="ts" setup>
 const route = useRoute()
 
+// The address is checked first, before any data is requested.
 const parsed = monthParamsSchema.safeParse(route.params)
 if (!parsed.success) {
     throw createError({ status: 404, fatal: true, data: { reason: 'month' }})
 }
 const { year, month } = parsed.data
+const monthRef: MonthRef = { year, month: month as Month }
+
 const { t, locale } = useI18n()
 const { currentYear, currentMonth } = useYear()
 const { recurring, purchases, failed, loading, retry } = useCostLists()
 const { monthName, monthYear, monthPath, toRow } = useMonth()
-const title = computed(() => monthYear(year, month))
+const { openAdd } = useCostDialog()
 const euros = useMoney({ cents: true })
-const monthRef: MonthRef = { year, month: month as Month }
+const heading = useTemplateRef<HTMLElement>('heading')
+
+const title = computed(() => monthYear(year, month))
 const isCurrentMonth = computed(() => year === currentYear.value && month === currentMonth.value)
 const neighbours = computed(() => monthNeighbours(monthRef, availableYears(purchases.value ?? [], currentYear.value)))
 const groups = computed(() => groupMonthCosts<Stored<RecurringCost>, Stored<Purchase>>(costsInMonth(recurring.value ?? [], purchases.value ?? [], year, month as Month)))
@@ -22,9 +27,6 @@ const sections = computed(() => [
     { id: 'recurring', title: t('month.recurring'), total: euros(groups.value.recurringTotal), rows: recurringRows.value },
     { id: 'purchases', title: t('month.purchases'), total: euros(groups.value.purchasesTotal), rows: purchaseRows.value },
 ].filter(section => section.rows.length > 0))
-const heading = useTemplateRef<HTMLElement>('heading')
-const { openAdd } = useCostDialog()
-
 
 useHead({ title: () => title.value })
 

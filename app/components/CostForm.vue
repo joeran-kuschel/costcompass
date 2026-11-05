@@ -11,10 +11,6 @@ const emit = defineEmits<{ saved: [], cancel: [] }>()
 const { t, locale } = useI18n()
 const { monthYear } = useMonth()
 const toast = useToast()
-const kindItems = computed(() => [
-    { label: t('kind.recurring'), value: 'recurring' },
-    { label: t('kind.purchase'), value: 'purchase' },
-])
 const kind = ref<'recurring' | 'purchase'>('purchase')
 const state = reactive({
     name: '',
@@ -25,6 +21,10 @@ const state = reactive({
     dueMonth: undefined as Month | undefined,
     date: ''
 })
+const kindItems = computed(() => [
+    { label: t('kind.recurring'), value: 'recurring' },
+    { label: t('kind.purchase'), value: 'purchase' },
+])
 const schema = computed(() => kind.value === 'recurring' ? createRecurringCostSchema : createPurchaseSchema)
 const categoryItems = computed(() => CATEGORIES.map(c => ({label: t(`category.${c}`), value: c})))
 const intervalItems = computed(() => INTERVALS.map(i => ({ label: t(`interval.${i}`), value: i })))
