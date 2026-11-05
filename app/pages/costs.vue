@@ -20,11 +20,9 @@ const costs = computed<Stored<Cost>[]>(() => [
 ].sort((a, b) => a.name.localeCompare(b.name, locale.value)))
 const columns = computed<TableColumn<Stored<Cost>>[]>(()  => [
     { accessorKey: 'name', header: sortableHeader(t('costs.columns.name')), sortingFn: (a, b) => a.original.name.localeCompare(b.original.name, locale.value) },
-    { accessorKey: 'category', header: sortableHeader(t('costs.columns.category')), sortingFn: (a, b) => t(`category.${a.original.category}`).localeCompare(t(`category.${b.original.category}`) , locale.value) },
     { accessorKey: 'kind', header: sortableHeader(t('costs.columns.kind')), sortingFn: (a, b) => t(`kind.${a.original.kind}`).localeCompare(t(`kind.${b.original.kind}`), locale.value) },
     { id: 'when', header: t('costs.columns.when') },
     { accessorKey: 'amount', header: sortableHeader(t('costs.columns.amount')) },
-    { accessorKey: 'business', header: sortableHeader(t('business.label')) },
     { id: 'actions', header: t('costs.columns.actions') },
 ])
 useHead({ title: () => t('costs.title') })
@@ -77,10 +75,10 @@ function sortableHeader(label: string) {
     <h1>{{ t('costs.title') }}</h1>
     <UTable :data="costs" :columns="columns" class="card" :ui="{ root: 'overflow-x-auto px-5 pb-2 pt-1', th: 'px-2 pb-2.5 pt-3.5 text-[13px] font-extrabold uppercase tracking-wide text-muted', td: 'px-2 py-2.5 text-sm text-default' }">
         <template #name-cell="{ row }">
-            <div class="flex items-center gap-3">
+            <div class="flex min-w-48 items-center gap-3 whitespace-normal">
                 <CategoryBadge :category="row.original.category" :size="40" />
-                <div>
-                    <p class="flex items-center gap-2 font-bold">
+                <div class="min-w-0">
+                    <p class="flex flex-wrap items-center gap-x-2 gap-y-1 break-words font-bold">
                         {{ row.original.name }}
                         <BusinessBadge v-if="row.original.business" />
                     </p>
@@ -88,7 +86,6 @@ function sortableHeader(label: string) {
                 </div>
             </div>
         </template>
-        <template #category-cell="{ row }">{{ t(`category.${row.original.category}`) }}</template>
         <template #kind-cell="{ row }">
             <span class="flex items-center gap-2">
                 <UIcon :name="kindIcon(row.original.kind)" class="size-4 shrink-0 text-muted" aria-hidden="true" />
@@ -96,11 +93,10 @@ function sortableHeader(label: string) {
             </span>
         </template>
         <template #amount-cell="{ row }">{{ n(row.original.amount, { style: 'currency', currency: 'EUR' }) }}</template>
-        <template #when-cell="{ row }">{{ whenLabel(row.original) }}</template>
-        <template #business-cell="{ row }">{{ row.original.business ? t('common.yes') : t('common.no') }}</template>
+        <template #when-cell="{ row }"><span class="whitespace-normal">{{ whenLabel(row.original) }}</span></template>
         <template #actions-cell="{ row }">
-            <UButton icon="i-lucide-trash-2" color="error" variant="ghost" class="pill-icon" @click="toDelete = row.original" :aria-label="t('costs.delete', { name: row.original.name })"/>
             <UButton icon="i-lucide-pencil" color="neutral" variant="ghost" class="pill-icon" @click="openEdit(row.original)" :aria-label="t('costs.edit', { name: row.original.name })"/>
+            <UButton icon="i-lucide-trash-2" color="neutral" variant="ghost" class="pill-icon" @click="toDelete = row.original" :aria-label="t('costs.delete', { name: row.original.name })"/>
         </template>
     </UTable>
     <UModal :ui="{ content: 'rounded-[2rem] bg-elevated' }"
