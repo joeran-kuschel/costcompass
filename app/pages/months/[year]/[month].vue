@@ -84,51 +84,59 @@ async function onRetry() {
             :actions="[{ label: t('dashboard.retry'), onClick: onRetry }]"
         />
         <template v-else>
-            <UCard variant="subtle" class="card card-hero mt-4" aria-labelledby="month-total-title">
-                <span class="hero-ring" aria-hidden="true" />
-                <div class="flex w-full flex-wrap items-end justify-between gap-x-5 gap-y-3">
-                    <div>
-                        <h2 id="month-total-title">{{ t('month.total', { month: monthName(month) }) }}</h2>
-                        <p class="hero-total">{{ heroTotal.whole }}<span class="hero-cents">{{ heroTotal.cents }}</span>{{ heroTotal.after }}</p>
-                    </div>
-                    <div class="flex flex-col items-end gap-2.5">
-                        <p v-if="!thisMonthSummary.empty" class="hero-pill">
-                            <UIcon :name="thisMonthSummary.icon" class="size-3.5 sm:size-4" aria-hidden="true" />
-                            <span aria-hidden="true" class="sm:hidden">{{ thisMonthSummary.comparisonShort }}</span>
-                            <span class="sr-only sm:not-sr-only">{{ thisMonthSummary.comparison }}</span>
-                        </p>
-                        <p v-if="!thisMonthSummary.empty" class="hero-meta hidden sm:block">{{ t('month.costCount', thisMonthSummary.count) }} · {{ t('month.businessCount', thisMonthSummary.businessCount) }}</p>
-                    </div>
-                </div>
-            </UCard>
-            <UCard v-if="thisMonthSummary.empty" variant="subtle" class="card mt-6 text-center">
-                <UIcon name="i-lucide-calendar-x" class="size-8" aria-hidden="true" />
-                <h2>{{ t('month.emptyTitle', { month: monthName(month) }) }}</h2>
-                <p>{{ t('month.emptyText') }}</p>
-                <UButton :label="t('costs.add')" class="pill mt-4" @click="openAdd(monthRef)" />
-            </UCard>
-            <section v-for="section in sections" :key="section.id" :aria-labelledby="`${section.id}-title`" class="card mt-6 px-6 py-5">
-                <div class="flex items-baseline justify-between gap-4">
-                    <h2 :id="`${section.id}-title`" class="flex items-center gap-2">
-                        <UIcon :name="kindIcon(section.kind)" class="text-muted" aria-hidden="true" />
-                        {{ section.title }}
-                    </h2>
-                    <p class="font-extrabold tabular-nums">{{ section.total }}</p>
-                </div>
-                <ul class="mt-3 flex flex-col gap-1.5">
-                    <li v-for="row in section.rows" :key="row.key" class="flex items-center gap-3 rounded-[18px] bg-muted px-3 py-2.5">
-                        <CategoryBadge :category="row.category" :size="40" />
-                        <div class="min-w-0 flex-1">
-                            <p class="flex flex-wrap items-center gap-1.5 break-words font-bold">
-                                {{ row.name }}
-                                <BusinessBadge v-if="row.business" />
-                            </p>
-                            <p class="text-sm text-muted">{{ row.subline }}</p>
+            <div class="mt-4 flex flex-col gap-6 lg:flex-row lg:items-start">
+                <div class="flex min-w-0 flex-1 flex-col gap-5">
+                    <UCard variant="subtle" class="card card-hero" aria-labelledby="month-total-title">
+                        <span class="hero-ring" aria-hidden="true" />
+                        <div class="flex w-full flex-wrap items-end justify-between gap-x-5 gap-y-3">
+                            <div>
+                                <h2 id="month-total-title">{{ t('month.total', { month: monthName(month) }) }}</h2>
+                                <p class="hero-total">{{ heroTotal.whole }}<span class="hero-cents">{{ heroTotal.cents }}</span>{{ heroTotal.after }}</p>
+                            </div>
+                            <div class="flex flex-col items-end gap-2.5">
+                                <p v-if="!thisMonthSummary.empty" class="hero-pill">
+                                    <UIcon :name="thisMonthSummary.icon" class="size-3.5 sm:size-4" aria-hidden="true" />
+                                    <span aria-hidden="true" class="sm:hidden">{{ thisMonthSummary.comparisonShort }}</span>
+                                    <span class="sr-only sm:not-sr-only">{{ thisMonthSummary.comparison }}</span>
+                                </p>
+                                <p v-if="!thisMonthSummary.empty" class="hero-meta hidden sm:block">{{ t('month.costCount', thisMonthSummary.count) }} · {{ t('month.businessCount', thisMonthSummary.businessCount) }}</p>
+                            </div>
                         </div>
-                        <p class="shrink-0 text-right font-extrabold tabular-nums">{{ row.amount }}</p>
-                    </li>
-                </ul>
-            </section>
+                    </UCard>
+                    <UCard v-if="thisMonthSummary.empty" variant="subtle" class="card text-center">
+                        <UIcon name="i-lucide-calendar-x" class="size-8" aria-hidden="true" />
+                        <h2>{{ t('month.emptyTitle', { month: monthName(month) }) }}</h2>
+                        <p>{{ t('month.emptyText') }}</p>
+                        <UButton :label="t('costs.add')" class="pill mt-4" @click="openAdd(monthRef)" />
+                    </UCard>
+                    <section v-for="section in sections" :key="section.id" :aria-labelledby="`${section.id}-title`" class="card px-6 py-5">
+                        <div class="flex items-baseline justify-between gap-4">
+                            <h2 :id="`${section.id}-title`" class="flex items-center gap-2">
+                                <UIcon :name="kindIcon(section.kind)" class="text-muted" aria-hidden="true" />
+                                {{ section.title }}
+                            </h2>
+                            <p class="font-extrabold tabular-nums">{{ section.total }}</p>
+                        </div>
+                        <ul class="mt-3 flex flex-col gap-1.5">
+                            <li v-for="row in section.rows" :key="row.key" class="flex items-center gap-3 rounded-[18px] bg-muted px-3 py-2.5">
+                                <CategoryBadge :category="row.category" :size="40" />
+                                <div class="min-w-0 flex-1">
+                                    <p class="flex flex-wrap items-center gap-1.5 break-words font-bold">
+                                        {{ row.name }}
+                                        <BusinessBadge v-if="row.business" />
+                                    </p>
+                                    <p class="text-sm text-muted">{{ row.subline }}</p>
+                                </div>
+                                <p class="shrink-0 text-right font-extrabold tabular-nums">{{ row.amount }}</p>
+                            </li>
+                        </ul>
+                    </section>
+                </div>
+                <aside v-if="!thisMonthSummary.empty" aria-labelledby="categories-title" class="card px-6 py-5 lg:w-[340px] lg:shrink-0">
+                    <h2 id="categories-title">{{ t('month.byCategory') }}</h2>
+                    <CategoryList :rows="thisMonthSummary.categoryRows" />
+                </aside>
+            </div>
         </template>
     </div>
 </template>
