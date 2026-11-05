@@ -9,25 +9,24 @@ if (!parsed.success) {
 const { year, month } = parsed.data
 const monthRef: MonthRef = { year, month: month as Month }
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
 const { currentYear, currentMonth } = useYear()
-const { recurring, purchases, failed, loading, retry } = useCostLists()
-const { monthName, monthYear, monthPath, toRow } = useMonth()
+const { purchases, failed, loading, retry } = useCostLists()
+const { monthName, monthYear, monthPath } = useMonth()
 const { openAdd } = useCostDialog()
 const euros = useMoney({ cents: true })
+const moneyParts = useMoneyParts()
 const heading = useTemplateRef<HTMLElement>('heading')
+const thisMonthSummary = useMonthSummary()
 
 const title = computed(() => monthYear(year, month))
+const heroTotal = computed(() => moneyParts(thisMonthSummary.value.total))
 const isCurrentMonth = computed(() => year === currentYear.value && month === currentMonth.value)
 const neighbours = computed(() => monthNeighbours(monthRef, availableYears(purchases.value ?? [], currentYear.value)))
-const groups = computed(() => groupMonthCosts<Stored<RecurringCost>, Stored<Purchase>>(costsInMonth(recurring.value ?? [], purchases.value ?? [], year, month as Month)))
-const recurringRows = computed(() => groups.value.recurring.map(toRow))
-const purchaseRows = computed(() => groups.value.purchases.map(toRow))
 const sections = computed(() => [
-    { id: 'recurring', title: t('month.recurring'), total: euros(groups.value.recurringTotal), rows: recurringRows.value },
-    { id: 'purchases', title: t('month.purchases'), total: euros(groups.value.purchasesTotal), rows: purchaseRows.value },
+    { id: 'recurring', title: t('month.recurring'), total: euros(thisMonthSummary.value.recurringTotal), rows: thisMonthSummary.value.recurringRows },
+    { id: 'purchases', title: t('month.purchases'), total: euros(thisMonthSummary.value.purchasesTotal), rows: thisMonthSummary.value.purchaseRows },
 ].filter(section => section.rows.length > 0))
-
 useHead({ title: () => title.value })
 
 watch([loading, failed], () => {
@@ -85,10 +84,23 @@ async function onRetry() {
         />
         <template v-else>
             <UCard variant="subtle" class="card card-hero mt-4" aria-labelledby="month-total-title">
-                <h2 id="month-total-title">{{ t('month.total', { month: monthName(month) }) }}</h2>
-                <p class="hero-total">{{ euros(groups.total) }}</p>
+                <span class="hero-ring" aria-hidden="true" />
+                <div class="flex w-full flex-wrap items-end justify-between gap-x-5 gap-y-3">
+                    <div>
+                        <h2 id="month-total-title">{{ t('month.total', { month: monthName(month) }) }}</h2>
+                        <p class="hero-total">{{ heroTotal.whole }}<span class="hero-cents">{{ heroTotal.cents }}</span>{{ heroTotal.after }}</p>
+                    </div>
+                    <div class="flex flex-col items-end gap-2.5">
+                        <p v-if="!thisMonthSummary.empty" class="hero-pill">
+                            <UIcon :name="thisMonthSummary.icon" class="size-3.5 sm:size-4" aria-hidden="true" />
+                            <span aria-hidden="true" class="sm:hidden">{{ thisMonthSummary.comparisonShort }}</span>
+                            <span class="sr-only sm:not-sr-only">{{ thisMonthSummary.comparison }}</span>
+                        </p>
+                        <p v-if="!thisMonthSummary.empty" class="hero-meta hidden sm:block">{{ t('month.costCount', thisMonthSummary.count) }} · {{ t('month.businessCount', thisMonthSummary.businessCount) }}</p>
+                    </div>
+                </div>
             </UCard>
-            <UCard v-if="sections.length === 0" variant="subtle" class="card mt-6 text-center">
+            <UCard v-if="thisMonthSummary.empty" variant="subtle" class="card mt-6 text-center">
                 <UIcon name="i-lucide-calendar-x" class="size-8" aria-hidden="true" />
                 <h2>{{ t('month.emptyTitle', { month: monthName(month) }) }}</h2>
                 <p>{{ t('month.emptyText') }}</p>

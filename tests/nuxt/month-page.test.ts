@@ -491,6 +491,107 @@ describe('month page content in German', () => {
   })
 })
 
+describe('month page comparison with the month before', () => {
+  // The pill holds two texts: the short one is seen on phones, the long one is seen from sm and is always what a screen reader reads.
+  const pill = () => totalCard().find('.hero-pill')
+  const shortText = () => pill().find('.sm\\:hidden')
+  const longText = () => pill().find('.sr-only')
+
+  it('says how much more the month cost, in a long and a short form', async () => {
+    // October 1,863.24 against September 1,280 (rent and the bike): 46% more.
+    await mountOctober()
+    expect(textOf(longText())).toBe('46% more than September')
+    expect(textOf(shortText())).toBe('46% more')
+  })
+  it('says how much less the month cost', async () => {
+    // November 800 (rent only) against October 1,863.24: 57% less.
+    await mountOctober('/months/2026/11')
+    expect(textOf(longText())).toBe('57% less than October')
+    expect(textOf(shortText())).toBe('57% less')
+  })
+  it('says when the month cost the same', async () => {
+    api.recurring.rows = [{ ...rent }]
+    api.purchases.rows = []
+    await mountPage()
+    await vi.waitFor(() => expect(status().exists()).toBe(false))
+    expect(textOf(longText())).toBe('Same as September')
+    expect(textOf(shortText())).toBe('Same as before')
+  })
+  it('has a neutral text when the month before cost nothing', async () => {
+    // Only the laptop in October 2026: September cost nothing.
+    await mountPage()
+    await vi.waitFor(() => expect(status().exists()).toBe(false))
+    expect(textOf(longText())).toBe('No costs in September to compare with')
+    expect(textOf(shortText())).toBe('No comparison')
+  })
+  it('hides the short text and the icon from screen readers, so only the full sentence is read', async () => {
+    await mountOctober()
+    expect(shortText().attributes('aria-hidden')).toBe('true')
+    expect(longText().attributes('aria-hidden')).toBeUndefined()
+    expect(pill().find('.iconify, svg').attributes('aria-hidden')).toBe('true')
+  })
+  it('is not shown while the lists load', async () => {
+    api.recurring.delay = 300
+    await mountPage()
+    expect(wrapper.find('.hero-pill').exists()).toBe(false)
+  })
+  it('is not shown in a month without costs, where the empty card explains it', async () => {
+    api.recurring.rows = [{ ...taxAdvice }]
+    api.purchases.rows = [{ ...bike }]
+    await mountPage()
+    await vi.waitFor(() => expect(status().exists()).toBe(false))
+    expect(totalCard().exists()).toBe(true)
+    expect(pill().exists()).toBe(false)
+  })
+  it('is not shown after a failed load', async () => {
+    api.recurring.fail = true
+    await mountPage()
+    await vi.waitFor(() => expect(alert().exists()).toBe(true))
+    expect(wrapper.find('.hero-pill').exists()).toBe(false)
+  })
+  it('has German texts', async () => {
+    await setLanguage('de')
+    await mountOctober()
+    expect(textOf(longText())).toBe('46 % mehr als im September')
+    expect(textOf(shortText())).toBe('46 % mehr')
+  })
+})
+
+describe('month page counts', () => {
+  const counts = () => totalCard().find('.hero-meta')
+
+  it('counts all costs of the month and the business ones among them', async () => {
+    // October: rent, liability, phone, laptop and book; liability and laptop are business.
+    await mountOctober()
+    expect(textOf(counts())).toBe('5 costs · 2 business')
+  })
+  it('matches the rows in the lists below', async () => {
+    await mountOctober()
+    const rows = [...rowsOf('recurring'), ...rowsOf('purchases')]
+    const business = rows.filter(row => row.text().includes('Business'))
+    expect(textOf(counts())).toBe(`${rows.length} costs · ${business.length} business`)
+  })
+  it('uses the singular for one cost', async () => {
+    // Only the laptop in October, not a business cost.
+    await mountPage()
+    await vi.waitFor(() => expect(status().exists()).toBe(false))
+    expect(textOf(counts())).toBe('1 cost · 0 business')
+  })
+  it('is hidden in a month without costs, where the empty card explains it', async () => {
+    api.recurring.rows = [{ ...taxAdvice }]
+    api.purchases.rows = [{ ...bike }]
+    await mountPage()
+    await vi.waitFor(() => expect(status().exists()).toBe(false))
+    expect(counts().exists()).toBe(false)
+    expect(wrapper.text()).toContain('No costs in October')
+  })
+  it('has German texts', async () => {
+    await setLanguage('de')
+    await mountOctober()
+    expect(textOf(counts())).toBe('5 Kosten · 2 geschäftlich')
+  })
+})
+
 describe('month page navigation', () => {
   // Valid years: 2025 and 2026 (purchases) and the current year, which is fixed to 2026 here.
   const oldBike = { ...bike, id: 9, date: '2025-09-02' }

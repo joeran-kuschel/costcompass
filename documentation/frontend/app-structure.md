@@ -44,7 +44,7 @@ Tests: the `skeleton` `describe` in the loading state of `tests/nuxt/dashboard-s
 
 ### Dashboard error card
 
-Issue #72. When either list fails to load, the dashboard shows a `UAlert` (`role="alert"`, `variant="naked"`, class `card`) laid out as a centred card instead of a banner:
+Issue #72. When either list fails to load, the dashboard shows a `UAlert` (`role="alert"`, `variant="subtle"`, class `card`) laid out as a centred card instead of a banner:
 
 - A decorative 72 px round disc with a circle-alert icon in the error tint (`aria-hidden`).
 - The `title` slot: an `h2` "Could not load your costs." (`dashboard.error.title`).
@@ -90,7 +90,7 @@ The costs of the month are only rendered in the loaded branch, so a refresh that
 
 #### Content (#25)
 
-The month's total sits in a `UCard` ("Total for <month>", the `card-hero` class). Below it is one `section` per kind that has entries (Recurring, Purchases); a group without entries is not shown. Each section has an `h2`, its subtotal and a `ul` of rows. The groups come from `groupMonthCosts` on `costsInMonth`, typed with `Stored<...>`, because TypeScript cannot infer `R` and `P` from the one list. One loop renders both groups.
+The month's total sits in a hero card (see [Month hero](#month-hero-73-74) below). Below it is one `section` per kind that has entries (Recurring, Purchases); a group without entries is not shown. Each section has an `h2`, its subtotal and a `ul` of rows. Everything about the month (the groups, subtotals, rows, comparison, counts and the empty flag) comes from one `useMonthSummary()` call, which runs `monthSummary` from the core (see [Composables](#composables)). The `sections` computed builds the two groups from its `recurringRows`, `purchaseRows`, `recurringTotal` and `purchasesTotal`, and one loop renders both.
 
 A row has:
 
@@ -101,13 +101,26 @@ A row has:
 
 A "This month" badge sits next to the `h1` when the address is today's month and year.
 
+#### Month hero (#73, #74)
+
+The total card is a `UCard` with `class="card card-hero"`, labelled by its `h2` (`aria-labelledby="month-total-title"`). Colours and CSS are in [Hero card](colour-scheme.md#hero-card). It has:
+
+- A decorative ring (`span.hero-ring`, `aria-hidden`), as on the dashboard.
+- A wrapping flex row with two columns (`flex-wrap items-end justify-between`). On a narrow screen the right column moves below the left one.
+- Left: the heading `h2#month-total-title` "Total for <month>" (`month.total`) and the total as `p.hero-total`. The total is split by `useMoneyParts()` into `whole`, `cents` and `after`, so the cents sit in a smaller `span.hero-cents`: "€2,081" + ".00" in English, "2.081" + ",00" + " €" in German.
+- Right, aligned to the end: the comparison pill `p.hero-pill` and the counts line.
+- The pill holds the trend icon (`aria-hidden`) and two texts. Below `sm` (640 px) the short text is visible (`month.changeShort.*`: "46% more", "57% less", "Same as before", "No comparison"); it is `aria-hidden` and `sm:hidden`. The long text (`dashboard.thisMonth.*`, the same sentence as on the dashboard: "46% more than September") is `sr-only sm:not-sr-only`, so a screen reader always reads only the long sentence, and from `sm` it is the visible text. Like the counts line, the pill is not rendered in a month without costs.
+- The counts line `p.hero-meta` "5 costs · 2 business" (`month.costCount`, which has a singular and a plural form, "1 cost"; `month.businessCount`). It has `hidden sm:block`, so it does not show on phones, and it is not rendered in a month without costs, where the empty card explains the month.
+
+Tests: `describe('month page comparison with the month before')` and `describe('month page counts')` in `tests/nuxt/month-page.test.ts`, see [Testing](testing.md#pages). Not checked in a browser: 320 px and light mode. Known limit: on phones the heading row with the arrows and the "This month" badge wraps into two lines (issue #118).
+
 #### Navigation (#26)
 
 A "Dashboard" link sits above the heading. A previous and a next month icon link sit on either side of the heading (`UButton` with `to`, so real `<a>` elements, 36 px square). Their accessible name is an `aria-label` that names the target ("Previous month, September 2026"); the paths come from `monthPath`. The targets come from `monthNeighbours` with `availableYears` as the valid years, so a link that would lead to a year without data is hidden. Until the lists have loaded only the current year counts, so the links inside a year are there from the start. Keyboard order: Dashboard, previous, next.
 
 #### Empty month (#28) and adding a cost (#31)
 
-A month without costs keeps the total card (with a zero in the money format) and shows a `UCard` instead of the groups: "No costs in <month>" (`h2`), a hint and a decorative icon. It is in the loaded branch, so it never shows while loading or after an error. Its "Add cost" button calls `openAdd(monthRef)`, so the layout's dialog opens with `CostForm` pre-filled for that month (see [Add and edit dialog](#add-and-edit-dialog)). The button next to the heading was removed with #59; the other entry points are the layout's sidebar button and the phone's round add button, which already passes the month. After `saved` the layout refreshes both lists with `retry` (the old data stays on screen meanwhile, so there is no flicker into the skeletons) and closes the dialog.
+A month without costs (the `empty` flag of `useMonthSummary()`) keeps the total card (with a zero in the money format, without the comparison pill and the counts line) and shows a `UCard` instead of the groups: "No costs in <month>" (`h2`), a hint and a decorative icon. It is in the loaded branch, so it never shows while loading or after an error. Its "Add cost" button calls `openAdd(monthRef)`, so the layout's dialog opens with `CostForm` pre-filled for that month (see [Add and edit dialog](#add-and-edit-dialog)). The button next to the heading was removed with #59; the other entry points are the layout's sidebar button and the phone's round add button, which already passes the month. After `saved` the layout refreshes both lists with `retry` (the old data stays on screen meanwhile, so there is no flicker into the skeletons) and closes the dialog.
 
 Tests: `tests/nuxt/month-page.test.ts`, see [Testing](testing.md).
 
@@ -130,7 +143,7 @@ Route `/costs`, file `app/pages/costs.vue`. One table with recurring costs and p
 
 ### Subtotals in the "This month" card
 
-Issue #61. Below the comparison line, the card has a description list (`dl`) with two pairs: "Recurring" (`month.recurring`) and "Purchases" (`month.purchases`), the same keys as the month page. The amounts are `recurringTotal` and `purchasesTotal` from `groupMonthCosts(costsInMonth(...))` for today's month and year, so they ignore the year selector like the rest of the card. A group without costs shows `€0.00`, not nothing.
+Issue #61. Below the comparison line, the card has a description list (`dl`) with two pairs: "Recurring" (`month.recurring`) and "Purchases" (`month.purchases`), the same keys as the month page. The amounts are `recurringTotal` and `purchasesTotal` from `useMonthSummary()` (the groups of `monthSummary`) for today's month and year, so they ignore the year selector like the rest of the card. A group without costs shows `€0.00`, not nothing.
 
 The subtotals use cents (`useMoney({ cents: true })`), while the card's total stays in whole euros. The rounded total can therefore differ from the sum of the two subtotals: 819.99 and 300.50 add up to 1,120.49, and the total shows €1,120. Since issue #60 the labels are `dt` elements in the light tint `#dce2fb` on the cobalt hero card (see [Hero card](colour-scheme.md#hero-card)).
 
@@ -138,15 +151,15 @@ Tests: `tests/nuxt/dashboard-month-cards.test.ts`, `describe('dashboard page thi
 
 ### The hero card ("This month")
 
-Issue #60. Written for developers. The "This month" card is a solid cobalt card (`class="card card-hero"`). Colours and CSS are in [Hero card](colour-scheme.md#hero-card). From top to bottom:
+Issue #60. Written for developers. The "This month" card is a solid cobalt card (`class="card card-hero"`). Colours and CSS are in [Hero card](colour-scheme.md#hero-card). The card and "Largest this month" read one `thisMonthSummary` from `useMonthSummary()` (see [Composables](#composables)); the page has no `thisMonth` computed of its own any more. From top to bottom:
 
 - A decorative ring (`span.hero-ring`, `aria-hidden`, no text), clipped by the card.
 - The heading `h2#this-month-title`: "This month · March 2026" (`dashboard.thisMonth.title`, with a middle dot, in both languages).
 - The total as `p.hero-total` (large, tabular numerals, whole euros).
-- The comparison with the previous month (from `monthChange`) in a translucent pill (`bg-white/15`, `rounded-full`). The trend icon is decoration (`aria-hidden`); the direction is in the words: "50% more than September", "less", "Same as", or a neutral text without a percentage when the previous month cost nothing.
-- The card always shows today's month (`currentYear`, `currentMonth`), whatever year the year select shows. The same holds for "Largest this month" and for the highlighted month of the months chart.
+- The comparison with the previous month (`comparison` and `icon` of the summary, from `monthChange`) in the pill `p.hero-pill`, the class the month page uses too. The trend icon is decoration (`aria-hidden`, `size-3.5`, `size-4` from `sm`); the direction is in the words: "50% more than September", "less", "Same as", or a neutral text without a percentage when the previous month cost nothing.
+- The card always shows today's month, whatever year the year select shows: the dashboard has no month in its address, so `useMonthSummary()` falls back to `currentYear` and `currentMonth` from `useYear()`. The same holds for "Largest this month" and for the highlighted month of the months chart.
 - A bottom row (flex, wraps): the subtotals `dl` on the left (cents), and at the right the white pill link "View <month year>" with an arrow (`ml-auto`).
-- In a month without costs, the row also shows "No costs this month yet." (`dashboard.thisMonth.empty`) and an outlined white "Add cost" button that calls `openAdd()` (the `thisMonth.empty` flag). With costs, neither is rendered. The "Largest this month" card shows the same text in that case.
+- In a month without costs, the row also shows "No costs this month yet." (`dashboard.thisMonth.empty`) and an outlined white "Add cost" button that calls `openAdd()` (the `empty` flag of the summary). With costs, neither is rendered. The "Largest this month" card shows the same text in that case.
 - The card is a flex column and its body fills it, so when the row stretches the card to the height of "Largest this month", the bottom row sits at the bottom. It uses `mt-auto` and `pt-10` (at least 40 px above it) and `w-full`, because the column does not stretch its children. See [Equal heights in a row](#equal-heights-in-a-row).
 
 Tests: `tests/nuxt/dashboard-month-cards.test.ts`: the heading with the middle dot, the trend icon, the ring, and `describe('dashboard page this month card empty month')` (text and button, the button asks for an empty dialog, the link stays, nothing with costs, German). Checked by the author in the browser: light and dark mode, German, 320 px, spacing. Not checked: a real phone, a screen reader, the contrast of the buttons and the focus ring, the size of the total on a phone against the mock (`BPhoneDashboard`).
@@ -167,7 +180,7 @@ Tests: none. jsdom has no layout, so equal heights cannot be tested. Not checked
 
 Issue #63. Written for developers. The card replaces the "Add a cost" tile and sits next to the "This month" card (the weight-2 flex row in `main.css` now selects `largest-title`). It is a `section` with `aria-labelledby="largest-title"`; its `ul` is named by the same heading ("Largest this month", `dashboard.largest.title`). The hint line (`dashboard.largest.text`) was removed with the restyle.
 
-- The rows come from `largestCosts(costsInMonth(...))` for today's month and year, so, like the "This month" card, they ignore the year selector. They are mapped with `toRow` from `useMonth()`.
+- The rows are `largestRows` from `useMonthSummary()` (`largestCosts` on the month's costs, mapped with `toRow` from `useMonth()`) for today's month and year, so, like the "This month" card, they ignore the year selector.
 - Each row is its own soft tile (`bg-muted`, 18 px radius, `gap-1.5` between rows, no divider lines) with a `CategoryBadge` (40 px), the bold name with the `BusinessBadge` next to it in a wrapping row, a sub line in 13 px ("Housing · Monthly", "Appliances · 8 Nov") and the amount with cents. The exact tint of the mock was approximated with `bg-muted`.
 - A month without costs shows "No costs this month yet." (`dashboard.thisMonth.empty`) and no button.
 - The full list of the month is no longer on the dashboard (this also removed the list from the "This month" card; its "Add cost" button came back in an empty month with #60). The "View <month year>" link of that card leads to it on the month page.
@@ -526,8 +539,10 @@ Checked by hand in the browser: the dashboard and month page buttons open the di
 | Composable | Returns |
 | --- | --- |
 | `useMoney(options?)` | A formatter for euros: whole euros, or cents with `useMoney({ cents: true })` |
+| `useMoneyParts()` | A function that splits an amount with cents into `{ whole, cents, after }`, so the cents can be styled on their own ("€2,081" ".00" "" in English, "2.081" ",00" " €" in German). Joined, the three equal `useMoney({ cents: true })`. Same file as `useMoney`; used by the month hero |
+| `useMonthSummary()` | One computed with everything the two heroes need about a month: `year`, `month`, `total`, `percent`, `direction` (`less`, `more`, `same`, `none`), `recurringTotal`, `purchasesTotal`, `empty`, `recurringRows`, `purchaseRows`, `largestRows` (display rows from `toRow`), `comparison` (the long text, `dashboard.thisMonth.*`), `comparisonShort` (`month.changeShort.*`), `icon`, `count`, `businessCount`. Takes no arguments: it reads the month from the route params with `monthParamsSchema` and falls back to today's month from `useYear()`, so on the dashboard it is today's month. Built on `monthSummary` and the lists of `useCostLists()`. Loading, failed and retry stay in `useCostLists()`, because they describe the lists, not the month, and the dashboard needs them for the whole page. See [Month summary from the route](decisions.md#month-summary-from-the-route) |
 | `useYear()` | `year` (selected, shared state), `currentYear`, `currentMonth` (read once, in UTC). The dashboard and the costs table share the selected year, because the core takes the year as a parameter; month pages take their year from the URL instead. See [Dashboard money and year](decisions.md#dashboard-money-and-year) |
-| `useMonth()` | `monthName(month, style?)`, `monthYear(year, month)`, `monthPath(year, month)`, `toRow(cost)` (a display row for a stored cost: `key`, `name`, `subline`, `business`, `amount` in cents, `category`; used by the month page and the "Largest this month" card) |
+| `useMonth()` | `monthName(month, style?)`, `monthYear(year, month)`, `monthPath(year, month)`, `toRow(cost)` (a display row for a stored cost: `key`, `name`, `subline`, `business`, `amount` in cents, `category`; used by `useMonthSummary()` for the month page and the "Largest this month" card) |
 | `useCostLists()` | `recurring`, `purchases`, `failed`, `loading`, `retry`. Uses `useFetch` with `lazy: true`, so the layout, the dashboard, the costs page and the month page share the cached data. |
 | `useNavItems()` | `items` (computed, follows the language): `label`, `shortLabel`, `to`, `icon` for Dashboard, Costs and This month. Read by the sidebar and `MobileBar`. |
 | `useCategory()` | `categoryIcon(category)`, `categoryClass(category)`, `categoryStyle(size)` for `CategoryBadge`; also exports `CATEGORY_SIZES` and `CategorySize` |

@@ -1,5 +1,5 @@
 import { CATEGORIES, MONTHS } from '~~/shared/types/calculation'
-import type { Cost, CostItem, Purchase, RecurringCost, Category, Interval, Month, AnnualSummary, CategoryTotal, SplitPercentages, MonthTotal, MonthChange, MonthRef, MonthNeighbours, MonthGroups } from '~~/shared/types/calculation'
+import type { Cost, CostItem, Purchase, RecurringCost, Category, Interval, Month, AnnualSummary, CategoryTotal, SplitPercentages, MonthTotal, MonthChange, MonthRef, MonthNeighbours, MonthGroups, MonthSummary } from '~~/shared/types/calculation'
 
 const PERIODS_PER_YEAR: Record<Interval, number> = {
   monthly: 12,
@@ -134,4 +134,16 @@ export function groupMonthCosts<R extends RecurringCost, P extends Purchase>(cos
     const recurringTotal = recurring.reduce((sum, cost) => sum + cost.amount, 0)
     const purchasesTotal = purchases.reduce((sum, cost) => sum + cost.amount, 0)
     return { recurring, purchases, recurringTotal, purchasesTotal, total: recurringTotal + purchasesTotal }
+}
+export function monthSummary<R extends RecurringCost, P extends Purchase>(recurring: R[], purchases: P[], year: number, month: Month): MonthSummary<R, P> {
+    const costs = costsInMonth(recurring, purchases, year, month)
+    return {
+        costs,
+        groups: groupMonthCosts<R, P>(costs),
+        change: monthChange(recurring, purchases, year, month),
+        largest: largestCosts(costs),
+        empty: costs.length === 0,
+        count: costs.length,
+        businessCount: costs.filter(cost => cost.business).length
+    }
 }

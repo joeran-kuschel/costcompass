@@ -254,6 +254,40 @@ main > div:has(#this-month-title) > section[aria-labelledby="split-title"] {
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
+/* The cents of the big number: smaller and in a softer tint, as in the mocks (24 px next to 56 px). */
+.card-hero .hero-cents {
+  font-size: 0.43em;
+  color: #c9d2f8;
+}
+/* The comparison pill: a translucent white tint in light mode, the darker cobalt #2840BC in dark mode (per the dark mocks). Smaller on phones. */
+.card-hero .hero-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.625rem 0.25rem 0.5rem;
+  border-radius: 9999px;
+  background-color: rgb(255 255 255 / 0.16);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+@media (min-width: 40rem) {
+  .card-hero .hero-pill {
+    gap: 0.375rem;
+    padding: 0.375rem 0.875rem 0.375rem 0.625rem;
+    font-size: 0.875rem;
+  }
+}
+.dark .card-hero .hero-pill {
+  background-color: #2840bc;
+}
+/* A quiet line of extra facts ("9 costs · 3 business") in the light tint, a lighter one in dark mode. */
+.card-hero .hero-meta {
+  font-size: 0.875rem;
+  color: #dce2fb;
+}
+.dark .card-hero .hero-meta {
+  color: #f2f4ff;
+}
 /* A decorative ring in the top right corner, clipped by the card; it never takes clicks. */
 .card-hero .hero-ring {
   position: absolute;
