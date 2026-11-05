@@ -29,7 +29,7 @@ The setup is Vitest with `@nuxt/test-utils`, environment `nuxt` (`vitest.config.
 | --- | --- |
 | Calculation core, dates, Zod schemas | `costs.test.ts`, `dates.test.ts`, `validation.test.ts` |
 | Server functions on a mocked `db` (`vi.mock`): the logic between the Drizzle calls, such as the PATCH merge, not the SQL | `server-costs.test.ts` |
-| Pages | `dashboard-page.test.ts`, `costs-page.test.ts`, `costs-page-sorting.test.ts`, `month-page.test.ts`, `error-page.test.ts` |
+| Pages | `dashboard-states.test.ts`, `dashboard-summary.test.ts`, `dashboard-months.test.ts`, `dashboard-month-cards.test.ts`, `costs-page.test.ts`, `costs-page-sorting.test.ts`, `month-page.test.ts`, `error-page.test.ts` |
 | Components | `CostForm.test.ts`, `LanguageSwitcher.test.ts`, `YearSelect.test.ts` |
 | Composables | `useMoney.test.ts`, `useMonth.test.ts`, `useYear.test.ts` |
 | App level | `app-locale.test.ts` (built-in texts, `<html lang>`, `dir`, titles), `route-announcer.test.ts` |

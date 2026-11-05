@@ -71,7 +71,7 @@ pnpm test          # watch mode
 pnpm vitest run    # one run, then exit
 ```
 
-At the time of writing, 25 test files with 630 tests pass. The tests need no database. See [testing.md](testing.md).
+At the time of writing, 28 test files with 630 tests pass. The tests need no database. See [testing.md](testing.md).
 
 ## Other scripts
 

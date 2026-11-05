@@ -40,7 +40,7 @@ The dashboard needs both lists before it shows numbers, because every total depe
 
 Known limit: the skeleton does not have exactly the height of the loaded dashboard, so the layout can still move when the content arrives.
 
-Tests: the `skeleton` `describe` in the loading state of `tests/nuxt/dashboard-page.test.ts` checks the busy region with the status text and the skeleton, that the status text is `sr-only`, that the skeleton is hidden from assistive technology with no alert inside, the three cards, the reduced motion class on every block, that it is gone after a load and after an error, that the page keeps loading until both lists have arrived, and the German status text. The page was checked in the browser (reload with the API delayed by 5 seconds). Not checked: a real phone, a screen reader, measured contrast, whether dark mode matches the dark mock.
+Tests: the `skeleton` `describe` in the loading state of `tests/nuxt/dashboard-states.test.ts` checks the busy region with the status text and the skeleton, that the status text is `sr-only`, that the skeleton is hidden from assistive technology with no alert inside, the three cards, the reduced motion class on every block, that it is gone after a load and after an error, that the page keeps loading until both lists have arrived, and the German status text. The page was checked in the browser (reload with the API delayed by 5 seconds). Not checked: a real phone, a screen reader, measured contrast, whether dark mode matches the dark mock.
 
 ### Dashboard error card
 
@@ -53,7 +53,7 @@ Issue #72. When either list fails to load, the dashboard shows a `UAlert` (`role
 
 The API message is not shown. `dashboard.error` is an object with `title` and `text`; before it was one string. The `h1` (`ref="heading"`, `tabindex="-1"`) is shown in all states. After a retry that succeeds, focus moves to it, because the card with the button is gone. After a retry that fails again, focus does not move.
 
-Tests: the error-state `describe` in `tests/nuxt/dashboard-page.test.ts` checks the card structure, that no API message appears, the focus after a successful retry and no focus move after a failed one; the German test checks the new texts. The card was checked in the browser in light and dark mode, in English and German, at 320 px.
+Tests: the error-state `describe` in `tests/nuxt/dashboard-states.test.ts` checks the card structure, that no API message appears, the focus after a successful retry and no focus move after a failed one; the German test checks the new texts. The card was checked in the browser in light and dark mode, in English and German, at 320 px.
 
 ### Dashboard empty card
 
@@ -66,7 +66,7 @@ Issue #70. When there are no costs at all, the dashboard shows a centred `UCard`
 
 `main.css` has the modifier `.card.card-state`: the body is a centred flex column with a 12 px gap, padding 40/24/28 px and centred text; `.card-state h2` has no bottom margin. It needs its own rule because the unlayered `.card > [data-slot="body"]` padding beats Tailwind's layered utilities.
 
-Tests: the empty-state `describe` in `tests/nuxt/dashboard-page.test.ts` checks the heading, text, tip and button, four decorative badges with different category classes, that the button opens the empty add dialog and no link to `/costs` is left, and the German texts. The card was checked in the browser. Not checked: a real phone, a screen reader, measured contrast, whether dark mode matches the dark mock exactly.
+Tests: the empty-state `describe` in `tests/nuxt/dashboard-states.test.ts` checks the heading, text, tip and button, four decorative badges with different category classes, that the button opens the empty add dialog and no link to `/costs` is left, and the German texts. The card was checked in the browser. Not checked: a real phone, a screen reader, measured contrast, whether dark mode matches the dark mock exactly.
 
 ### Month page
 
@@ -134,7 +134,7 @@ Issue #61. Below the comparison line, the card has a description list (`dl`) wit
 
 The subtotals use cents (`useMoney({ cents: true })`), while the card's total stays in whole euros. The rounded total can therefore differ from the sum of the two subtotals: 819.99 and 300.50 add up to 1,120.49, and the total shows €1,120. Since issue #60 the labels are `dt` elements in the light tint `#dce2fb` on the cobalt hero card (see [Hero card](colour-scheme.md#hero-card)).
 
-Tests: `tests/nuxt/dashboard-page.test.ts`, `describe('dashboard page this month subtotals')`: labels and cents, only purchases of the current month, the sum against `monthlyTotals`, zero groups, a month without costs, the `dl` terms and German.
+Tests: `tests/nuxt/dashboard-month-cards.test.ts`, `describe('dashboard page this month subtotals')`: labels and cents, only purchases of the current month, the sum against `monthlyTotals`, zero groups, a month without costs, the `dl` terms and German.
 
 ### The hero card ("This month")
 
@@ -149,7 +149,7 @@ Issue #60. Written for developers. The "This month" card is a solid cobalt card 
 - In a month without costs, the row also shows "No costs this month yet." (`dashboard.thisMonth.empty`) and an outlined white "Add cost" button that calls `openAdd()` (the `thisMonth.empty` flag). With costs, neither is rendered. The "Largest this month" card shows the same text in that case.
 - The card is a flex column and its body fills it, so when the row stretches the card to the height of "Largest this month", the bottom row sits at the bottom. It uses `mt-auto` and `pt-10` (at least 40 px above it) and `w-full`, because the column does not stretch its children. See [Equal heights in a row](#equal-heights-in-a-row).
 
-Tests: `tests/nuxt/dashboard-page.test.ts`: the heading with the middle dot, the trend icon, the ring, and `describe('dashboard page this month card empty month')` (text and button, the button asks for an empty dialog, the link stays, nothing with costs, German). Checked by the author in the browser: light and dark mode, German, 320 px, spacing. Not checked: a real phone, a screen reader, the contrast of the buttons and the focus ring, the size of the total on a phone against the mock (`BPhoneDashboard`).
+Tests: `tests/nuxt/dashboard-month-cards.test.ts`: the heading with the middle dot, the trend icon, the ring, and `describe('dashboard page this month card empty month')` (text and button, the button asks for an empty dialog, the link stays, nothing with costs, German). Checked by the author in the browser: light and dark mode, German, 320 px, spacing. Not checked: a real phone, a screen reader, the contrast of the buttons and the focus ring, the size of the total on a phone against the mock (`BPhoneDashboard`).
 
 ### Equal heights in a row
 
@@ -174,7 +174,7 @@ Issue #63. Written for developers. The card replaces the "Add a cost" tile and s
 - The dashboard has no add entry point of its own. The sidebar button and the phone's round button remain.
 - On narrow screens the card wraps below the "This month" card. This was not decided from a mock (the phone mock has no such card).
 
-Tests: `tests/nuxt/dashboard-page.test.ts`, `describe('dashboard page largest this month')`; `describe('largestCosts')` in `tests/nuxt/costs.test.ts`. Not checked in the browser (light and dark mode, German, 320 px); text contrast not measured.
+Tests: `tests/nuxt/dashboard-month-cards.test.ts`, `describe('dashboard page largest this month')`; `describe('largestCosts')` in `tests/nuxt/costs.test.ts`. Not checked in the browser (light and dark mode, German, 320 px); text contrast not measured.
 
 ### Summary card
 
@@ -195,7 +195,7 @@ Below the header is one `UCard` (`card card-flush overflow-hidden`) with a `dl` 
 - `YearSelect.vue` now shows its visible label "Year" to the left of the select (`UFormField` with `orientation="horizontal"`), and the select is a pill (`rounded-full`, 44 px high). The two first-row rules in `main.css` for the floated picker were removed; the `h1` rule only sets `margin-bottom: 0`.
 - Locale keys: `dashboard.summary.average`, `perYear`, `perMonth`, `ofYear`, `business` are new; `averagePerMonth` was removed.
 
-Tests: `tests/nuxt/dashboard-page.test.ts`: one card, order, whole-euro values, sub lines, shares add up to 100, dots hidden, the year select next to the heading with its label, German. The year-select tests use the heading "Your year". Checked by the author in the browser: light and dark mode, German, 320 px. Not checked: a real phone, a screen reader; the contrast of the muted labels and sub lines is not measured; the horizontal label layout was adjusted by sight.
+Tests: `tests/nuxt/dashboard-summary.test.ts`: one card, order, whole-euro values, sub lines, shares add up to 100, dots hidden, the year select next to the heading with its label, German. The year-select tests use the heading "Your year"; the describe "dashboard page year selector" is in `tests/nuxt/dashboard-month-cards.test.ts`. Checked by the author in the browser: light and dark mode, German, 320 px. Not checked: a real phone, a screen reader; the contrast of the muted labels and sub lines is not measured; the horizontal label layout was adjusted by sight.
 
 ### "Where your money goes" (categories)
 
@@ -208,7 +208,7 @@ Issue #65. The section `aria-labelledby="categories-title"` is one card. Its `h2
 - Issue #66: above the list sits one stacked bar. It is a flex container (`mb-2.5 mt-4 flex h-3.5 gap-[3px] overflow-hidden rounded-full bg-accented`: 14 px high, 3 px gaps) with `aria-hidden="true"` and no text, so it is decoration; the list below carries every value. It holds one `div` per category in the order of the list. The width of a segment is the category's `percent` (`categoryRows` carries it as the number `value`), its colour the category token through `categoryClass()` from `useCategory()` (see [Category badge](colour-scheme.md#category-badge)). A category with 0% has no visible segment (`v-show`); a year without costs shows only the grey track. Only the outer ends are round, because the container is a pill with `overflow-hidden`; the segments are square, as in the mock.
 - Whole percentages can make a thin segment (3% of the width) very narrow on a phone.
 
-Tests: `tests/nuxt/dashboard-page.test.ts` (heading, name, amount and percentage per row, sum 100, no bar per row, German, badge 36 px; the stacked bar: decorative and without text above the list, widths 86/11/3% in list order, colour tokens, no visible segment for 0%, empty track) and `tests/nuxt/costs.test.ts` (`categoryBreakdown percentages`). Checked by the author in the browser: light and dark mode, German, 320 px, the grid columns (the list, #65). The stacked bar (#66) was checked in the browser in light mode, including the segment shape; dark mode, German and 320 px were not checked for it. Not checked: a real phone, a screen reader; the contrast of the muted percentage text is not measured; the contrast of the segments was computed from the colour tokens, not measured in the browser: against the gap (the track colour) at least 4.41:1 in light mode and 3.06:1 to 3.74:1 in dark mode, so 3:1 against the gap holds in both; against their neighbours they are close (1.0:1 to 2.1:1, insurance next to housing 1.58:1 in light and 1.00:1 in dark), so the gap does the separating.
+Tests: `tests/nuxt/dashboard-summary.test.ts` (heading, name, amount and percentage per row, sum 100, no bar per row, German, badge 36 px; the stacked bar: decorative and without text above the list, widths 86/11/3% in list order, colour tokens, no visible segment for 0%, empty track) and `tests/nuxt/costs.test.ts` (`categoryBreakdown percentages`). Checked by the author in the browser: light and dark mode, German, 320 px, the grid columns (the list, #65). The stacked bar (#66) was checked in the browser in light mode, including the segment shape; dark mode, German and 320 px were not checked for it. Not checked: a real phone, a screen reader; the contrast of the muted percentage text is not measured; the contrast of the segments was computed from the colour tokens, not measured in the browser: against the gap (the track colour) at least 4.41:1 in light mode and 3.06:1 to 3.74:1 in dark mode, so 3:1 against the gap holds in both; against their neighbours they are close (1.0:1 to 2.1:1, insurance next to housing 1.58:1 in light and 1.00:1 in dark), so the gap does the separating.
 
 ### "Household and business" (split ring)
 
@@ -220,7 +220,7 @@ Issue #67. The section `aria-labelledby="split-title"` is one card. Its `h2` rea
 - A 96 px hole in the surface colour shows the household percentage (22 px, bold, tabular figures) and the word "household" (`dashboard.split.household`).
 - Beside the ring, two rows: house icon, "Household", amount; briefcase icon, "Business", amount (whole euros, `useMoney()`). The icons are `aria-hidden` and coloured `text-primary` and `text-secondary`. The ring and the rows sit in a wrapping flex row, so on a phone the rows stack under the ring. The percentage legend of the old bar is gone; the business percentage is only in the ring's label.
 
-Tests: `tests/nuxt/dashboard-page.test.ts`, "dashboard page household versus business split" (11 tests: heading, label, centre text, rows with amounts, hidden icons, ring colours and gap, German, full household ring, full business ring, empty ring and 0%, a 1% share). Not checked: the look of the ring and the gaps, light and dark mode, German, 320 px and the layout next to the categories card in the browser; a real phone; a screen reader.
+Tests: `tests/nuxt/dashboard-summary.test.ts`, "dashboard page household versus business split" (11 tests: heading, label, centre text, rows with amounts, hidden icons, ring colours and gap, German, full household ring, full business ring, empty ring and 0%, a 1% share). Not checked: the look of the ring and the gaps, light and dark mode, German, 320 px and the layout next to the categories card in the browser; a real phone; a screen reader.
 
 ### Dashboard links to month pages
 
@@ -242,7 +242,7 @@ Notes on the months chart:
 - Keyboard focus shows an outline (`focus-visible:outline-2 focus-visible:outline-primary`).
 - The current month's label and value are bold only if the shown year is the current year (`shownYear === currentYear && month === currentMonth`).
 - The grid is `repeat(12, minmax(2.75rem, 1fr))` with an 8 px gap (`gap-2`) inside an `overflow-x-auto` wrapper. 2.75rem is 44 px. Twelve columns plus gaps do not fit on narrow screens, so the chart scrolls sideways instead of squeezing the targets. Looked at in the browser by the author (the 320 px width was part of that check); not measured.
-- Tests: `tests/nuxt/dashboard-page.test.ts`, the describes "dashboard page month bar links" and "dashboard page "View month" link"; the heading, hint, pills, colours, column width and the value above the bars are tested in "dashboard page costs per month".
+- Tests: "dashboard page month bar links" and "dashboard page costs per month" (the heading, hint, pills, colours, column width and the value above the bars) are in `tests/nuxt/dashboard-months.test.ts`; "dashboard page "View month" link" is in `tests/nuxt/dashboard-month-cards.test.ts`.
 
 ### Year fallback on the dashboard
 
@@ -263,7 +263,7 @@ Why a computed value and not a reset of the stored year:
 
 The month page and the costs page do not use the stored year.
 
-Tests: `tests/nuxt/dashboard-page.test.ts`, describe "dashboard page year selector" (falls back when the stored year has no purchases; keeps a stored year that is in the list; falls back after the purchases of the selected year are deleted).
+Tests: `tests/nuxt/dashboard-month-cards.test.ts`, describe "dashboard page year selector" (falls back when the stored year has no purchases; keeps a stored year that is in the list; falls back after the purchases of the selected year are deleted).
 
 ## Sidebar navigation
 
@@ -501,7 +501,7 @@ State lives in `useState`, not in provide/inject, so any component can open the 
 ### Tests
 
 - `tests/nuxt/CostDialog.test.ts` (mounted on the layout): opens empty (also from the sidebar button), pre-filled for an edit and for a month (date on the first day, `min` and `max`, hint); Cancel and the close button clear the state; no leftover cost or month in the next dialog; focus returns to the element that had it before the dialog opened; both lists are loaded again and the dialog closes after a save; German.
-- `dashboard-page.test.ts`, `costs-page.test.ts` and `month-page.test.ts` only check that the page asks for the dialog with the right state (`open`, `cost`, `month` of `useCostDialog()`), and that the page shows new numbers after `refreshNuxtData()`.
+- `dashboard-states.test.ts`, `dashboard-month-cards.test.ts`, `costs-page.test.ts` and `month-page.test.ts` only check that the page asks for the dialog with the right state (`open`, `cost`, `month` of `useCostDialog()`), and that the page shows new numbers after `refreshNuxtData()`.
 - Every file that touches the dialog closes its state after each test, because `useState` outlives a test.
 
 Checked by hand in the browser: the dashboard and month page buttons open the dialog, and the costs table updates after a save. The sidebar button opens the dialog (test in `CostDialog.test.ts`). Not checked: the dialog on a phone *(to verify)*.

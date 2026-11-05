@@ -150,7 +150,7 @@ Issue #51. `app/components/CategoryBadge.vue` shows a round disc with a white ic
 
 The colours are the tokens `--category-<id>` in `main.css` (light in `:root`, dark in `.dark`), taken from the mocks. The dashboard's stacked bar above the category list (#66) uses the same tokens through `categoryClass()` for its segments. To change one, edit the token; to add a category, add it to `CATEGORIES`, then to both maps and to both token sets.
 
-Tests: `tests/nuxt/useCategory.test.ts`, `tests/nuxt/CategoryBadge.test.ts`, and new cases in `costs-page.test.ts` and `dashboard-page.test.ts`. The component test relies on the rendered icon class `iconify i-lucide:<name>` (with a colon).
+Tests: `tests/nuxt/useCategory.test.ts`, `tests/nuxt/CategoryBadge.test.ts`, and new cases in `costs-page.test.ts` and the dashboard tests (`dashboard-*.test.ts`). The component test relies on the rendered icon class `iconify i-lucide:<name>` (with a colon).
 
 ### Contrast (decision)
 
