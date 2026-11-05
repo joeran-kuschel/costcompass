@@ -91,7 +91,7 @@ async function onRetry() {
                         <p class="hero-total">{{ heroTotal.whole }}<span class="hero-cents">{{ heroTotal.cents }}</span>{{ heroTotal.after }}</p>
                     </div>
                     <div class="flex flex-col items-end gap-2.5">
-                        <p class="hero-pill">
+                        <p v-if="!thisMonthSummary.empty" class="hero-pill">
                             <UIcon :name="thisMonthSummary.icon" class="size-3.5 sm:size-4" aria-hidden="true" />
                             <span aria-hidden="true" class="sm:hidden">{{ thisMonthSummary.comparisonShort }}</span>
                             <span class="sr-only sm:not-sr-only">{{ thisMonthSummary.comparison }}</span>

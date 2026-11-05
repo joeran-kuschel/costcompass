@@ -535,6 +535,14 @@ describe('month page comparison with the month before', () => {
     await mountPage()
     expect(wrapper.find('.hero-pill').exists()).toBe(false)
   })
+  it('is not shown in a month without costs, where the empty card explains it', async () => {
+    api.recurring.rows = [{ ...taxAdvice }]
+    api.purchases.rows = [{ ...bike }]
+    await mountPage()
+    await vi.waitFor(() => expect(status().exists()).toBe(false))
+    expect(totalCard().exists()).toBe(true)
+    expect(pill().exists()).toBe(false)
+  })
   it('is not shown after a failed load', async () => {
     api.recurring.fail = true
     await mountPage()

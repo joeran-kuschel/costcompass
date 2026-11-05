@@ -1,4 +1,3 @@
-import { sum } from "drizzle-orm"
 import { monthSummary } from "~~/shared/utils/costs"
 export function useMonthSummary() {
     const route = useRoute()
@@ -7,7 +6,7 @@ export function useMonthSummary() {
     const { recurring, purchases } = useCostLists()
     const { toRow, monthName } = useMonth()
 
-    const ref = computed(() => {
+    const monthRef = computed(() => {
         const parsed = monthParamsSchema.safeParse(route.params)
         return parsed.success
             ? { year: parsed.data.year, month: parsed.data.month as Month }
@@ -15,7 +14,7 @@ export function useMonthSummary() {
     })
 
     return computed(() => {
-        const { year, month } = ref.value
+        const { year, month } = monthRef.value
         const summary = monthSummary(recurring.value ?? [], purchases.value ?? [], year, month)
         const percent = summary.change.percent
         const direction = percent === null ? 'none' : percent < 0 ? 'less' : percent > 0 ? 'more' : 'same'
