@@ -9,7 +9,7 @@ pnpm test          # watch mode
 pnpm vitest run    # single run
 ```
 
-The setup is Vitest with `@nuxt/test-utils`, environment `nuxt` (`vitest.config.ts`), `happy-dom`, and `@vue/test-utils` (a dev dependency that `mountSuspended` needs). Tests are in `tests/nuxt/` (the folder the Nuxt TypeScript config includes) and end in `.test.ts`. At the time of writing: 29 files, 684 tests, all passing, about 10 to 15 seconds. No database is needed.
+The setup is Vitest with `@nuxt/test-utils`, environment `nuxt` (`vitest.config.ts`), `happy-dom`, and `@vue/test-utils` (a dev dependency that `mountSuspended` needs). Tests are in `tests/nuxt/` (the folder the Nuxt TypeScript config includes) and end in `.test.ts`. At the time of writing: 29 files, 696 tests, all passing, about 10 to 15 seconds. No database is needed.
 
 ## Conventions
 
@@ -36,7 +36,7 @@ The setup is Vitest with `@nuxt/test-utils`, environment `nuxt` (`vitest.config.
 
 ### Core and server tests
 
-- `costs.test.ts`: the calculation core, one `describe` per function (see [calculation-core.md](calculation-core.md)). `monthCategoryTotals` is checked for the sums per category, leaving out categories without costs, largest first, `CATEGORIES` order on equal totals, an empty list, adding up to `monthlyTotals` (with `toBeCloseTo`, because the additions run in a different order) and not changing its input. `monthSummary` is checked against the functions it combines (`costsInMonth`, `groupMonthCosts` and `monthlyTotals`, `monthChange`, `largestCosts`, `monthCategoryTotals`, with `[]` for an empty month), plus its counts, its empty flag, the kept `id` and that it does not change its input.
+- `costs.test.ts`: the calculation core, one `describe` per function (see [calculation-core.md](calculation-core.md)). `monthCategoryTotals` is checked for the sums per category, leaving out categories without costs, largest first, `CATEGORIES` order on equal totals, an empty list, adding up to `monthlyTotals` (with `toBeCloseTo`, because the additions run in a different order) and not changing its input. `monthSummary` is checked against the functions it combines (`costsInMonth`, `groupMonthCosts` and `monthlyTotals`, `monthChange`, `largestCosts`, `monthCategoryTotals`, with `[]` for an empty month), plus its counts, its household and business totals (the sum of the business costs and the household rest, adding up to `groups.total` with cents, only business costs that fall in the month, 0 business when there are none, both 0 for an empty month), its empty flag, the kept `id` and that it does not change its input.
 - `dates.test.ts`: `monthDateRange`.
 - `validation.test.ts`: the Zod schemas.
 - `server-costs.test.ts`: `db` is replaced with `vi.mock`, so the tests check the logic between the Drizzle calls, such as the PATCH merge, not the SQL.

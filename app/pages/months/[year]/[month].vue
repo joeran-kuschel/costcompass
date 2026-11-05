@@ -135,6 +135,7 @@ async function onRetry() {
                 <aside v-if="!thisMonthSummary.empty" aria-labelledby="categories-title" class="card px-6 py-5 lg:w-[340px] lg:shrink-0">
                     <h2 id="categories-title">{{ t('month.byCategory') }}</h2>
                     <CategoryList :rows="thisMonthSummary.categoryRows" />
+                    <SplitList class="mt-3.5 border-t border-default pt-3.5" :householdTotal="thisMonthSummary.householdTotal" :businessTotal="thisMonthSummary.businessTotal" />
                 </aside>
             </div>
         </template>

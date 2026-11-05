@@ -43,6 +43,8 @@ export function useMonthSummary() {
                 label: t(`category.${category}`),
                 amount: cents(total)
             })),
+            householdTotal: cents(summary.householdTotal),
+            businessTotal: cents(summary.businessTotal),
         }
     })
 }
