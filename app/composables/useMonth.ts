@@ -22,5 +22,5 @@ export function useMonth() {
             category: cost.category
         }
     }
-    return { monthName, monthYear, monthPath, toRow}
+    return { monthName, monthYear, monthPath, toRow, formatDate}
 }

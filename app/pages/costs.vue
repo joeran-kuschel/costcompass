@@ -13,9 +13,13 @@ const toast = useToast()
 const { kindIcon } = useKind()
 const yearSummary = useYearSummary()
 const euros = useMoney()
+const cents = useMoney({ cents: true })
+const { formatDate } = useMonth()
+const cancelButton = useTemplateRef<{ $el: HTMLElement }>('cancel')
 
 const UButton = resolveComponent('UButton')
 const toDelete = ref<Stored<Cost> | null>(null)
+const dialogContent = { role: 'alertdialog', onOpenAutoFocus: focusCancel }
 const costs = computed<Stored<Cost>[]>(() => [
     ...(recurring.value ?? []),
     ...(purchases.value ?? []),
@@ -27,6 +31,14 @@ const columns = computed<TableColumn<Stored<Cost>>[]>(()  => [
     { accessorKey: 'amount', header: sortableHeader(t('costs.columns.amount')) },
     { id: 'actions', header: t('costs.columns.actions') },
 ])
+const confirmText = computed(() => {
+    const cost = toDelete.value
+    if (!cost) return ''
+    const amount = cents(cost.amount)
+    return cost.kind === 'recurring'
+        ? t('costs.confirmRecurring', { name: cost.name, amount, interval: t(`interval.${cost.interval}`).toLocaleLowerCase(locale.value) })
+        : t('costs.confirmPurchase', { name: cost.name, amount, date: formatDate(cost.date, 'long') })
+})
 useHead({ title: () => t('costs.title') })
 
 async function onDelete (cost: Stored<Cost>) {
@@ -44,7 +56,10 @@ async function confirmDelete() {
     await onDelete(toDelete.value)
     toDelete.value = null
 }
-
+function focusCancel(event: Event) {
+    event.preventDefault()
+    cancelButton.value?.$el.focus()
+}
 function monthName(month: number): string {
     return new Intl.DateTimeFormat(locale.value, { month: 'long', timeZone: 'UTC' })
         .format(new Date(Date.UTC(2000, month - 1, 1)))
@@ -109,16 +124,26 @@ function sortableHeader(label: string) {
             <UButton icon="i-lucide-trash-2" color="neutral" variant="ghost" class="pill-icon" @click="toDelete = row.original" :aria-label="t('costs.delete', { name: row.original.name })"/>
         </template>
     </UTable>
-    <UModal :ui="{ content: 'rounded-[2rem] bg-elevated' }"
+    <UModal
         :open="toDelete !== null"
         :title="t('costs.confirmTitle')"
-        :description="t('costs.confirmText', { name: toDelete?.name ?? '' })"
+        :description="confirmText"
+        :close="false"
+        :content="dialogContent"
+        :ui="{ content: 'rounded-[2rem] bg-elevated', header: 'flex-col items-center gap-2 text-center', footer: 'flex-col items-stretch gap-2.5 lg:flex-row' }"
         @update:open="(isOpen: boolean) => { if (!isOpen) toDelete = null }"
     >
+        <template #title>
+            <span class="mx-auto mb-1.5 flex size-15 items-center justify-center rounded-full bg-error/10 text-error" aria-hidden="true">
+                <UIcon name="i-lucide-trash-2" class="size-6.5" />
+            </span>
+            <span class="block text-[1.375rem] font-extrabold">{{ t('costs.confirmTitle') }}</span>
+        </template>
         <template #footer>
-            <UButton color="neutral" variant="outline" :label="t('common.cancel')" class="pill" @click="toDelete = null" />
-            <UButton color="error" :label="t('common.delete')" class="pill" @click="confirmDelete" />
+            <UButton color="error" :label="t('common.delete')" class="pill justify-center" block @click="confirmDelete" />
+            <UButton ref="cancel" color="primary" variant="soft" :label="t('common.cancel')" class="pill justify-center" block @click="toDelete = null" />
         </template>
     </UModal>
+
 
 </template>

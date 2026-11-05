@@ -287,3 +287,56 @@ describe('costs page delete', () => {
     await vi.waitFor(() => expect(addToast).toHaveBeenCalledWith(expect.objectContaining({ color: 'error' })))
   })
 })
+
+describe('costs page delete confirmation', () => {
+  const dialog = () => body().querySelector<HTMLElement>('[role="alertdialog"]')
+  // The delete button is named "Delete <name>" in English and "<name> löschen" in German.
+  async function openFor(name: string, label = `Delete ${name}`) {
+    await vi.waitFor(() => expect(wrapper.findAll('tbody tr')).toHaveLength(3))
+    await click(wrapper.find(`button[aria-label="${label}"]`).element)
+    await vi.waitFor(() => expect(dialog()).not.toBeNull())
+  }
+  const byId = (id: string | null | undefined) => (id ? document.getElementById(id) : null)
+  // German amounts have a non-breaking space before the euro sign; compare with plain spaces.
+  const textOf = (element: Element) => (element.textContent ?? '').replace(/\u00a0/g, ' ')
+
+  it('is an alert dialog named by its title and described by its message', async () => {
+    await openFor('Rent')
+    expect(byId(dialog()!.getAttribute('aria-labelledby'))?.textContent?.trim()).toBe('Delete cost?')
+    expect(byId(dialog()!.getAttribute('aria-describedby'))?.textContent?.trim()).toBe('Rent (€800.00, monthly) will be permanently deleted.')
+  })
+  it('names the amount with cents and the interval of a recurring cost, without the due month', async () => {
+    await openFor('Liability insurance')
+    expect(dialog()!.textContent).toContain('Liability insurance (€90.00, yearly) will be permanently deleted.')
+  })
+  it('names the amount and the long date of a purchase', async () => {
+    await openFor('Laptop')
+    expect(dialog()!.textContent).toContain('Laptop (€1,200.50, March 14) will be permanently deleted.')
+  })
+  it('shows a decorative trash icon in the title and no close button', async () => {
+    await openFor('Rent')
+    const title = byId(dialog()!.getAttribute('aria-labelledby'))!
+    const icon = title.querySelector('[aria-hidden="true"]')
+    expect(icon).not.toBeNull()
+    expect(icon!.querySelector('[class*="trash"]')).not.toBeNull()
+    expect([...dialog()!.querySelectorAll('button')].map(b => b.textContent?.trim())).toEqual(['Delete', 'Cancel'])
+  })
+  it('puts the focus on Cancel, not on Delete', async () => {
+    await openFor('Rent')
+    await vi.waitFor(() => expect(document.activeElement?.textContent?.trim()).toBe('Cancel'))
+  })
+  it('has German texts', async () => {
+    await useNuxtApp().$i18n.setLocale('de')
+    try {
+      await openFor('Rent', 'Rent löschen')
+      expect(byId(dialog()!.getAttribute('aria-labelledby'))?.textContent?.trim()).toBe('Kosten löschen?')
+      expect(textOf(dialog()!)).toContain('Rent (800,00 €, monatlich) wird endgültig gelöscht.')
+      await click(button('Abbrechen'))
+      await vi.waitFor(() => expect(dialog()).toBeNull())
+      await openFor('Laptop', 'Laptop löschen')
+      expect(textOf(dialog()!)).toContain('Laptop (1.200,50 €, 14. März) wird endgültig gelöscht.')
+    } finally {
+      await useNuxtApp().$i18n.setLocale('en')
+    }
+  })
+})
