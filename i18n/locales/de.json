@@ -35,6 +35,11 @@
       "none": "Nach {column} sortieren",
       "asc": "{column}, aufsteigend sortiert",
       "desc": "{column}, absteigend sortiert"
+    },
+    "summary": {
+      "recurring": "{n} wiederkehrender Posten | {n} wiederkehrende Posten",
+      "purchases": "{n} Anschaffung | {n} Anschaffungen",
+      "line": "{recurring} und {purchases} · {total} im Jahr {year}"
     }
   },
   "kind": {

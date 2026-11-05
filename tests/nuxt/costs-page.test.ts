@@ -38,6 +38,9 @@ beforeEach(async () => {
 afterEach(() => {
   wrapper.unmount()
   useCostDialog().close()
+  // The summary tests change the selected year and the cached lists; start the next test without them.
+  clearNuxtState(['year'])
+  clearNuxtData()
 })
 
 // Modals are teleported to the body, so their content is not inside the wrapper.
@@ -85,6 +88,65 @@ describe('costs page table', () => {
     for (const name of ['Rent', 'Liability insurance', 'Laptop']) {
       expect(wrapper.find(`button[aria-label="Edit ${name}"]`).exists()).toBe(true)
       expect(wrapper.find(`button[aria-label="Delete ${name}"]`).exists()).toBe(true)
+    }
+  })
+})
+
+describe('costs page summary line', () => {
+  // Rent (800 a month) and liability insurance (90 a year) recur; the laptop (1,200.50) was bought in 2026.
+  // The total is shown in whole euros: 9,600 + 90 + 1,200.50 = 10,890.50, so "€10,891".
+  const line = () => wrapper.find('header p')
+  async function showYear(year: number) {
+    await vi.waitFor(() => expect(wrapper.findAll('tbody tr')).toHaveLength(3))
+    useYear().year.value = year
+    await nextTick()
+  }
+
+  it('counts the recurring costs and purchases and names the total of the year', async () => {
+    await showYear(2026)
+    expect(line().text().replace(/\s+/g, ' ')).toBe('2 recurring costs and 1 purchase · €10,891 in 2026')
+  })
+  it('sets only the amount in bold', async () => {
+    await showYear(2026)
+    expect(line().find('b').text()).toBe('€10,891')
+    expect(line().find('b').classes()).toContain('font-extrabold')
+  })
+  it('sits in the page header, below the heading', async () => {
+    await showYear(2026)
+    expect(wrapper.find('header h1').text()).toBe('Costs')
+    expect(wrapper.find('header h1 + p').exists()).toBe(true)
+  })
+  it('counts all costs, but adds up only the purchases of the year it names', async () => {
+    // 2025 is no year with data here, so it falls back to the current year, like the dashboard.
+    useYear().year.value = 2025
+    await vi.waitFor(() => expect(wrapper.findAll('tbody tr')).toHaveLength(3))
+    await nextTick()
+    const current = new Date().getUTCFullYear()
+    expect(line().text()).toContain(`in ${current}`)
+    expect(line().text()).toContain('2 recurring costs and 1 purchase')
+  })
+  it('updates when the lists change', async () => {
+    await showYear(2026)
+    const { recurring } = useCostLists()
+    recurring.value = recurring.value!.filter(cost => cost.name !== 'Rent')
+    await nextTick()
+    expect(line().text().replace(/\s+/g, ' ')).toBe('1 recurring cost and 1 purchase · €1,291 in 2026')
+  })
+  it('uses the singular, the plural and the plural for zero', () => {
+    const { t } = useNuxtApp().$i18n
+    expect([0, 1, 2].map(n => t('costs.summary.recurring', n))).toEqual(['0 recurring costs', '1 recurring cost', '2 recurring costs'])
+    expect([0, 1, 2].map(n => t('costs.summary.purchases', n))).toEqual(['0 purchases', '1 purchase', '2 purchases'])
+  })
+  it('has German forms with a singular that reads right', async () => {
+    const { t, setLocale } = useNuxtApp().$i18n
+    await setLocale('de')
+    try {
+      expect([0, 1, 2].map(n => t('costs.summary.recurring', n))).toEqual(['0 wiederkehrende Posten', '1 wiederkehrender Posten', '2 wiederkehrende Posten'])
+      expect([0, 1, 2].map(n => t('costs.summary.purchases', n))).toEqual(['0 Anschaffungen', '1 Anschaffung', '2 Anschaffungen'])
+      await showYear(2026)
+      expect(line().text().replace(/\s+/g, ' ')).toBe('2 wiederkehrende Posten und 1 Anschaffung · 10.891 € im Jahr 2026')
+    } finally {
+      await setLocale('en')
     }
   })
 })

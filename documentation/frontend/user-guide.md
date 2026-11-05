@@ -35,7 +35,11 @@ On the **Costs** page, each row has two buttons.
 
 ## Read the costs table
 
-The **Costs** page lists recurring costs and purchases together. The table has the columns **Name**, **Kind**, **When**, **Amount** and **Actions**.
+The **Costs** page lists recurring costs and purchases together.
+
+Below the heading, one line counts your costs and gives the total of a year, for example "2 recurring costs and 1 purchase · €10,891 in 2026". The counts include every cost in the table. The total is for the year it names: the year you chose on the Dashboard, or the current year if that year has no purchases any more. The total is in whole euros. The line updates when you add or delete a cost.
+
+The table has the columns **Name**, **Kind**, **When**, **Amount** and **Actions**.
 
 - **Name** shows a round icon in the colour of the category, the name, a "Business" label where it applies, and the category below the name, for example "Housing".
 - **When** shows the interval and month for a recurring cost (for example "Yearly, March") and the date for a purchase.

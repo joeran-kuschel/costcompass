@@ -7,7 +7,7 @@ Reference and conventions for `app/` (pages, components, composables, texts). Wr
 | Route | File | State | What it does |
 | --- | --- | --- | --- |
 | `/` | `app/pages/index.vue` | Exists | Dashboard: "This month" hero card with the recurring and purchases subtotals, "Largest this month" card, summary card with the year select in its header, household and business ring, "Where your money goes" (categories), "Month by month" |
-| `/costs` | `app/pages/costs.vue` | Exists | One sortable table of both kinds, add, edit and delete |
+| `/costs` | `app/pages/costs.vue` | Exists | A summary line under the heading (counts and the yearly total), one sortable table of both kinds, add, edit and delete |
 | `/months/[year]/[month]` | `app/pages/months/[year]/[month].vue` | Exists | Costs of one month, total, "By category" card with the household and business totals, previous and next links, add cost in the empty month (pre-filled for the month) |
 | `/calculator` | - | Planned | Rate calculator |
 
@@ -179,6 +179,13 @@ When the error carries `data: { reason: 'month' }` (thrown by the month page), i
 
 Route `/costs`, file `app/pages/costs.vue`. One table with recurring costs and purchases together. It has five columns: Name, Kind, When, Amount and Actions. Since #84 the category and the business flag are shown only in the name column; the table has no Category or Business column.
 
+- **Header and summary line:** issue #80. The `h1` "Costs" and one line below it sit in a `<header class="mb-4">`. The line reads "2 recurring costs and 1 purchase · €10,891 in 2026" (German "2 wiederkehrende Posten und 1 Anschaffung · 10.891 € im Jahr 2026").
+  - **Markup:** `<i18n-t keypath="costs.summary.line" tag="p" scope="global" class="mt-1 text-muted">` with the slots `recurring`, `purchases`, `total` and `year`. Only the amount is bold: the `total` slot holds a `b.font-extrabold.tabular-nums.text-default`. `<i18n-t>` keeps the whole sentence one translation, so the word order stays with the translator and no `v-html` is needed. See [Summary line with `<i18n-t>`](decisions.md#summary-line-with-i18n-t-80).
+  - **Spacing:** inside the header the global rule `main > div > h1 { margin-bottom: 1rem }` no longer matches, so the line sits 4 px under the heading (`mt-1`). The page container is a wrapping flex row (`main > div:has(table)` in `main.css`); the header and the table card each take the full width (`flex: 1 1 100%`), and the row gap of 1rem puts 16 px between them, as in the BDesktopCosts mock. The old `> h1` and `> button` rules for the former add button are removed.
+  - **Values:** all from [`useYearSummary()`](#composables). The counts are `recurringCount` and `purchasesCount`: every cost in the table, not only one year's. The total is `total` (`annualSummary` for the shown year) in whole euros through `useMoney()`. The year is the shown year with the [year fallback](#year-fallback-on-the-dashboard), so the line names the same year as the dashboard.
+  - **Loading:** the line has `v-if="!loading"`, so it never shows "0 recurring costs and 0 purchases · €0" while the lists load. It follows the lists, so it updates after a save or a delete.
+  - **Locale keys:** `costs.summary.recurring` ("{n} recurring cost | {n} recurring costs"), `costs.summary.purchases` ("{n} purchase | {n} purchases") and `costs.summary.line` ("{recurring} and {purchases} · {total} in {year}"). German: "{n} wiederkehrender Posten | {n} wiederkehrende Posten" (German "Kosten" has no singular, so "Posten"), "{n} Anschaffung | {n} Anschaffungen", and "{recurring} und {purchases} · {total} im Jahr {year}" ("im Jahr" instead of the anglicism "in 2026").
+  - **Checks:** tests in `tests/nuxt/costs-page.test.ts`, `describe('costs page summary line')`. Checked by the author in the browser: light and dark mode, German, 320 px, and that the line updates after adding or deleting a cost. Not checked: a screen reader. Contrast is not measured; the line adds no new colours (`text-muted`, `text-default`).
 - **Adding:** the page has no "Add cost" button of its own. The sidebar's button (`openAdd()`) is the single entry and opens the add form in the layout's dialog. The table refreshes after a save.
 - **Data:** the page reads its lists with `useCostLists()` (lazy, the same cache keys as the layout, so the table updates after a save from the layout). Known limit: see [Known limit: the costs table loads on the client](#known-limit-the-costs-table-loads-on-the-client).
 - **Name column:** issue #84. A `#name-cell` slot with a `CategoryBadge` (40 px), the name in bold with the `BusinessBadge` for business costs, and the translated category name as a muted caption below. It is the only place in the table that shows the category and the business flag. The separate Category and Business columns, their sort buttons and their cell slots were removed, and with them the unused locale keys `costs.columns.category`, `common.yes` and `common.no`.
@@ -245,14 +252,14 @@ Tests: `tests/nuxt/dashboard-month-cards.test.ts`, `describe('dashboard page lar
 
 Issue #64. The section `aria-labelledby="summary-title"` has a header row (`flex flex-wrap items-center justify-between`) with the `h2` "Your year <year>" (`dashboard.summary.title`, 26 px, weight 800) and, to its right, the `YearSelect`. Before, the select sat above the sections and the heading was "Summary for <year>". Both are inside the loaded content, so neither shows while loading, on an error or on the empty screen.
 
-Below the header is one `UCard` (`card card-flush overflow-hidden`) with a `dl` of four tiles, in the order Annual total, Average, Household, Business. The data is from `annualSummary` in `shared/utils/costs.ts`, shown in whole euros by `useMoney()`; the year comes from `useYear()` (see [Composables](#composables)):
+Below the header is one `UCard` (`card card-flush overflow-hidden`) with a `dl` of four tiles, in the order Annual total, Average, Household, Business. The data is from `annualSummary` in `shared/utils/costs.ts`, shown in whole euros by `useMoney()`; the page reads both the totals and the shown year from `useYearSummary()` (see [Composables](#composables)):
 
 | Tile | Label key | Value | Sub line | Dot |
 | --- | --- | --- | --- | --- |
-| Annual total | `dashboard.summary.total` | `summary.total` | "per year" (`perYear`) | `bg-inverted` |
-| Average | `dashboard.summary.average` | `summary.averagePerMonth` | "per month" (`perMonth`) | `bg-accented` |
-| Household | `dashboard.summary.household` | `summary.household` | "<n>% of the year" (`ofYear`) | `bg-primary` (cobalt) |
-| Business | `business.label` | `summary.business` | "<n>% of the year" (`ofYear`) | `bg-secondary` (orange) |
+| Annual total | `dashboard.summary.total` | `yearSummary.total` | "per year" (`perYear`) | `bg-inverted` |
+| Average | `dashboard.summary.average` | `yearSummary.averagePerMonth` | "per month" (`perMonth`) | `bg-accented` |
+| Household | `dashboard.summary.household` | `yearSummary.household` | "<n>% of the year" (`ofYear`) | `bg-primary` (cobalt) |
+| Business | `business.label` | `yearSummary.business` | "<n>% of the year" (`ofYear`) | `bg-secondary` (orange) |
 
 - Each tile has the label as `dt` with an `aria-hidden` colour dot, the value as `dd` (30 px, bold, whole euros) and the sub line as a second `dd`. The percentages come from `splitPercentages`, so they add up to 100.
 - Layout: a 2x2 grid on phones, four in a row from `lg`. The dividers are 1 px gaps (`gap-px`) that show the grid's background (`bg-default`); the tiles have an opaque `bg-elevated` fill, so no border elements are needed.
@@ -264,7 +271,7 @@ Tests: `tests/nuxt/dashboard-summary.test.ts`: one card, order, whole-euro value
 
 ### "Where your money goes" (categories)
 
-Issue #65. The section `aria-labelledby="categories-title"` is one card. Its `h2` sits inside the card and reads "Where your money goes" (`dashboard.categories.title`, no year in the heading; German "Wo Dein Geld hin geht"). The rows come from `categoryBreakdown` for `shownYear`.
+Issue #65. The section `aria-labelledby="categories-title"` is one card. Its `h2` sits inside the card and reads "Where your money goes" (`dashboard.categories.title`, no year in the heading; German "Wo Dein Geld hin geht"). The rows come from `categoryBreakdown` for the shown year (`yearSummary.year`).
 
 - The `ul` is a grid, `grid-cols-[repeat(auto-fill,minmax(13.75rem,1fr))]`: one column on a phone, several on a wide screen.
 - The `ul` is rendered by `CategoryList` (#77, shared with the month page's "By category" card, see [Components](#components)). The page passes `categoryRows` with the amount already formatted in whole euros and the `percent` text; the heading and the stacked bar stay in the page.
@@ -295,7 +302,7 @@ Two places on `app/pages/index.vue` link to `/months/[year]/[month]` (issues #18
 | Link | Target | Year used | Why |
 | --- | --- | --- | --- |
 | "View <month year>" at the end of the "This month" card (`dashboard.thisMonth.view`, e.g. "View March 2026") | Today's month: `monthPath(currentYear, currentMonth)` | Always `currentYear` | The card always shows today's month, so its link has to agree with it. Shown also when the month has no costs. |
-| Each of the 12 items in "Month by month" | `monthPath(shownYear.value, month)` | The shown year (`shownYear`, see below) | The chart shows that year, so a bar leads to that year's month. |
+| Each of the 12 items in "Month by month" | `monthPath(yearSummary.value.year, month)` | The shown year (`yearSummary.year`, see below) | The chart shows that year, so a bar leads to that year's month. |
 
 Notes on the months chart:
 
@@ -306,7 +313,7 @@ Notes on the months chart:
 - Decision: the value is hand-built, not `Intl.NumberFormat` with `notation: 'compact'` (what issue #68 asked for). The author checked it: German short compact does not abbreviate thousands ("2100", "12.600"), the long form is "2,1 Tausend" (too wide for a narrow column), and the mock builds "2.1k" by hand too. The full amount stays in the link's `sr-only` text.
 - The scroll area has `pb-4` (16 px) below the month labels.
 - Keyboard focus shows an outline (`focus-visible:outline-2 focus-visible:outline-primary`).
-- The current month's label and value are bold only if the shown year is the current year (`shownYear === currentYear && month === currentMonth`).
+- The current month's label and value are bold only if the shown year is the current year (`yearSummary.year === currentYear && month === currentMonth`).
 - The grid is `repeat(12, minmax(2.75rem, 1fr))` with an 8 px gap (`gap-2`) inside an `overflow-x-auto` wrapper. 2.75rem is 44 px. Twelve columns plus gaps do not fit on narrow screens, so the chart scrolls sideways instead of squeezing the targets. Looked at in the browser by the author (the 320 px width was part of that check); not measured.
 - Tests: "dashboard page month bar links" and "dashboard page costs per month" (the heading, hint, pills, colours, column width and the value above the bars) are in `tests/nuxt/dashboard-months.test.ts`; "dashboard page "View month" link" is in `tests/nuxt/dashboard-month-cards.test.ts`.
 
@@ -314,22 +321,23 @@ Notes on the months chart:
 
 Issue #30. The selected year lives in `useYear()` (`year`, a `useState('year')`). The year select offers `availableYears(purchases, currentYear)`: the current year plus the years of all purchases. If the stored year is not in that list (for example after the last purchase of that year is deleted), the dashboard shows the current year instead. Before, the select was empty and the sections showed that year with recurring costs only.
 
-`app/pages/index.vue` has a computed value for this:
+Since #80 the rule lives in `useYearSummary()` (`app/composables/useYearSummary.ts`), so the dashboard and the [costs page summary line](#costs-page) always name the same year. Inside its computed:
 
 ```ts
-const shownYear = computed(() => years.value.includes(year.value) ? year.value : currentYear.value)
+const years = availableYears(purchases.value ?? [], currentYear.value)
+const shownYear = years.includes(year.value) ? year.value : currentYear.value
 ```
 
-`shownYear` feeds the `YearSelect` (`:model-value`), the section headings, `annualSummary`, `categoryBreakdown`, `monthBreakdown`, the month bar links and the current-month marker. The "This month" card still uses `currentYear`. Choosing a year in the select (`update:model-value`) writes the stored `year`.
+The composable returns the shown year as `year` and the list as `years`, next to the `annualSummary` totals of that year. On the dashboard, `yearSummary.year` feeds the `YearSelect` (`:model-value`), the "Your year" heading, `categoryBreakdown`, `monthBreakdown`, the month bar links and the current-month marker; `yearSummary.years` is the select's list and the totals feed the tiles, the ring and the `SplitList`. The "This month" card still uses `currentYear`. Choosing a year in the select (`update:model-value`) writes the stored `year` from `useYear()`. Before #80 the dashboard had its own `years`, `shownYear` and `summary` computeds.
 
 Why a computed value and not a reset of the stored year:
 
 - The stored year stays untouched, so it is only a display rule. If purchases of that year exist again, for example after the lists finish loading or refresh, that year is shown again.
 - A reset would need a `watch` that writes shared state. While the lists are still loading, `purchases` is empty and `years` holds only the current year, so such a watch, which runs whether or not the select is visible yet, could throw away a valid choice. It would have to wait for the lists first.
 
-The month page and the costs page do not use the stored year.
+The month page does not use the stored year. The costs page uses it only for the year and total of its summary line, through `useYearSummary()`; its table shows all costs.
 
-Tests: `tests/nuxt/dashboard-month-cards.test.ts`, describe "dashboard page year selector" (falls back when the stored year has no purchases; keeps a stored year that is in the list; falls back after the purchases of the selected year are deleted).
+Tests: `tests/nuxt/dashboard-month-cards.test.ts`, describe "dashboard page year selector" (falls back when the stored year has no purchases; keeps a stored year that is in the list; falls back after the purchases of the selected year are deleted), and in `tests/nuxt/costs-page.test.ts` the summary line test for a year without data. `useYearSummary()` has no test file of its own.
 
 ## Sidebar navigation
 
@@ -596,7 +604,8 @@ Checked by hand in the browser: the dashboard and month page buttons open the di
 | `useMoney(options?)` | A formatter for euros: whole euros, or cents with `useMoney({ cents: true })` |
 | `useMoneyParts()` | A function that splits an amount with cents into `{ whole, cents, after }`, so the cents can be styled on their own ("€2,081" ".00" "" in English, "2.081" ",00" " €" in German). Joined, the three equal `useMoney({ cents: true })`. Same file as `useMoney`; used by the month hero |
 | `useMonthSummary()` | One computed with everything the two heroes need about a month: `year`, `month`, `total`, `percent`, `direction` (`less`, `more`, `same`, `none`), `recurringTotal`, `purchasesTotal`, `empty`, `recurringRows`, `purchaseRows`, `largestRows` (display rows from `toRow`: `recurringRows` and `purchaseRows` in the long form, `largestRows` in the short form; written as arrow functions, because `.map(toRow)` would pass the array index as `form`), `comparison` (the long text, `dashboard.thisMonth.*`), `comparisonShort` (`month.changeShort.*`), `icon`, `count`, `businessCount`, `categoryRows` (`{ category, label, amount }` from the summary's `categories`, the label from `category.<id>`, the amount with cents through `useMoney({ cents: true })`; read by the month page's [By category card](#by-category-card-77)), `householdTotal` and `businessTotal` (the summary's totals with cents through `useMoney({ cents: true })`, read by the `SplitList` in the same card). Takes no arguments: it reads the month from the route params with `monthParamsSchema` and falls back to today's month from `useYear()`, so on the dashboard it is today's month. Built on `monthSummary` and the lists of `useCostLists()`. Loading, failed and retry stay in `useCostLists()`, because they describe the lists, not the month, and the dashboard needs them for the whole page. See [Month summary from the route](decisions.md#month-summary-from-the-route) |
-| `useYear()` | `year` (selected, shared state), `currentYear`, `currentMonth` (read once, in UTC). The dashboard and the costs table share the selected year, because the core takes the year as a parameter; month pages take their year from the URL instead. See [Dashboard money and year](decisions.md#dashboard-money-and-year) |
+| `useYearSummary()` | One computed for the shown year (#80): `year` (the stored year from `useYear()` if it is in `availableYears(purchases, currentYear)`, otherwise the current year; the [year fallback](#year-fallback-on-the-dashboard)), `years` (the selectable years), the fields of `annualSummary` for that year (`total`, `household`, `business`, `averagePerMonth`), and `recurringCount` and `purchasesCount` (the lengths of the two lists: all costs, not one year's). Takes no arguments, like `useMonthSummary()`; built on `useYear()` and `useCostLists()`. Read by the dashboard and the costs page summary line, so both name the same year |
+| `useYear()` | `year` (selected, shared state), `currentYear`, `currentMonth` (read once, in UTC). The dashboard and the costs page share the selected year through `useYearSummary()`, because the core takes the year as a parameter; month pages take their year from the URL instead. See [Dashboard money and year](decisions.md#dashboard-money-and-year) |
 | `useMonth()` | `monthName(month, style?)`, `monthYear(year, month)`, `monthPath(year, month)`, `formatDate(date, form?)`, `toRow(cost, form?)` (a display row for a stored cost: `key`, `name`, `subline`, `business`, `amount` in cents, `category`; used by `useMonthSummary()` for the month page and the "Largest this month" card). `form` is `'short'` (default) or `'long'`. Short, for the dashboard: "Yearly", "Oct 20". Long, for the month page (#76): a yearly cost with a `dueMonth` reads "Yearly, November" (`interval.yearlyIn`), a yearly cost without one falls back to "Yearly", quarterly and monthly show only the interval, and a purchase date has the full month ("October 20", German "20. Oktober"). `formatDate` takes the same `form` |
 | `useCostLists()` | `recurring`, `purchases`, `failed`, `loading`, `retry`. Uses `useFetch` with `lazy: true`, so the layout, the dashboard, the costs page and the month page share the cached data. |
 | `useNavItems()` | `items` (computed, follows the language): `label`, `shortLabel`, `to`, `icon` for Dashboard, Costs and This month. Read by the sidebar and `MobileBar`. |

@@ -12,12 +12,12 @@ Today's year and month are read once in `useYear()` (one `Date`, in UTC) and kep
 
 Month names and labels such as "October 2026" come from `useMonth()` (`Intl`, UTC dates), not from copies in the pages.
 
-The selected year (`year`) is shared state too, so it survives navigation and a later costs page (#10) can read the same value. `YearSelect` (a `v-model` component with a translated, visible label to the left of the select) offers `availableYears(purchases, currentYear)`: the current year plus the years of all purchases, newest first.
+The selected year (`year`) is shared state too, so it survives navigation and the costs page names the same year in its summary line (#80). `YearSelect` (a `v-model` component with a translated, visible label to the left of the select) offers `availableYears(purchases, currentYear)`: the current year plus the years of all purchases, newest first.
 
 Known limits:
 
 - Recurring costs have no start or end date, so a past year shows today's recurring costs until price history exists (#23).
-- A stored year that is no longer in the list (for example after deleting the last purchase of that year) falls back to the current year (#30). The dashboard computes `shownYear` (`years.includes(year) ? year : currentYear`) and uses it for the select, the sections, the month links and the headings, while the stored year stays unchanged. It returns by itself when purchases of that year exist again, and a list that is still loading does not reset it. Details: [Year fallback on the dashboard](app-structure.md#year-fallback-on-the-dashboard).
+- A stored year that is no longer in the list (for example after deleting the last purchase of that year) falls back to the current year (#30). The shown year is `years.includes(year) ? year : currentYear`; the dashboard uses it for the select, the sections, the month links and the headings, while the stored year stays unchanged. It returns by itself when purchases of that year exist again, and a list that is still loading does not reset it. Since #80 the rule lives in one place, `useYearSummary()`, and not in the dashboard: the costs page summary line names a year too, and both pages must name the same one. Details: [Year fallback on the dashboard](app-structure.md#year-fallback-on-the-dashboard).
 
 ## Colour scheme (#50, steps 1 to 3)
 
@@ -135,6 +135,16 @@ Alternatives considered:
 - Accepting the loss without a replacement planned.
 
 The table sorts by Name, Kind and Amount. Details: [Costs page](app-structure.md#costs-page).
+
+### Summary line with `<i18n-t>` (#80)
+
+The line under the heading ("2 recurring costs and 1 purchase · €10,891 in 2026") has a bold amount inside a translated sentence.
+
+- **`<i18n-t>` with slots, not separate keys or `v-html`.** The sentence is one key (`costs.summary.line`) with the slots `recurring`, `purchases`, `total` and `year`, so the translator controls the word order, and only the `total` slot is wrapped in a `b`. Splitting the sentence into pieces would fix the English order; `v-html` would put markup into the locale files.
+- **Counts for all costs, total for one year.** The counts match the table, which shows every cost. The total needs a year, so the line names it, and the year is the dashboard's shown year from `useYearSummary()`.
+- **"Posten" and "im Jahr" in German.** "Kosten" has no singular, so the recurring count reads "1 wiederkehrender Posten"; "im Jahr 2026" replaces the anglicism "in 2026".
+
+Details: [Costs page](app-structure.md#costs-page).
 
 ### Row actions: edit first, both neutral (#84)
 

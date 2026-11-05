@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { annualSummary, categoryBreakdown, splitPercentages, monthBreakdown } from '~~/shared/utils/costs'
+import { categoryBreakdown, splitPercentages, monthBreakdown } from '~~/shared/utils/costs'
 
 const EMPTY_BADGES = ['housing', 'food', 'insurance', 'mobility'] as const
 const GAP = 0.6
@@ -8,6 +8,7 @@ const { t, n } = useI18n()
 const { year, currentYear, currentMonth } = useYear()
 const { monthName, monthYear, monthPath } = useMonth()
 const thisMonthSummary = useMonthSummary()
+const yearSummary = useYearSummary()
 const { recurring, purchases, failed, loading, retry } = useCostLists()
 const { categoryClass } = useCategory()
 const euros = useMoney()
@@ -15,24 +16,21 @@ const cents = useMoney({ cents: true })
 const { openAdd } = useCostDialog()
 const heading = useTemplateRef<HTMLElement>('heading')
 
-const years = computed(() => availableYears(purchases.value ?? [], currentYear.value))
-const shownYear = computed(() => years.value.includes(year.value) ? year.value : currentYear.value)
 const empty = computed(() => !failed.value && !loading.value && recurring.value?.length === 0 && purchases.value?.length === 0)
-const summary = computed (() => annualSummary(recurring.value ?? [], purchases.value ?? [], shownYear.value))
-const categoryRows = computed (() => categoryBreakdown(recurring.value ?? [], purchases.value ?? [], shownYear.value).map(({ category, total, percent}) => ({
+const categoryRows = computed (() => categoryBreakdown(recurring.value ?? [], purchases.value ?? [], yearSummary.value.year).map(({ category, total, percent}) => ({
     category,
     label: t(`category.${category}`),
     amount: euros(total),
     percent: n(percent / 100, { style: 'percent' }),
     value: percent
 })))
-const split = computed(() => splitPercentages(summary.value))
+const split = computed(() => splitPercentages(yearSummary.value))
    // the gap between the two colours, in percent of the ring
 const splitRing = computed(() => {
     const { household, business } = split.value
     const filled = (color: string) => `conic-gradient(${color} 0 100%)`
     const half = GAP / 2
-    if (summary.value.total === 0) return filled('var(--ui-bg-accented)')   // empty year: an empty track
+    if (yearSummary.value.total === 0) return filled('var(--ui-bg-accented)')   // empty year: an empty track
     if (business === 0) return filled('var(--ui-primary)')                  // 100% household
     if (household === 0) return filled('var(--ui-warning)')                 // 100% business
     return `conic-gradient(
@@ -43,20 +41,20 @@ const splitRing = computed(() => {
         var(--ui-bg-elevated) ${100 - half}% 100%)`
 })
 const tiles = computed(() => [
-    { key: 'total', value: summary.value.total, label: t('dashboard.summary.total'), sub: t('dashboard.summary.perYear'),  dot: 'bg-inverted' },
-    { key: 'average', value: summary.value.averagePerMonth, label: t('dashboard.summary.average'), sub: t('dashboard.summary.perMonth'), dot: 'bg-accented' },
-    { key: 'household', value: summary.value.household, label: t('dashboard.summary.household'), sub: t('dashboard.summary.ofYear', { percent: split.value.household }), dot: 'bg-primary' },
-    { key: 'business',  value: summary.value.business, label: t('business.label'), sub: t('dashboard.summary.ofYear', { percent: split.value.business }),  dot: 'bg-secondary' },
+    { key: 'total', value: yearSummary.value.total, label: t('dashboard.summary.total'), sub: t('dashboard.summary.perYear'),  dot: 'bg-inverted' },
+    { key: 'average', value: yearSummary.value.averagePerMonth, label: t('dashboard.summary.average'), sub: t('dashboard.summary.perMonth'), dot: 'bg-accented' },
+    { key: 'household', value: yearSummary.value.household, label: t('dashboard.summary.household'), sub: t('dashboard.summary.ofYear', { percent: split.value.household }), dot: 'bg-primary' },
+    { key: 'business',  value: yearSummary.value.business, label: t('business.label'), sub: t('dashboard.summary.ofYear', { percent: split.value.business }),  dot: 'bg-secondary' },
 ].map(tile => ({ ...tile, value: euros(tile.value) })))
-const monthRows = computed (() => monthBreakdown(recurring.value ?? [], purchases.value ?? [], shownYear.value).map(({ month, total, share}) => {
+const monthRows = computed (() => monthBreakdown(recurring.value ?? [], purchases.value ?? [], yearSummary.value.year).map(({ month, total, share}) => {
     const shortAmount = (total: number) => Math.round(total) < 1000 ? n(Math.round(total)) : t('dashboard.months.thousand', { value: n(total / 1000, { maximumFractionDigits: 1 }) })
     return {
         month,
         short: monthName(month, 'short'),
         text: t('dashboard.months.alt', { month: monthName(month, 'long'), amount: euros(total)}),
         height: `${share * 100}%`,
-        to: monthPath(shownYear.value, month),
-        current: shownYear.value === currentYear.value && month === currentMonth.value,
+        to: monthPath(yearSummary.value.year, month),
+        current: yearSummary.value.year === currentYear.value && month === currentMonth.value,
         value: shortAmount(total)
     }
 }))
@@ -172,8 +170,8 @@ async function onRetry() {
         </section>
         <section aria-labelledby="summary-title">
             <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-                <h2 id="summary-title" class="mb-0 text-[1.625rem] font-extrabold tracking-tight">{{ t('dashboard.summary.title', { year: shownYear }) }}</h2>
-                <YearSelect :model-value="shownYear" @update:model-value="year = $event" :years="years"/>
+                <h2 id="summary-title" class="mb-0 text-[1.625rem] font-extrabold tracking-tight">{{ t('dashboard.summary.title', { year: yearSummary.year }) }}</h2>
+                <YearSelect :model-value="yearSummary.year" @update:model-value="year = $event" :years="yearSummary.years"/>
             </div>
             <UCard variant="subtle" class="card card-flush overflow-hidden">
                 <dl class="grid grid-cols-2 gap-px bg-default lg:grid-cols-4">
@@ -210,7 +208,7 @@ async function onRetry() {
                             <span class="text-[0.6875rem] font-semibold text-muted">{{ t('dashboard.split.household') }}</span>
                         </div>
                     </div>
-                    <SplitList class="min-w-[8.75rem] flex-1" :householdTotal="euros(summary.household)" :businessTotal="euros(summary.business)" />
+                    <SplitList class="min-w-[8.75rem] flex-1" :householdTotal="euros(yearSummary.household)" :businessTotal="euros(yearSummary.business)" />
                 </div>
             </UCard>
         </section>
