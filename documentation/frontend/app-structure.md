@@ -199,16 +199,16 @@ Tests: `tests/nuxt/dashboard-page.test.ts`: one card, order, whole-euro values, 
 
 ### "Where your money goes" (categories)
 
-Issue #65. The section `aria-labelledby="categories-title"` is one card. Its `h2` sits inside the card and reads "Where your money goes" (`dashboard.categories.title`, no year in the heading; German "Wo Dein Geld hin geht"). The rows come from `categoryBreakDown` for `shownYear`.
+Issue #65. The section `aria-labelledby="categories-title"` is one card. Its `h2` sits inside the card and reads "Where your money goes" (`dashboard.categories.title`, no year in the heading; German "Wo Dein Geld hin geht"). The rows come from `categoryBreakdown` for `shownYear`.
 
 - The `ul` is a grid, `grid-cols-[repeat(auto-fill,minmax(13.75rem,1fr))]`: one column on a phone, several on a wide screen.
 - Each row has a `CategoryBadge` (36 px), the bold name and, right-aligned, the amount in whole euros (bold) with the percentage below it. The percentage is `n(percent / 100, { style: 'percent' })`, so it reads "86%" in English and "86 %" in German.
 - `percent` is whole numbers that add up to 100 (largest-remainder rounding, see [calculation core](../backend/calculation-core.md)). A year without costs shows 0% everywhere.
-- The old bar per row was removed. `share` is still returned by `categoryBreakDown`, but the dashboard does not read it any more. It stays in the core for now, with no consumer; it can be dropped later.
+- The old bar per row was removed. `share` is still returned by `categoryBreakdown`, but the dashboard does not read it any more. It stays in the core for now, with no consumer; it can be dropped later.
 - Issue #66: above the list sits one stacked bar. It is a flex container (`mb-2.5 mt-4 flex h-3.5 gap-[3px] overflow-hidden rounded-full bg-accented`: 14 px high, 3 px gaps) with `aria-hidden="true"` and no text, so it is decoration; the list below carries every value. It holds one `div` per category in the order of the list. The width of a segment is the category's `percent` (`categoryRows` carries it as the number `value`), its colour the category token through `categoryClass()` from `useCategory()` (see [Category badge](colour-scheme.md#category-badge)). A category with 0% has no visible segment (`v-show`); a year without costs shows only the grey track. Only the outer ends are round, because the container is a pill with `overflow-hidden`; the segments are square, as in the mock.
 - Whole percentages can make a thin segment (3% of the width) very narrow on a phone.
 
-Tests: `tests/nuxt/dashboard-page.test.ts` (heading, name, amount and percentage per row, sum 100, no bar per row, German, badge 36 px; the stacked bar: decorative and without text above the list, widths 86/11/3% in list order, colour tokens, no visible segment for 0%, empty track) and `tests/nuxt/costs.test.ts` (`categoryBreakDown percentages`). Checked by the author in the browser: light and dark mode, German, 320 px, the grid columns (the list, #65). The stacked bar (#66) was checked in the browser in light mode, including the segment shape; dark mode, German and 320 px were not checked for it. Not checked: a real phone, a screen reader; the contrast of the muted percentage text is not measured; the contrast of the segments was computed from the colour tokens, not measured in the browser: against the gap (the track colour) at least 4.41:1 in light mode and 3.06:1 to 3.74:1 in dark mode, so 3:1 against the gap holds in both; against their neighbours they are close (1.0:1 to 2.1:1, insurance next to housing 1.58:1 in light and 1.00:1 in dark), so the gap does the separating.
+Tests: `tests/nuxt/dashboard-page.test.ts` (heading, name, amount and percentage per row, sum 100, no bar per row, German, badge 36 px; the stacked bar: decorative and without text above the list, widths 86/11/3% in list order, colour tokens, no visible segment for 0%, empty track) and `tests/nuxt/costs.test.ts` (`categoryBreakdown percentages`). Checked by the author in the browser: light and dark mode, German, 320 px, the grid columns (the list, #65). The stacked bar (#66) was checked in the browser in light mode, including the segment shape; dark mode, German and 320 px were not checked for it. Not checked: a real phone, a screen reader; the contrast of the muted percentage text is not measured; the contrast of the segments was computed from the colour tokens, not measured in the browser: against the gap (the track colour) at least 4.41:1 in light mode and 3.06:1 to 3.74:1 in dark mode, so 3:1 against the gap holds in both; against their neighbours they are close (1.0:1 to 2.1:1, insurance next to housing 1.58:1 in light and 1.00:1 in dark), so the gap does the separating.
 
 ### "Household and business" (split ring)
 
@@ -254,7 +254,7 @@ Issue #30. The selected year lives in `useYear()` (`year`, a `useState('year')`)
 const shownYear = computed(() => years.value.includes(year.value) ? year.value : currentYear.value)
 ```
 
-`shownYear` feeds the `YearSelect` (`:model-value`), the section headings, `annualSummary`, `categoryBreakDown`, `monthBreakdown`, the month bar links and the current-month marker. The "This month" card still uses `currentYear`. Choosing a year in the select (`update:model-value`) writes the stored `year`.
+`shownYear` feeds the `YearSelect` (`:model-value`), the section headings, `annualSummary`, `categoryBreakdown`, `monthBreakdown`, the month bar links and the current-month marker. The "This month" card still uses `currentYear`. Choosing a year in the select (`update:model-value`) writes the stored `year`.
 
 Why a computed value and not a reset of the stored year:
 

@@ -49,7 +49,7 @@ Edge case: a yearly or quarterly cost without `dueMonth` (untyped input, old row
 | Function | Returns | Behaviour |
 | --- | --- | --- |
 | `annualSummary(recurring, purchases, year)` | `{ total, household, business, averagePerMonth }` | `business` is the total of business costs; `household` is `total - business`, so the two always add up. `averagePerMonth` is `total / 12`, not rounded. |
-| `categoryBreakDown(recurring, purchases, year)` | `{ category, total, share, percent }[]` | One entry per category, largest total first. `share` is relative to the largest category (0 to 1); the dashboard no longer reads it, it stays in the core for now. `percent` is the category's share of the year's total as a whole percentage, and all percentages add up to exactly 100 (see below). Categories without costs are included with 0. Equal totals keep the order of `CATEGORIES`. With no costs, every share and percent is 0. |
+| `categoryBreakdown(recurring, purchases, year)` | `{ category, total, share, percent }[]` | One entry per category, largest total first. `share` is relative to the largest category (0 to 1); the dashboard no longer reads it, it stays in the core for now. `percent` is the category's share of the year's total as a whole percentage, and all percentages add up to exactly 100 (see below). Categories without costs are included with 0. Equal totals keep the order of `CATEGORIES`. With no costs, every share and percent is 0. |
 | `splitPercentages(summary)` | `{ household, business }` | Whole percentages. `business` is rounded, `household` is `100 - business`, so they add up to 100. A total of 0 gives 0 and 0. |
 | `monthBreakdown(recurring, purchases, year)` | `{ month, total, share }[12]` | January to December, not sorted. `share` is relative to the largest month; with no costs every share is 0. |
 | `monthChange(recurring, purchases, year, month)` | `{ current, previous, percent }` | Totals of the month and the one before. January compares with December of the previous year, which matters for purchases. "Today" is not read in the core; the caller passes year and month. `percent` is the signed whole-number change (negative means less) and `null` when the previous month cost nothing. |
@@ -57,7 +57,7 @@ Edge case: a yearly or quarterly cost without `dueMonth` (untyped input, old row
 
 ### Rounding of `percent`
 
-Rounding each category on its own can give 99 or 101. `categoryBreakDown` uses the largest-remainder method: every percentage is rounded down first, then the missing points go one by one to the categories with the largest remainders. Ties between equal remainders go to the category earlier in `CATEGORIES`. The result always adds up to 100, so the percentages on the dashboard do not contradict each other. With no costs there is nothing to share and every percent is 0.
+Rounding each category on its own can give 99 or 101. `categoryBreakdown` uses the largest-remainder method: every percentage is rounded down first, then the missing points go one by one to the categories with the largest remainders. Ties between equal remainders go to the category earlier in `CATEGORIES`. The result always adds up to 100, so the percentages on the dashboard do not contradict each other. With no costs there is nothing to share and every percent is 0.
 
 ## Month page functions
 

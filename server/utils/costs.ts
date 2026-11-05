@@ -19,7 +19,7 @@ export async function listPurchases(): Promise<Purchase[]> {
     const rows = await db.select().from(purchases).orderBy(purchases.id)
     return rows.map(toPurchase)
 }
-export async function createRecurringCosts(input: CreateRecurringCost): Promise<RecurringCost> {
+export async function createRecurringCost(input: CreateRecurringCost): Promise<RecurringCost> {
     const [row] = await db.insert(recurringCosts).values(input).returning()
     if (!row) throw new Error('Insert returned no row')
     return toRecurringCost(row)
@@ -48,7 +48,7 @@ export async function updatePurchase(id: number, patch: PatchPurchase): Promise<
     const [row] = await db.update(purchases).set(patch).where(eq(purchases.id, id)).returning()
     return row ? toPurchase(row) : undefined
 }
-export async function deleteRecurringCosts(id: number): Promise<boolean> {
+export async function deleteRecurringCost(id: number): Promise<boolean> {
     const rows = await db.delete(recurringCosts).where(eq(recurringCosts.id, id)).returning({ id: recurringCosts.id})
     return rows.length > 0
 }

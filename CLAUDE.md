@@ -105,7 +105,7 @@ One or two lines per function; the full behaviour (rounding, edge cases) is in [
 5. `monthlyTotals(recurring, purchases, year)`: the true cost of each of the 12 months (not an average)
 6. `costsInMonth(recurring, purchases, year, month)`: the costs of one month, recurring first, then purchases; generic, so stored items keep their `id`. A month's total is the sum of its list.
 7. `annualSummary(recurring, purchases, year)`: `{ total, household, business, averagePerMonth }`; household plus business equals the total by construction
-8. `categoryBreakDown(recurring, purchases, year)`: one `{ category, total, share, percent }` per category, largest first; `percent` adds up to exactly 100 (largest-remainder rounding); `share` is no longer read by the dashboard
+8. `categoryBreakdown(recurring, purchases, year)`: one `{ category, total, share, percent }` per category, largest first; `percent` adds up to exactly 100 (largest-remainder rounding); `share` is no longer read by the dashboard
 9. `splitPercentages(summary)`: whole percentages for household and business, always adding up to 100
 10. `monthBreakdown(recurring, purchases, year)`: one `{ month, total, share }` per month in calendar order
 11. `monthChange(recurring, purchases, year, month)`: `{ current, previous, percent }`; `percent` is `null` when the previous month cost nothing; "today" is passed in, never read

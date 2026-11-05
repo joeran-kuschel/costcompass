@@ -69,13 +69,13 @@ export function annualSummary(recurring: RecurringCost[], purchases: Purchase[],
     const business = totalAnnualCost(filterByBusiness(recurring, true), filterByBusiness(purchases, true), year)
     return { total, household: total - business, business, averagePerMonth: total / 12 }
 }
-export function categoryBreakDown(recurring: RecurringCost[], purchases: Purchase[], year: number): CategoryTotal[] {
+export function categoryBreakdown(recurring: RecurringCost[], purchases: Purchase[], year: number): CategoryTotal[] {
     const totals = totalsByCategory(recurring, purchases, year)
     const largest = Math.max(...CATEGORIES.map(category => totals[category]))
     const sum = CATEGORIES.reduce((acc, c) => acc + totals[c], 0)
     const exact = CATEGORIES.map(c => sum > 0 ? totals[c] / sum * 100 : 0)
     const floors = exact.map(Math.floor)
-    let leftover = sum > 0 ? 100 - floors.reduce((a, b) => a + b, 0) : 0
+    const leftover = sum > 0 ? 100 - floors.reduce((a, b) => a + b, 0) : 0
     const order = exact.map((_, i) => i).sort((a, b) => (exact[b]! - floors[b]!) - (exact[a]! - floors[a]!))
     const percents = [...floors]
     for (const index of order.slice(0, leftover)) percents[index]! += 1

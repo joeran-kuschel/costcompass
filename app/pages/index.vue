@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { annualSummary, categoryBreakDown, splitPercentages, monthBreakdown, monthChange, costsInMonth, groupMonthCosts, largestCosts} from '~~/shared/utils/costs'
+import { annualSummary, categoryBreakdown, splitPercentages, monthBreakdown, monthChange, costsInMonth, groupMonthCosts, largestCosts} from '~~/shared/utils/costs'
 
 const EMPTY_BADGES = ['housing', 'food', 'insurance', 'mobility'] as const
 const GAP = 0.6
@@ -18,7 +18,7 @@ const years = computed(() => availableYears(purchases.value ?? [], currentYear.v
 const shownYear = computed(() => years.value.includes(year.value) ? year.value : currentYear.value)
 const empty = computed(() => !failed.value && !loading.value && recurring.value?.length === 0 && purchases.value?.length === 0)
 const summary = computed (() => annualSummary(recurring.value ?? [], purchases.value ?? [], shownYear.value))
-const categoryRows = computed (() => categoryBreakDown(recurring.value ?? [], purchases.value ?? [], shownYear.value).map(({ category, total, percent}) => ({
+const categoryRows = computed (() => categoryBreakdown(recurring.value ?? [], purchases.value ?? [], shownYear.value).map(({ category, total, percent}) => ({
     category,
     label: t(`category.${category}`),
     amount: euros(total),
