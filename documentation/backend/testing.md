@@ -9,7 +9,7 @@ pnpm test          # watch mode
 pnpm vitest run    # single run
 ```
 
-The setup is Vitest with `@nuxt/test-utils`, environment `nuxt` (`vitest.config.ts`), `happy-dom`, and `@vue/test-utils`. Tests are in `tests/nuxt/` and end in `.test.ts`. At the time of writing: 25 files, 616 tests, all passing, about 10 seconds. No database is needed.
+The setup is Vitest with `@nuxt/test-utils`, environment `nuxt` (`vitest.config.ts`), `happy-dom`, and `@vue/test-utils` (a dev dependency that `mountSuspended` needs). Tests are in `tests/nuxt/` (the folder the Nuxt TypeScript config includes) and end in `.test.ts`. At the time of writing: 25 files, 630 tests, all passing, about 10 to 15 seconds. No database is needed.
 
 ## Conventions
 
@@ -33,6 +33,15 @@ The setup is Vitest with `@nuxt/test-utils`, environment `nuxt` (`vitest.config.
 | Components | `CostForm.test.ts`, `LanguageSwitcher.test.ts`, `YearSelect.test.ts` |
 | Composables | `useMoney.test.ts`, `useMonth.test.ts`, `useYear.test.ts` |
 | App level | `app-locale.test.ts` (built-in texts, `<html lang>`, `dir`, titles), `route-announcer.test.ts` |
+
+### Core and server tests
+
+- `costs.test.ts`: the calculation core, one `describe` per function (see [calculation-core.md](calculation-core.md)).
+- `dates.test.ts`: `monthDateRange`.
+- `validation.test.ts`: the Zod schemas.
+- `server-costs.test.ts`: `db` is replaced with `vi.mock`, so the tests check the logic between the Drizzle calls, such as the PATCH merge, not the SQL.
+
+The component, page, composable and app-level tests, and how each is set up, are described in [the frontend testing page](../frontend/testing.md).
 
 ## Not covered
 

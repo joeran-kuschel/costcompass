@@ -9,7 +9,7 @@ For developers and contributors. It covers the server, the database, the shared 
 | [api.md](api.md) | Reference | Every API route with bodies, status codes and examples |
 | [database.md](database.md) | Reference and how-to | Drizzle schema, migrations workflow |
 | [calculation-core.md](calculation-core.md) | Reference | Every function in `shared/utils/costs.ts` and `dates.ts` |
-| [testing.md](testing.md) | Explanation and how-to | How tests are organised, conventions, commands |
-| [decisions.md](decisions.md) | Explanation | Decision log and open decisions |
+| [testing.md](testing.md) | Explanation and how-to | How tests are organised, conventions, commands, the core and server tests (frontend tests: [frontend/testing.md](../frontend/testing.md)) |
+| [decisions.md](decisions.md) | Explanation | Decision log, the details of the architecture and data decisions, and open decisions (design decisions: [frontend/decisions.md](../frontend/decisions.md)) |
 
 The working agreement for this project is [`CLAUDE.md`](../../CLAUDE.md). These pages describe what exists in the code; where they disagree with `CLAUDE.md`, the code was checked and is described here.

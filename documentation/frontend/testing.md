@@ -1,0 +1,70 @@
+# Testing the frontend
+
+What the component, page, composable and app-level tests check and how each is set up. Written for: developers. The general conventions, the commands and the tests of the calculation core and the server are in [the backend testing page](../backend/testing.md). The tests live in `tests/nuxt/`; today there are 25 files and 630 tests.
+
+## Setup that all of these tests share
+
+- Tests run in the Nuxt environment (`@nuxt/test-utils`). Components and pages are mounted with `mountSuspended` from `@nuxt/test-utils/runtime`, which needs the dev dependency `@vue/test-utils`.
+- `$fetch` is an auto-import in this project, so a test mocks it with `mockNuxtImport('$fetch', ...)`. `vi.stubGlobal` has no effect.
+- That mock also replaces what `useFetch` uses. The page tests therefore register fake API endpoints with `registerEndpoint` instead. The endpoints can be slow or fail.
+- `useFetch` caches by URL, so page tests call `clearNuxtData()` before each test.
+- `useState` outlives a test. Tests for `useState` call `clearNuxtState()` before each test, and every file that touches the dialog closes its state after each test.
+- Modal content is teleported to `document.body`, so page tests query it there.
+- `UForm` validates asynchronously, so tests wait for the outcome with `vi.waitFor`.
+- A page test does not render `app.vue`, so a title has no "– Costcompass" suffix.
+
+## What each file checks
+
+### Pages
+
+| File | Checks |
+| --- | --- |
+| `dashboard-page.test.ts` | See the list below. Uses the fake endpoints above and `clearNuxtData()` before each test |
+| `month-page.test.ts` | The states; that its add buttons ask for the dialog with the month; the year check; the content with its sums, checked against `monthlyTotals`. Same fake endpoints as the dashboard tests, `mountSuspended` with the `route` option, `showError` mocked with `mockNuxtImport` |
+| `error-page.test.ts` | `error.vue` mounted with an `error` prop, `clearError` mocked with `mockNuxtImport` |
+| `costs-page.test.ts` | `costs.vue`: its add and edit buttons only check the dialog state; the page shows new numbers after `refreshNuxtData()` |
+| `costs-page-sorting.test.ts` | The sort order and the sort button names of the costs table in both languages. It switches the locale with `useNuxtApp().$i18n.setLocale` and resets it after each test |
+
+`dashboard-page.test.ts` covers:
+
+- The states: the loading skeleton (busy region with status text, `sr-only` status text, hidden from assistive technology with no alert inside, three cards, reduced motion class on every block, gone after load and after an error, keeps loading until both lists have arrived, German status text), the empty card (heading, text, tip, button, four decorative badges with different category classes, the button opens the empty add dialog and no link to `/costs` is left, German) and the error card (its structure, no API message, focus after a successful retry, no focus move after a failed one).
+- The summary card with its four tiles and sub lines.
+- The household versus business ring: label, centre text, rows with amounts, ring colours and gap as a style string, the full and empty rings, a 1% share.
+- The category rows: name, amount, percentage, sum 100, no bar per row, and the stacked bar (decorative and without text, widths in list order, category colour tokens, no visible segment for 0%, empty track in an empty year).
+- The "View month" link, the month bar links and the "Largest this month" card.
+- The subtotals of the this-month card, checked against `monthlyTotals`.
+
+The page test does not go through Nuxt's error handling. Whether a real unknown URL gives the 404 status was checked by hand against the dev server with `curl -H "Accept: text/html"`, so `error-page.test.ts` does not cover it.
+
+### Components
+
+| File | Checks |
+| --- | --- |
+| `CostForm.test.ts` | The form, including its `month` prop |
+| `CostDialog.test.ts` | The central dialog, mounted on the layout: opens empty, pre-filled for an edit and for a month, Cancel and the close button clear the state, nothing leaks into the next dialog, focus returns to the element focused before, both lists are loaded again and the dialog closes after a save, German. Each test file that touches the dialog closes the state after every test, because `useState` outlives a test |
+| `LanguageSwitcher.test.ts` | The language switcher |
+| `YearSelect.test.ts` | The year select. The list is teleported to the body and an item is chosen with a `pointerup` event, not a click |
+| `BusinessBadge.test.ts`, `CategoryBadge.test.ts`, `MobileBar.test.ts`, `DefaultLayout.test.ts` | See [Business badge](colour-scheme.md#business-badge), [Category badge](colour-scheme.md#category-badge), [Bottom tab bar](app-structure.md#bottom-tab-bar) and [Sidebar navigation](app-structure.md#sidebar-navigation) |
+| `manifest.test.ts` | See [Favicon, app icons and web manifest](colour-scheme.md#favicon-app-icons-and-web-manifest) |
+
+### Composables
+
+| File | Checks |
+| --- | --- |
+| `useMoney.test.ts` | The money formatter. It is called from a small probe component, because it needs the i18n context |
+| `useYear.test.ts` | `clearNuxtState` before each test, because `useState` outlives a test. A test fakes the clock around New Year |
+| `useMonth.test.ts` | Its time zone check only fails west of UTC. Run it with `TZ=America/Los_Angeles` to see it, as described on the [backend testing page](../backend/testing.md#good-to-know) |
+| `useCategory.test.ts`, `useNavItems.test.ts` | See [Category badge](colour-scheme.md#category-badge) and [The items](app-structure.md#the-items) |
+
+### App level
+
+| File | Checks |
+| --- | --- |
+| `app-locale.test.ts` | The language behaviour of the app: built-in Nuxt UI texts, `<html lang>` and `dir`, and the page titles, each also after switching the language without a reload |
+| `route-announcer.test.ts` | The hidden live region holds the new page title after a navigation, also in German |
+
+## What the tests do not cover
+
+- Layout widths and equal heights: jsdom has no layout. They were checked by hand in the browser, see the pages in [app-structure.md](app-structure.md).
+- The current tab of the bottom bar (`aria-current`): the test environment's router does not report a `NuxtLink` as active.
+- A real unknown URL giving the 404 status (see above).

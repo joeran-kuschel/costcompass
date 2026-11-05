@@ -17,7 +17,7 @@ Month pages are reached from the dashboard (see [Dashboard links to month pages]
 
 ### Page states
 
-The dashboard and the month page get their data with `useCostLists()` and show these states, in this order of priority:
+The dashboard and the month page get their data with `useCostLists()` and show these states, in this order of priority. On the dashboard the shell is the `h1`, both cost lists fetched with `useFetch` and `lazy: true` (the same URLs as `/costs`, so both pages share the cached data), and three states decided by computed flags: `loading` (a list has not arrived yet), `failed` (either request failed) and `empty` (no costs at all). The sections, in order: "This month" next to "Largest this month", "Your year", "Where your money goes" next to "Household and business", "Month by month". Everything on the dashboard comes from the `shared/` core, with no API routes of its own.
 
 1. **Failed**: a `UAlert` with `role="alert"` and a retry button that refreshes both lists. No numbers are shown next to it. The month page shows a banner; the dashboard shows a centred card (see [Dashboard error card](#dashboard-error-card)).
 2. **Loading**: a visually hidden `role="status"` text plus skeleton blocks marked `aria-hidden`: two on the month page, three cards on the dashboard (see [Dashboard loading skeleton](#dashboard-loading-skeleton)).
@@ -68,9 +68,65 @@ Issue #70. When there are no costs at all, the dashboard shows a centred `UCard`
 
 Tests: the empty-state `describe` in `tests/nuxt/dashboard-page.test.ts` checks the heading, text, tip and button, four decorative badges with different category classes, that the button opens the empty add dialog and no link to `/costs` is left, and the German texts. The card was checked in the browser. Not checked: a real phone, a screen reader, measured contrast, whether dark mode matches the dark mock exactly.
 
-### Month page address
+### Month page
 
-The address is checked before any data is requested. `monthParamsSchema` (`shared/utils/validation.ts`) accepts a four-digit year and a month `01` to `12`. Anything else shows the not-found error. Once the lists have loaded, a year that is not in `availableYears` also shows it. Build links with `monthPath(year, month)` from `useMonth()`, which pads the month.
+Route `/months/[year]/[month]`, file `app/pages/months/[year]/[month].vue`. It shows the costs of one month (`costsInMonth`) and the month's total, with an add action that opens the same form as `/costs`. The page is started: the address check, the loading and error states, the year check, the content, the navigation, the empty state and adding a cost exist. The year is part of the URL, so a month page does not depend on shared year state, can be bookmarked and works with the back button. The dashboard's monthly totals link to these pages (see [Dashboard links to month pages](#dashboard-links-to-month-pages)).
+
+#### Address
+
+The month in the address is always two digits (`/months/2026/03`), so every month has exactly one address; `3` or `13` give the 404. The address is checked before any data is requested. `monthParamsSchema` (`shared/utils/validation.ts`) accepts a four-digit year and a month `01` to `12`. Anything else shows the not-found error. Links are built with `monthPath(year, month)` from `useMonth()`, which pads the month.
+
+The year check against the valid years (`availableYears`) runs in a `watch` once the lists have loaded (never while loading or after a failed load). A year that is not in the list shows the same not-found error with `showError`.
+
+#### States
+
+Below the heading (`h1`, from the address) the page has a wrapper with `aria-busy` and three states from `useCostLists`:
+
+- **Loading**: a visually hidden `role="status"` text "Loading the costs of <month year>…" and two skeleton blocks. The skeletons are `aria-hidden` with `role="presentation"`, because `USkeleton` renders itself as `role="alert"` and would be announced twice. They stop animating with `motion-reduce:animate-none`.
+- **Failed**: a `UAlert` with `role="alert"`, the month in its title, a hint that the data has not changed and a retry button. No total and no API message. After a retry that succeeds, the focus moves to the `h1`, which has `tabindex="-1"`, because the banner with the button that had the focus is gone. After a retry that fails again the focus is not moved; the new banner is announced.
+- **Loaded**: the content, see below.
+
+The costs of the month are only rendered in the loaded branch, so a refresh that fails does not leave old numbers next to the error banner. The page is rebuilt for every new address (Nuxt keys the page by its path), so the constants taken from the address are not reactive.
+
+#### Content (#25)
+
+The month's total sits in a `UCard` ("Total for <month>", the `card-hero` class). Below it is one `section` per kind that has entries (Recurring, Purchases); a group without entries is not shown. Each section has an `h2`, its subtotal and a `ul` of rows. The groups come from `groupMonthCosts` on `costsInMonth`, typed with `Stored<...>`, because TypeScript cannot infer `R` and `P` from the one list. One loop renders both groups.
+
+A row has:
+
+- the name (it wraps when long),
+- the `BusinessBadge` ("Business" with a briefcase icon) where it applies,
+- a sub line: for a recurring cost "Category · Interval", for a purchase "Category · day and month" (from `Intl` in the active language, UTC),
+- the amount with cents, right-aligned.
+
+A "This month" badge sits next to the `h1` when the address is today's month and year.
+
+#### Navigation (#26)
+
+A "Dashboard" link sits above the heading. A previous and a next month icon link sit on either side of the heading (`UButton` with `to`, so real `<a>` elements, 36 px square). Their accessible name is an `aria-label` that names the target ("Previous month, September 2026"); the paths come from `monthPath`. The targets come from `monthNeighbours` with `availableYears` as the valid years, so a link that would lead to a year without data is hidden. Until the lists have loaded only the current year counts, so the links inside a year are there from the start. Keyboard order: Dashboard, previous, next.
+
+#### Empty month (#28) and adding a cost (#31)
+
+A month without costs keeps the total card (with a zero in the money format) and shows a `UCard` instead of the groups: "No costs in <month>" (`h2`), a hint and a decorative icon. It is in the loaded branch, so it never shows while loading or after an error. Its "Add cost" button calls `openAdd(monthRef)`, so the layout's dialog opens with `CostForm` pre-filled for that month (see [Add and edit dialog](#add-and-edit-dialog)). The button next to the heading was removed with #59; the other entry points are the layout's sidebar button and the phone's round add button, which already passes the month. After `saved` the layout refreshes both lists with `retry` (the old data stays on screen meanwhile, so there is no flicker into the skeletons) and closes the dialog.
+
+Tests: `tests/nuxt/month-page.test.ts`, see [Testing](testing.md).
+
+### Error page
+
+`app/error.vue` is Nuxt's error page, not a route. It shows a translated "Page not found" for an unknown URL (the response has the status 404) and a generic "Something went wrong" for any other error, never the error message. It sits in the default layout, has its own title and its own route announcer, and a "Back to dashboard" button that clears the error and redirects to `/`.
+
+When the error carries `data: { reason: 'month' }` (thrown by the month page), it shows the month variant instead: "That month doesn't exist", a hint that the address has a month outside 1 to 12 or an invalid year, a "Go to <current month and year>" link (`monthPath`) and the same "Back to dashboard" button. The texts are picked by a `variant` (`month`, `notFound` or `generic`) that forms the locale key (`error.<variant>Title`, `error.<variant>Text`). Tests: `tests/nuxt/error-page.test.ts`, see [Testing](testing.md).
+
+### Costs page
+
+Route `/costs`, file `app/pages/costs.vue`. One table with recurring costs and purchases together, a `kind` column and a "when" column (interval and month for recurring costs, date for purchases).
+
+- **Adding:** the page has no "Add cost" button of its own. The sidebar's button (`openAdd()`) is the single entry and opens the add form in the layout's dialog. The table refreshes after a save.
+- **Data:** the page reads its lists with `useCostLists()` (lazy, the same cache keys as the layout, so the table updates after a save from the layout). Known limit: see [Known limit: the costs table loads on the client](#known-limit-the-costs-table-loads-on-the-client).
+- **Delete:** each row has a trash icon button (accessible name "Delete <name>") that opens one shared confirmation modal (`UModal`, driven by a `toDelete` ref). On confirm the cost is deleted through the API and the table refreshes. A failed delete shows its own error toast.
+- **Name column:** a `#name-cell` slot with a `CategoryBadge` (40 px), the name in bold with the `BusinessBadge` for business costs, and the category name as a caption below. The separate Category and Business columns still exist; whether they go away is not decided.
+- **Edit:** each row also has a pencil icon button (accessible name "Edit <name>") that calls `openEdit(row.original)`. It opens the same dialog in edit mode; the dialog title shows the cost's name.
+- **Sorting:** the table is sorted by name by default (`localeCompare` with the active locale, so umlauts sort correctly). The headers of Name, Category, Kind, Amount and Business are sort buttons (`sortableHeader` in `costs.vue`, cycling ascending and descending). Text columns use a `sortingFn` that compares the translated text shown in the cell, not the stored id. `UTable` sets no `aria-sort`, so the button's `aria-label` carries the state ("Name, sorted ascending"; texts in `costs.sort.*`). The "When" column is deliberately not sortable (idea: issue #3).
 
 ### Subtotals in the "This month" card
 
@@ -87,7 +143,8 @@ Issue #60. Written for developers. The "This month" card is a solid cobalt card 
 - A decorative ring (`span.hero-ring`, `aria-hidden`, no text), clipped by the card.
 - The heading `h2#this-month-title`: "This month · March 2026" (`dashboard.thisMonth.title`, with a middle dot, in both languages).
 - The total as `p.hero-total` (large, tabular numerals, whole euros).
-- The comparison with the previous month in a translucent pill (`bg-white/15`, `rounded-full`). The trend icon is decoration; the direction is in the words.
+- The comparison with the previous month (from `monthChange`) in a translucent pill (`bg-white/15`, `rounded-full`). The trend icon is decoration (`aria-hidden`); the direction is in the words: "50% more than September", "less", "Same as", or a neutral text without a percentage when the previous month cost nothing.
+- The card always shows today's month (`currentYear`, `currentMonth`), whatever year the year select shows. The same holds for "Largest this month" and for the highlighted month of the months chart.
 - A bottom row (flex, wraps): the subtotals `dl` on the left (cents), and at the right the white pill link "View <month year>" with an arrow (`ml-auto`).
 - In a month without costs, the row also shows "No costs this month yet." (`dashboard.thisMonth.empty`) and an outlined white "Add cost" button that calls `openAdd()` (the `thisMonth.empty` flag). With costs, neither is rendered. The "Largest this month" card shows the same text in that case.
 - The card is a flex column and its body fills it, so when the row stretches the card to the height of "Largest this month", the bottom row sits at the bottom. It uses `mt-auto` and `pt-10` (at least 40 px above it) and `w-full`, because the column does not stretch its children. See [Equal heights in a row](#equal-heights-in-a-row).
@@ -97,6 +154,10 @@ Tests: `tests/nuxt/dashboard-page.test.ts`: the heading with the middle dot, the
 ### Equal heights in a row
 
 Issue #111. Written for developers. The dashboard rows are flex rows in `main.css` (`main > div:has(#this-month-title)`). They use `align-items: stretch`, so the sections of one row are as tall as the tallest one: "This month" next to "Largest this month", "Where your money goes" next to "Household and business". A section alone in its row ("Your year", "Month by month") keeps its own height. Each dashboard `section` is a flex column and its `.card` has `flex: 1`, so a shorter card fills the section and no empty strip shows below it.
+
+The rows are set up in `main.css` with `:has(#this-month-title)` on the layout's container, because the sections sit directly in it and no wrapper element may be added. The `h1` has its own row (the year picker moved into the summary section, #64). "This month" (flex weight 3) sits next to "Largest this month" (2), and "Where your money goes" (3) next to "Household and business" (2). Everything wraps into one column on narrow screens.
+
+The `sr-only` texts of the months chart are kept inside its scroll area with `relative`, which also removed the sideways page scroll at 320 px.
 
 The month page's total card also uses `card-hero`; its two lines stay at the top.
 
@@ -119,7 +180,7 @@ Tests: `tests/nuxt/dashboard-page.test.ts`, `describe('dashboard page largest th
 
 Issue #64. The section `aria-labelledby="summary-title"` has a header row (`flex flex-wrap items-center justify-between`) with the `h2` "Your year <year>" (`dashboard.summary.title`, 26 px, weight 800) and, to its right, the `YearSelect`. Before, the select sat above the sections and the heading was "Summary for <year>". Both are inside the loaded content, so neither shows while loading, on an error or on the empty screen.
 
-Below the header is one `UCard` (`card card-flush overflow-hidden`) with a `dl` of four tiles, in the order Annual total, Average, Household, Business:
+Below the header is one `UCard` (`card card-flush overflow-hidden`) with a `dl` of four tiles, in the order Annual total, Average, Household, Business. The data is from `annualSummary` in `shared/utils/costs.ts`, shown in whole euros by `useMoney()`; the year comes from `useYear()` (see [Composables](#composables)):
 
 | Tile | Label key | Value | Sub line | Dot |
 | --- | --- | --- | --- | --- |
@@ -174,7 +235,7 @@ Notes on the months chart:
 
 - Issue #69: the card holds the `h2` "Month by month" (`dashboard.months.title`, no year; German "Monat für Monat") and the hint `dashboard.months.hint` ("Select a month to open it") in one row (`flex flex-wrap items-baseline justify-between gap-2`). The bars are 32 px pills (`w-8 rounded-full`, centred in the column). The current month of the shown year is `bg-primary` with a bold `text-primary` value and a bold label; the other months use `bg-[var(--chart-soft)]`. Colour is not the only carrier: the bold label and value stay. The light soft colour has 1.70:1 against the card, see [Months chart colours](colour-scheme.md#months-chart-colours).
 - Each `li` holds a `NuxtLink` (a real `<a>`, works without JavaScript). The `li` has no layout of its own, so the link fills the grid column and the bars keep their width.
-- Link name: the `sr-only` text from `dashboard.months.alt` ("March: €1,100"). The bar, the short value and the short label are `aria-hidden`; the bar has a hover `title`.
+- Link name: the `sr-only` text from `dashboard.months.alt` ("March: €1,100"; the month names come from `Intl` in the active language, "January: €800"). The bar, the short value and the short label are `aria-hidden`; the bar has a hover `title`.
 - Short value above each bar (`span.text-xs.tabular-nums`, `aria-hidden`; bold and `text-primary` for the current month, `text-muted` for the others). `monthRows` carries it as `value`, built by `shortAmount(total)`: if `Math.round(total) < 1000` it is the whole number from `n(...)` ("800"); otherwise `n(total / 1000, { maximumFractionDigits: 1 })` inside the key `dashboard.months.thousand` (`"{value}k"` in en and de), so "2.3k" in English, "2,3k" in German, "2k" for 2,000 and "12.6k". 999.60 rounds to 1000 and reads "1k". A month of 0 shows "0" and keeps its baseline.
 - Decision: the value is hand-built, not `Intl.NumberFormat` with `notation: 'compact'` (what issue #68 asked for). The author checked it: German short compact does not abbreviate thousands ("2100", "12.600"), the long form is "2,1 Tausend" (too wide for a narrow column), and the mock builds "2.1k" by hand too. The full amount stays in the link's `sr-only` text.
 - The scroll area has `pb-4` (16 px) below the month labels.
@@ -407,7 +468,9 @@ Who calls what:
 | `/costs`: pencil button of a row | `openEdit(row.original)` |
 | Month page: "Add cost" in the empty month card (no button next to the heading since #59) | `openAdd(monthRef)` |
 
-The delete confirmation is not part of this. It stays a modal of the costs page.
+The delete confirmation is not part of this. It stays a modal of the costs page (see [Costs page](#costs-page)).
+
+The dialog is not its own route and not one per page. A modal (`UModal`) was chosen over a slide-over for mobile.
 
 What the layout does:
 
@@ -418,6 +481,18 @@ What the layout does:
 - The layout calls `useCostLists()`. The pages fetch the same lists, so this adds no requests.
 
 State lives in `useState`, not in provide/inject, so any component can open the dialog without being a child of the layout.
+
+### Cost form
+
+`components/CostForm.vue` is one form for adding and editing both kinds of cost. It is built with `UForm` and the Zod schemas; the schema switches with the kind switch. All fields are labelled.
+
+- **Add:** on submit it POSTs `event.data` (already stripped by Zod) to the matching route and emits `saved`. The layout refreshes both lists (`retry` of `useCostLists()`) and closes the dialog.
+- **Failure:** if the request fails, a toast (`useToast`, text from `form.error`) is shown and the modal stays open with the entered values.
+- **Fresh start:** a closed modal unmounts its content, so the form starts empty each time. A Cancel button emits `cancel`; the layout closes the dialog, which clears the state, so the next "Add cost" starts empty.
+- **Edit:** with the optional `cost` prop (`Stored<Cost>`) the form is pre-filled once, the kind radio group is disabled (a cost cannot change its kind), the submit button says "Save" and submit sends a `PATCH` to `/api/<resource>/<id>` instead of a `POST`.
+- **Month prop:** the optional `month` prop (`{ year, month }`, set when a month page or the phone's add button calls `openAdd(monthRef)`) starts a purchase on the first day of that month, limits the date field to that month with `min` and `max` and names the month in a hint ("Pre-filled with October 2026. Pick the day."). A yearly or quarterly cost starts with that month as `dueMonth`, which stays free to change. The first and last day come from `monthDateRange` in `shared/utils/dates.ts` (UTC, leap years included).
+- **Limit of the month prop:** the browser limits the date field, the Zod schema does not, so the API still accepts a purchase on any day.
+- **Defaults are read once** when the form is created, like the `cost` prefill, and an edited cost keeps its own values. Without the `month` prop the form is unchanged; the sidebar and `/costs` use `openAdd()`.
 
 ### Known limit: the costs table loads on the client
 
@@ -451,7 +526,7 @@ Checked by hand in the browser: the dashboard and month page buttons open the di
 | Composable | Returns |
 | --- | --- |
 | `useMoney(options?)` | A formatter for euros: whole euros, or cents with `useMoney({ cents: true })` |
-| `useYear()` | `year` (selected, shared state), `currentYear`, `currentMonth` (read once, in UTC) |
+| `useYear()` | `year` (selected, shared state), `currentYear`, `currentMonth` (read once, in UTC). The dashboard and the costs table share the selected year, because the core takes the year as a parameter; month pages take their year from the URL instead. See [Dashboard money and year](decisions.md#dashboard-money-and-year) |
 | `useMonth()` | `monthName(month, style?)`, `monthYear(year, month)`, `monthPath(year, month)`, `toRow(cost)` (a display row for a stored cost: `key`, `name`, `subline`, `business`, `amount` in cents, `category`; used by the month page and the "Largest this month" card) |
 | `useCostLists()` | `recurring`, `purchases`, `failed`, `loading`, `retry`. Uses `useFetch` with `lazy: true`, so the layout, the dashboard, the costs page and the month page share the cached data. |
 | `useNavItems()` | `items` (computed, follows the language): `label`, `shortLabel`, `to`, `icon` for Dashboard, Costs and This month. Read by the sidebar and `MobileBar`. |
@@ -468,7 +543,10 @@ Checked by hand in the browser: the dashboard and month page buttons open the di
 - Add button texts: `costs.add` (all pages) and `costs.addToMonth` (month pages, "Add cost to {month}" / "Kosten zu {month} hinzufügen"), used by the [phone add button](#add-button-on-phones).
 - Language texts: `language.label` (the select: "Language" / "Sprache") and `language.current` (the compact button's name, "Language: {language}" / "Sprache: {language}").
 - Navigation texts: `nav.label`, `nav.dashboard`, `nav.costs`, `nav.thisMonth` and `nav.month` (the short label of the tab bar: "Month" / "Monat").
-- Page titles: each page sets `useHead({ title: () => t('...') })`. `app.vue` adds the suffix: "<page> – Costcompass".
+- Page titles: `app.vue` sets a `titleTemplate` (`<page> – Costcompass`, the app name from `app.name`) and every page sets its own title with `useHead({ title: () => t('...') })`, so the title is translated and follows a language switch. A page without a title falls back to the app name. New pages (dashboard, month pages) follow the same pattern.
+- Head setup: `lang`, `dir` and the title template live in `useAppHead()`, which both `app.vue` and `error.vue` call, because `error.vue` replaces `app.vue` while an error is shown. `@nuxtjs/i18n` does not set the document language, so `useAppHead()` sets `<html lang>` (the locale code) and `dir="ltr"` with `useHead`; a right-to-left language would need `dir` from the locale.
+- `<NuxtRouteAnnouncer />` in `app.vue` announces the new title to screen readers after every navigation; `error.vue` has its own.
+- Nuxt UI's own texts (the modal close button, the empty table) follow the i18n locale on their own, because the Nuxt UI module provides its locale from `$i18n.locale`. `UApp` needs no `locale` prop.
 
 ## Accessibility conventions
 

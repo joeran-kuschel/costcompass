@@ -33,7 +33,9 @@ Example: rent `950` monthly gives `11400` a year; a laptop of `1200` bought in 2
 
 Edge case: a yearly or quarterly cost without `dueMonth` (untyped input, old rows) never occurs in a month, but still counts in the annual totals. The API prevents such rows; see [api.md](api.md).
 
-`totalMonthlyCost` and `monthlyTotals` agree with `costsInMonth`: a month's total is the sum of its list.
+`totalMonthlyCost` and `monthlyTotals` agree with `costsInMonth`: a month's total is the sum of its list. `costsInMonth` is generic, so stored items keep their `id` (rows need a key), and the UI can show recurring costs and purchases clearly apart.
+
+`monthlyTotals` returns the true cost of each of the 12 months, not an average: purchases land in the month of their date, monthly recurring costs count in every month.
 
 ## Filter and category totals
 
@@ -50,7 +52,7 @@ Edge case: a yearly or quarterly cost without `dueMonth` (untyped input, old row
 | `categoryBreakDown(recurring, purchases, year)` | `{ category, total, share, percent }[]` | One entry per category, largest total first. `share` is relative to the largest category (0 to 1); the dashboard no longer reads it, it stays in the core for now. `percent` is the category's share of the year's total as a whole percentage, and all percentages add up to exactly 100 (see below). Categories without costs are included with 0. Equal totals keep the order of `CATEGORIES`. With no costs, every share and percent is 0. |
 | `splitPercentages(summary)` | `{ household, business }` | Whole percentages. `business` is rounded, `household` is `100 - business`, so they add up to 100. A total of 0 gives 0 and 0. |
 | `monthBreakdown(recurring, purchases, year)` | `{ month, total, share }[12]` | January to December, not sorted. `share` is relative to the largest month; with no costs every share is 0. |
-| `monthChange(recurring, purchases, year, month)` | `{ current, previous, percent }` | Totals of the month and the one before. January compares with December of the previous year. `percent` is the signed whole-number change (negative means less) and `null` when the previous month cost nothing. |
+| `monthChange(recurring, purchases, year, month)` | `{ current, previous, percent }` | Totals of the month and the one before. January compares with December of the previous year, which matters for purchases. "Today" is not read in the core; the caller passes year and month. `percent` is the signed whole-number change (negative means less) and `null` when the previous month cost nothing. |
 | `availableYears(purchases, currentYear)` | number[] | The current year plus every year with a purchase, newest first, no duplicates. |
 
 ### Rounding of `percent`
@@ -61,8 +63,8 @@ Rounding each category on its own can give 99 or 101. `categoryBreakDown` uses t
 
 | Function | Returns | Behaviour |
 | --- | --- | --- |
-| `monthNeighbours({ year, month }, validYears)` | `{ previous, next }` | The adjacent months as `{ year, month }`. January goes back to December of the previous year, December on to January of the next. A neighbour whose year is not in `validYears` is `null`. It does not bridge gaps between valid years. |
-| `groupMonthCosts(costs)` | `{ recurring, purchases, recurringTotal, purchasesTotal, total }` | Splits the output of `costsInMonth` by `kind`. A group without entries is an empty list with subtotal 0. `total` equals the matching entry of `monthlyTotals`. Generic, so `id` survives. |
+| `monthNeighbours({ year, month }, validYears)` | `{ previous, next }` | The adjacent months as `{ year, month }`. January goes back to December of the previous year, December on to January of the next. A neighbour whose year is not in `validYears` is `null`, so the month page can hide that link; the valid years are the years with data plus the current year (`availableYears`). It does not bridge gaps between valid years. |
+| `groupMonthCosts(costs)` | `{ recurring, purchases, recurringTotal, purchasesTotal, total }` | Splits the output of `costsInMonth` by `kind`. A group without entries is an empty list with subtotal 0. `total` is added in the same order as `totalMonthlyCost`, so it equals the matching entry of `monthlyTotals`. Generic (`MonthGroups<R, P>`), so `id` survives. |
 | `largestCosts(costs, n = 4)` | The first `n` of the costs | Sorts by amount, largest first. Ties: recurring before purchase, then by name (`localeCompare` with the fixed locale `en`, so the result does not depend on the runtime locale). Fewer than `n` costs gives all of them, none gives an empty list. Does not change its input. Generic, so `id` survives. Takes the output of `costsInMonth`. |
 
 ## Dates

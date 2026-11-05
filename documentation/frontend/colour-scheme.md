@@ -1,6 +1,6 @@
 # Colour scheme
 
-How the Cobalt colour scheme is built, how to change a colour and how to check it. Written for: developers. The decision and its status are in [CLAUDE.md](../../CLAUDE.md) ("Colour scheme (#50, steps 1 and 1b)"); this page explains the mechanics. Other conventions of `app/` are in [app-structure.md](app-structure.md).
+How the Cobalt colour scheme is built, how to change a colour and how to check it. Written for: developers. The decision and its status are in [decisions.md](decisions.md#colour-scheme-50-steps-1-to-3); this page explains the mechanics. Other conventions of `app/` are in [app-structure.md](app-structure.md).
 
 ## Where the scheme comes from
 
@@ -67,7 +67,7 @@ The cobalt scale (light, set in `:root` only; the dark mode reuses it):
 2. Edit the value in `:root` for light mode and, if it differs, in `.dark` for dark mode. To change the primary colour as a whole, edit the `--ui-color-primary-*` steps and keep `--ui-primary` pointing at them.
 3. Save. The dev server (`pnpm dev`) reloads the page.
 4. Check both modes (next section).
-5. If the change is a design decision, update the "Colour scheme" decision in `CLAUDE.md` and the table above.
+5. If the change is a design decision, update the "Colour scheme" decision in [decisions.md](decisions.md) and the table above.
 
 To colour a new element, use the Nuxt UI colour props (`color="primary"`, `color="secondary"`, `color="neutral"`) or the matching utility classes (`bg-primary`, `text-muted`) instead of hex values, so both modes follow.
 
