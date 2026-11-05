@@ -10,6 +10,8 @@ const { t, n, locale } = useI18n()
 const { openAdd, openEdit } = useCostDialog()
 const { recurring, purchases, failed, loading, retry } = useCostLists()
 const toast = useToast()
+const { kindIcon } = useKind()
+
 const UButton = resolveComponent('UButton')
 const toDelete = ref<Stored<Cost> | null>(null)
 const costs = computed<Stored<Cost>[]>(() => [
@@ -87,7 +89,12 @@ function sortableHeader(label: string) {
             </div>
         </template>
         <template #category-cell="{ row }">{{ t(`category.${row.original.category}`) }}</template>
-        <template #kind-cell="{ row }">{{ t(`kind.${row.original.kind}`) }}</template>
+        <template #kind-cell="{ row }">
+            <span class="flex items-center gap-2">
+                <UIcon :name="kindIcon(row.original.kind)" class="size-4 shrink-0 text-muted" aria-hidden="true" />
+                {{ t(`kind.${row.original.kind}`) }}
+            </span>
+        </template>
         <template #amount-cell="{ row }">{{ n(row.original.amount, { style: 'currency', currency: 'EUR' }) }}</template>
         <template #when-cell="{ row }">{{ whenLabel(row.original) }}</template>
         <template #business-cell="{ row }">{{ row.original.business ? t('common.yes') : t('common.no') }}</template>

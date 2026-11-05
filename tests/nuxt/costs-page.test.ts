@@ -95,6 +95,45 @@ describe('costs page name column', () => {
   })
 })
 
+describe('costs page kind column', () => {
+  // Rows are sorted by name: Laptop (purchase), Liability insurance and Rent (recurring). Kind is the third column.
+  const kindCell = (index: number) => wrapper.findAll('tbody tr')[index]!.findAll('td')[2]!
+  const iconIn = (cell: ReturnType<typeof kindCell>, icon: string) => cell.find(`[class*="i-lucide:${icon}"], [class*="i-lucide-${icon}"]`)
+
+  it('shows the repeat icon for recurring costs and the shopping bag for purchases', async () => {
+    await vi.waitFor(() => expect(wrapper.findAll('tbody tr')).toHaveLength(3))
+    expect(iconIn(kindCell(0), 'shopping-bag').exists()).toBe(true)
+    expect(iconIn(kindCell(1), 'repeat').exists()).toBe(true)
+    expect(iconIn(kindCell(2), 'repeat').exists()).toBe(true)
+    expect(iconIn(kindCell(0), 'repeat').exists()).toBe(false)
+  })
+  it('keeps the icon decorative and the kind as text', async () => {
+    await vi.waitFor(() => expect(wrapper.findAll('tbody tr')).toHaveLength(3))
+    expect(iconIn(kindCell(0), 'shopping-bag').attributes('aria-hidden')).toBe('true')
+    expect(iconIn(kindCell(2), 'repeat').attributes('aria-hidden')).toBe('true')
+    expect(kindCell(0).text()).toBe('Purchase')
+    expect(kindCell(2).text()).toBe('Recurring')
+  })
+  it('uses the same icons as the month page', async () => {
+    await vi.waitFor(() => expect(wrapper.findAll('tbody tr')).toHaveLength(3))
+    const { kindIcon } = useKind()
+    expect(kindCell(0).find(`[class*="${kindIcon('purchase').replace('i-lucide-', '')}"]`).exists()).toBe(true)
+    expect(kindCell(2).find(`[class*="${kindIcon('recurring').replace('i-lucide-', '')}"]`).exists()).toBe(true)
+  })
+  it('has German kind names next to the icons', async () => {
+    await vi.waitFor(() => expect(wrapper.findAll('tbody tr')).toHaveLength(3))
+    await useNuxtApp().$i18n.setLocale('de')
+    try {
+      // German sorts the same way here: Laptop, Liability insurance, Rent.
+      await vi.waitFor(() => expect(kindCell(0).text()).toBe('Anschaffung'))
+      expect(kindCell(2).text()).toBe('Wiederkehrend')
+      expect(iconIn(kindCell(0), 'shopping-bag').exists()).toBe(true)
+    } finally {
+      await useNuxtApp().$i18n.setLocale('en')
+    }
+  })
+})
+
 describe('costs page add and edit', () => {
   // The dialog itself lives in the layout (see CostDialog.test.ts); the page only asks for it.
   const dialogState = () => {
