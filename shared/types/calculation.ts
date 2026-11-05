@@ -65,3 +65,12 @@ export interface MonthGroups<R, P> {
     purchasesTotal: number,
     total: number
 }
+export interface MonthSummary<R, P> {
+    costs: (R | P)[],
+    count: number,
+    businessCount: number,
+    groups: MonthGroups<R, P>,
+    change: MonthChange,
+    largest: (R | P)[],
+    empty: boolean
+}

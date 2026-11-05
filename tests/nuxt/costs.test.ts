@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import type { RecurringCost, Purchase, CostItem, Month, AnnualSummary, Stored } from '~~/shared/types/calculation'
 import { CATEGORIES } from '~~/shared/types/calculation'
-import { totalAnnualRecurring, totalAnnualPurchases, totalAnnualCost, filterByBusiness, totalsByCategory, occursInMonth, totalMonthlyCost, monthlyTotals, costsInMonth, annualSummary, categoryBreakdown, splitPercentages, monthBreakdown, monthChange, availableYears, monthNeighbours, groupMonthCosts, largestCosts } from '~~/shared/utils/costs'
+import { totalAnnualRecurring, totalAnnualPurchases, totalAnnualCost, filterByBusiness, totalsByCategory, occursInMonth, totalMonthlyCost, monthlyTotals, costsInMonth, annualSummary, categoryBreakdown, splitPercentages, monthBreakdown, monthChange, availableYears, monthNeighbours, groupMonthCosts, largestCosts, monthSummary } from '~~/shared/utils/costs'
 
 const YEAR = 2026
 
@@ -955,5 +955,92 @@ describe('largestCosts', () => {
     const costs = [...five]
     largestCosts(costs)
     expect(names(costs)).toEqual(['Gym', 'Desk', 'Rent', 'Lamp', 'Phone'])
+  })
+})
+
+describe('monthSummary', () => {
+  const rent = recurring({ name: 'Rent', amount: 1200 })
+  const gym = recurring({ name: 'Gym', amount: 30 })
+  const lamp = purchase({ name: 'Lamp', amount: 90, date: `${YEAR}-03-15` })
+  const desk = purchase({ name: 'Desk', amount: 210, date: `${YEAR}-03-20` })
+  const march = 3 as Month
+
+  it('lists the costs of the month like costsInMonth', () => {
+    const result = monthSummary([rent, gym], [lamp, desk], YEAR, march)
+    expect(result.costs).toEqual(costsInMonth([rent, gym], [lamp, desk], YEAR, march))
+  })
+  it('groups the same list by kind and its total equals the matching entry of monthlyTotals', () => {
+    const result = monthSummary([rent, gym], [lamp, desk], YEAR, march)
+    expect(result.groups).toEqual(groupMonthCosts(result.costs))
+    expect(result.groups.total).toBe(monthlyTotals([rent, gym], [lamp, desk], YEAR)[2])
+  })
+  it('compares with the month before like monthChange', () => {
+    const february = purchase({ name: 'Heater', amount: 500, date: `${YEAR}-02-10` })
+    const result = monthSummary([rent], [lamp, february], YEAR, march)
+    expect(result.change).toEqual(monthChange([rent], [lamp, february], YEAR, march))
+    expect(result.change.previous).toBe(1700)
+  })
+  it('compares January with December of the year before', () => {
+    const december = purchase({ name: 'Gift', amount: 400, date: `${YEAR - 1}-12-20` })
+    const result = monthSummary([], [december], YEAR, 1)
+    expect(result.change.previous).toBe(400)
+    expect(result.change.current).toBe(0)
+  })
+  it('has no percentage when the month before cost nothing', () => {
+    expect(monthSummary([], [lamp], YEAR, march).change.percent).toBeNull()
+  })
+  it('returns the four largest costs of the month like largestCosts', () => {
+    const extra = [1, 2, 3].map(index => purchase({ name: `Extra ${index}`, amount: index, date: `${YEAR}-03-0${index}` }))
+    const result = monthSummary([rent, gym], [lamp, desk, ...extra], YEAR, march)
+    expect(result.largest).toEqual(largestCosts(result.costs))
+    expect(result.largest).toHaveLength(4)
+    expect(result.largest.map(cost => cost.name)).toEqual(['Rent', 'Desk', 'Lamp', 'Gym'])
+  })
+  it('is empty for a month without costs, and not empty otherwise', () => {
+    const empty = monthSummary([], [lamp], YEAR, 5)
+    expect(empty.empty).toBe(true)
+    expect(empty.costs).toEqual([])
+    expect(empty.largest).toEqual([])
+    expect(empty.groups.total).toBe(0)
+    expect(monthSummary([], [lamp], YEAR, march).empty).toBe(false)
+  })
+  it('keeps the id of stored items', () => {
+    const storedRent: Stored<RecurringCost> = { ...rent, id: 7 }
+    const storedLamp: Stored<Purchase> = { ...lamp, id: 8 }
+    const result = monthSummary([storedRent], [storedLamp], YEAR, march)
+    expect(result.groups.recurring[0]?.id).toBe(7)
+    expect(result.groups.purchases[0]?.id).toBe(8)
+    expect(result.largest.map(cost => cost.id)).toEqual([7, 8])
+  })
+  it('counts the costs of the month, recurring and purchases together', () => {
+    const result = monthSummary([rent, gym], [lamp, desk], YEAR, march)
+    expect(result.count).toBe(4)
+    expect(result.count).toBe(result.costs.length)
+  })
+  it('counts business costs of both kinds', () => {
+    const businessGym = recurring({ name: 'Gym', amount: 30, business: true })
+    const businessDesk = purchase({ name: 'Desk', amount: 210, date: `${YEAR}-03-20`, business: true })
+    const result = monthSummary([rent, businessGym], [lamp, businessDesk], YEAR, march)
+    expect(result.count).toBe(4)
+    expect(result.businessCount).toBe(2)
+  })
+  it('counts only business costs that fall in the month', () => {
+    const businessFebruary = purchase({ name: 'Printer', amount: 150, date: `${YEAR}-02-10`, business: true })
+    const businessYearly = recurring({ name: 'Domain', amount: 20, interval: 'yearly', dueMonth: 6, business: true })
+    const result = monthSummary([rent, businessYearly], [lamp, businessFebruary], YEAR, march)
+    expect(result.count).toBe(2)
+    expect(result.businessCount).toBe(0)
+  })
+  it('counts zero costs and zero business costs for an empty month', () => {
+    const result = monthSummary([], [lamp], YEAR, 5)
+    expect(result.count).toBe(0)
+    expect(result.businessCount).toBe(0)
+  })
+  it('does not change its input', () => {
+    const recurringList = [rent, gym]
+    const purchaseList = [lamp, desk]
+    monthSummary(recurringList, purchaseList, YEAR, march)
+    expect(recurringList).toEqual([rent, gym])
+    expect(purchaseList).toEqual([lamp, desk])
   })
 })
