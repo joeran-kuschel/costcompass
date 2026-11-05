@@ -111,6 +111,14 @@ Details: [By category card](app-structure.md#by-category-card-77).
 
 Details: [By category card](app-structure.md#by-category-card-77) and [Components](app-structure.md#components).
 
+### Month heading row on phones (#118)
+
+- **A grid with a fixed middle column, not `justify-between`.** Below `sm` the row is a three-column grid (44 px, the rest, 44 px), and the title is fixed to column 2. With `justify-between` in a flex row the title would move sideways when an arrow is missing (the first or the last month with data). The grid keeps the title in the middle in every case.
+- **The badge below the title on phones.** Title and badge are stacked and centred in the middle column, so the row never wraps. From `sm` the row is the old flex row.
+- **Source order unchanged.** Only CSS places the parts, so the keyboard order and the screen reader order stay previous, title, next.
+
+Details: [Navigation](app-structure.md#navigation-26).
+
 ## Add/edit form
 
 A modal (`UModal`) with one `CostForm` for both kinds of cost, rendered once by the layout. A modal works better on mobile than a slide-over. Details: [Add and edit dialog](app-structure.md#add-and-edit-dialog).
