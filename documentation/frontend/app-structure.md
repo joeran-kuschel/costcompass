@@ -92,6 +92,8 @@ The costs of the month are only rendered in the loaded branch, so a refresh that
 
 The month's total sits in a hero card (see [Month hero](#month-hero-73-74) below). Below it is one `section` per kind that has entries (Recurring, Purchases); a group without entries is not shown. Each section has an `h2`, its subtotal and a `ul` of rows. Everything about the month (the groups, subtotals, rows, comparison, counts and the empty flag) comes from one `useMonthSummary()` call, which runs `monthSummary` from the core (see [Composables](#composables)). The `sections` computed builds the two groups from its `recurringRows`, `purchaseRows`, `recurringTotal` and `purchasesTotal`, and one loop renders both.
 
+Issue #75: each group heading starts with a kind icon. Every `sections` entry carries its `kind` (`'recurring'` or `'purchase'`), and the `h2` (`flex items-center gap-2`) holds a `UIcon` with `kindIcon(section.kind)` from `useKind()` (see [Composables](#composables)) before the title: a repeat icon for "Recurring", a shopping bag for "Purchases". The icon is `text-muted` and `aria-hidden="true"`, so the heading's accessible name stays "Recurring" or "Purchases". Contrast of the icon, computed from the colour tokens with the WCAG formula, not measured: `#4a4e69` on the card's `#ffffff` is 8.12:1 in light mode, `#a3a7c2` on `#15172a` is 7.46:1 in dark mode, so both clear the 3:1 for graphics. Tests: `tests/nuxt/month-page.test.ts` ("puts a decorative kind icon in each group heading, so the heading text stays the same") and `tests/nuxt/useKind.test.ts`. Checked by the author in the browser: light mode, dark mode and 320 px. Not checked: a real phone, a screen reader.
+
 A row has:
 
 - the name (it wraps when long),
@@ -546,6 +548,7 @@ Checked by hand in the browser: the dashboard and month page buttons open the di
 | `useCostLists()` | `recurring`, `purchases`, `failed`, `loading`, `retry`. Uses `useFetch` with `lazy: true`, so the layout, the dashboard, the costs page and the month page share the cached data. |
 | `useNavItems()` | `items` (computed, follows the language): `label`, `shortLabel`, `to`, `icon` for Dashboard, Costs and This month. Read by the sidebar and `MobileBar`. |
 | `useCategory()` | `categoryIcon(category)`, `categoryClass(category)`, `categoryStyle(size)` for `CategoryBadge`; also exports `CATEGORY_SIZES` and `CategorySize` |
+| `useKind()` | `kindIcon(kind)`: the icon for a cost's kind, from `KIND_ICONS` (`recurring` → `i-lucide-repeat`, `purchase` → `i-lucide-shopping-bag`, not food's `i-lucide-shopping-basket`). The one place for kind icons; used by the month page's group headings, and an icon in the kind column of the costs table *(planned, #85)* is meant to reuse it. See [Kind icons](decisions.md#kind-icons-75) |
 | `useCostDialog()` | `open`, `cost` (`Stored<Cost> \| null`), `month` (`MonthRef \| null`), `openAdd(month?)`, `openEdit(cost)`, `close()`. State in `useState` (keys `costDialogOpen`, `costDialogCost`, `costDialogMonth`). See [Add and edit dialog](#add-and-edit-dialog). |
 | `useAppHead()` | `<html lang>`, `dir` and the title template; called by `app.vue` and `error.vue` |
 

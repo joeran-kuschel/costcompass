@@ -89,6 +89,10 @@ Year and month are in the URL (`/months/2026/03`), the month always with two dig
 
 `useMonthSummary()` takes no arguments. It reads the month from the route params (`monthParamsSchema`) and falls back to today's month from `useYear()` when the address has none, so the dashboard hero and the month page hero share one composable without passing a month around. Loading, failed and retry stay in `useCostLists()`: they describe the lists, not the month, and the dashboard needs them for the whole page. Details: [Composables](app-structure.md#composables).
 
+### Kind icons (#75)
+
+The icons for the two kinds of cost live in their own composable, `useKind()`, not in `useCategory()`: the kind is a different property of a cost than its category. There is no component for now, because it would only wrap one `UIcon`. A `KindLabel` component is worth reconsidering with #85 (an icon next to the kind in the costs table) if icon and word appear together in several places. Details: [Content](app-structure.md#content-25).
+
 ## Add/edit form
 
 A modal (`UModal`) with one `CostForm` for both kinds of cost, rendered once by the layout. A modal works better on mobile than a slide-over. Details: [Add and edit dialog](app-structure.md#add-and-edit-dialog).

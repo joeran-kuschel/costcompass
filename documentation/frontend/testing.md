@@ -1,6 +1,6 @@
 # Testing the frontend
 
-What the component, page, composable and app-level tests check and how each is set up. Written for: developers. The general conventions, the commands and the tests of the calculation core and the server are in [the backend testing page](../backend/testing.md). The tests live in `tests/nuxt/`; today there are 28 files and 661 tests.
+What the component, page, composable and app-level tests check and how each is set up. Written for: developers. The general conventions, the commands and the tests of the calculation core and the server are in [the backend testing page](../backend/testing.md). The tests live in `tests/nuxt/`; today there are 29 files and 664 tests.
 
 ## Setup that all of these tests share
 
@@ -25,7 +25,7 @@ What the component, page, composable and app-level tests check and how each is s
 | `dashboard-months.test.ts` | The costs per month chart and the month bar links |
 | `dashboard-month-cards.test.ts` | The this-month card (also its empty month and its subtotals), the "Largest this month" card, the "View month" link and the year selector |
 | `helpers/dashboard.ts` | Not a test file. The shared fake API (`api`, `registerDashboardEndpoints()`), the `rent` fixture, `sleep`, `setLanguage()` and `resetDashboardState()`, which resets the fake endpoints, calls `clearNuxtData()` and `clearNuxtState(['year', 'today'])` and runs in `beforeEach` |
-| `month-page.test.ts` | The states; that its add buttons ask for the dialog with the month; the year check; the content with its sums, checked against `monthlyTotals`; the hero's comparison pill (more, less, same, nothing to compare with, the short text and the icon hidden from screen readers, not shown while loading or after a failed load, German) and its counts line (all and business costs, matching the rows below, singular for one cost, hidden in an empty month, German). Same fake endpoints as the dashboard tests, `mountSuspended` with the `route` option, `showError` mocked with `mockNuxtImport` |
+| `month-page.test.ts` | The states; that its add buttons ask for the dialog with the month; the year check; the content with its sums, checked against `monthlyTotals`; the hero's comparison pill (more, less, same, nothing to compare with, the short text and the icon hidden from screen readers, not shown while loading or after a failed load, German) and its counts line (all and business costs, matching the rows below, singular for one cost, hidden in an empty month, German); the decorative kind icon in each group heading, with the heading text unchanged. Same fake endpoints as the dashboard tests, `mountSuspended` with the `route` option, `showError` mocked with `mockNuxtImport` |
 | `error-page.test.ts` | `error.vue` mounted with an `error` prop, `clearError` mocked with `mockNuxtImport` |
 | `costs-page.test.ts` | `costs.vue`: its add and edit buttons only check the dialog state; the page shows new numbers after `refreshNuxtData()` |
 | `costs-page-sorting.test.ts` | The sort order and the sort button names of the costs table in both languages. It switches the locale with `useNuxtApp().$i18n.setLocale` and resets it after each test |
@@ -61,6 +61,7 @@ The page test does not go through Nuxt's error handling. Whether a real unknown 
 | `useYear.test.ts` | `clearNuxtState` before each test, because `useState` outlives a test. A test fakes the clock around New Year |
 | `useMonth.test.ts` | Its time zone check only fails west of UTC. Run it with `TZ=America/Los_Angeles` to see it, as described on the [backend testing page](../backend/testing.md#good-to-know) |
 | `useCategory.test.ts`, `useNavItems.test.ts` | See [Category badge](colour-scheme.md#category-badge) and [The items](app-structure.md#the-items) |
+| `useKind.test.ts` | The icon per kind (repeat for recurring costs, shopping bag for purchases), and that each kind has its own icon, different from every category icon of `useCategory()`. Calls `useKind()` directly, because it needs no i18n or component state |
 
 ### App level
 

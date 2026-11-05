@@ -242,6 +242,16 @@ describe('month page content', () => {
     expect(subtotalOf('recurring')).toBe('€950.75')
     expect(subtotalOf('purchases')).toBe('€912.49')
   })
+  it('puts a decorative kind icon in each group heading, so the heading text stays the same', async () => {
+    await mountOctober()
+    for (const [id, icon, text] of [['recurring', 'repeat', 'Recurring'], ['purchases', 'shopping-bag', 'Purchases']] as const) {
+      const heading = section(id).find('h2')
+      const iconElement = heading.find(`[class*="i-lucide:${icon}"], [class*="i-lucide-${icon}"]`)
+      expect(iconElement.exists(), id).toBe(true)
+      expect(iconElement.attributes('aria-hidden'), id).toBe('true')
+      expect(heading.text()).toBe(text)
+    }
+  })
   it('shows only the costs that fall in the month', async () => {
     await mountOctober()
     const names = (id: 'recurring' | 'purchases') => rowsOf(id).map(row => row.find('p').text())

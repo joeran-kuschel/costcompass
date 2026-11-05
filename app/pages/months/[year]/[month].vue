@@ -18,14 +18,15 @@ const euros = useMoney({ cents: true })
 const moneyParts = useMoneyParts()
 const heading = useTemplateRef<HTMLElement>('heading')
 const thisMonthSummary = useMonthSummary()
+const { kindIcon } = useKind()
 
 const title = computed(() => monthYear(year, month))
 const heroTotal = computed(() => moneyParts(thisMonthSummary.value.total))
 const isCurrentMonth = computed(() => year === currentYear.value && month === currentMonth.value)
 const neighbours = computed(() => monthNeighbours(monthRef, availableYears(purchases.value ?? [], currentYear.value)))
 const sections = computed(() => [
-    { id: 'recurring', title: t('month.recurring'), total: euros(thisMonthSummary.value.recurringTotal), rows: thisMonthSummary.value.recurringRows },
-    { id: 'purchases', title: t('month.purchases'), total: euros(thisMonthSummary.value.purchasesTotal), rows: thisMonthSummary.value.purchaseRows },
+    { id: 'recurring', title: t('month.recurring'), total: euros(thisMonthSummary.value.recurringTotal), rows: thisMonthSummary.value.recurringRows, kind: 'recurring' as const },
+    { id: 'purchases', title: t('month.purchases'), total: euros(thisMonthSummary.value.purchasesTotal), rows: thisMonthSummary.value.purchaseRows, kind: 'purchase' as const },
 ].filter(section => section.rows.length > 0))
 useHead({ title: () => title.value })
 
@@ -108,7 +109,10 @@ async function onRetry() {
             </UCard>
             <section v-for="section in sections" :key="section.id" :aria-labelledby="`${section.id}-title`" class="card mt-6 px-6 py-5">
                 <div class="flex items-baseline justify-between gap-4">
-                    <h2 :id="`${section.id}-title`">{{ section.title }}</h2>
+                    <h2 :id="`${section.id}-title`" class="flex items-center gap-2">
+                        <UIcon :name="kindIcon(section.kind)" class="text-muted" aria-hidden="true" />
+                        {{ section.title }}
+                    </h2>
                     <p class="font-extrabold tabular-nums">{{ section.total }}</p>
                 </div>
                 <ul class="mt-3 flex flex-col gap-1.5">
