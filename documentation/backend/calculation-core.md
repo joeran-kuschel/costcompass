@@ -65,8 +65,17 @@ Rounding each category on its own can give 99 or 101. `categoryBreakdown` uses t
 | --- | --- | --- |
 | `monthNeighbours({ year, month }, validYears)` | `{ previous, next }` | The adjacent months as `{ year, month }`. January goes back to December of the previous year, December on to January of the next. A neighbour whose year is not in `validYears` is `null`, so the month page can hide that link; the valid years are the years with data plus the current year (`availableYears`). It does not bridge gaps between valid years. |
 | `groupMonthCosts(costs)` | `{ recurring, purchases, recurringTotal, purchasesTotal, total }` | Splits the output of `costsInMonth` by `kind`. A group without entries is an empty list with subtotal 0. `total` is added in the same order as `totalMonthlyCost`, so it equals the matching entry of `monthlyTotals`. Generic (`MonthGroups<R, P>`), so `id` survives. |
+| `monthCategoryTotals(costs)` | `{ category, total }[]` (`MonthCategoryTotal[]`) | Sums `amount` per category over the output of `costsInMonth`. Categories with a total of 0 are left out. Sorted by total, largest first; the sort is stable, so equal totals keep the order of `CATEGORIES`. No percentage. An empty list gives `[]`. Does not change its input. |
 | `largestCosts(costs, n = 4)` | The first `n` of the costs | Sorts by amount, largest first. Ties: recurring before purchase, then by name (`localeCompare` with the fixed locale `en`, so the result does not depend on the runtime locale). Fewer than `n` costs gives all of them, none gives an empty list. Does not change its input. Generic, so `id` survives. Takes the output of `costsInMonth`. |
-| `monthSummary(recurring, purchases, year, month)` | `{ costs, groups, change, largest, empty, count, businessCount }` (`MonthSummary<R, P>`) | Everything about one month in one call: `costs` from `costsInMonth`, `groups` from `groupMonthCosts` on that list, `change` from `monthChange`, `largest` from `largestCosts` (the four largest). `empty` is true when the month has no costs; `count` is the number of costs, `businessCount` the number of business costs among them (both kinds). Generic, so `id` survives. Does not change its input. The UI reads it through `useMonthSummary()`. |
+| `monthSummary(recurring, purchases, year, month)` | `{ costs, groups, change, largest, empty, count, businessCount, categories }` (`MonthSummary<R, P>`) | Everything about one month in one call: `costs` from `costsInMonth`, `groups` from `groupMonthCosts` on that list, `change` from `monthChange`, `largest` from `largestCosts` (the four largest), `categories` from `monthCategoryTotals` (`[]` for an empty month). `empty` is true when the month has no costs; `count` is the number of costs, `businessCount` the number of business costs among them (both kinds). Generic, so `id` survives. Does not change its input. The UI reads it through `useMonthSummary()`. |
+
+### Month and year category totals
+
+`monthCategoryTotals` is named "month..." so it is not confused with `totalsByCategory` and `categoryBreakdown`. Those two take the lists and a year and use annual amounts (a monthly cost counts 12 times), so they cannot give a month's totals. `monthCategoryTotals` takes the month's list instead, where every item counts once with its `amount`.
+
+It drops categories without costs because the month page's "By category" card shows only categories with a cost, so the template needs no filter. `categoryBreakdown` keeps them, because the dashboard shows every category.
+
+Its totals add up to the month's entry in `monthlyTotals`, but only within a cent: the additions run in a different order, so floating point can differ in the last digits.
 
 ## Dates
 
