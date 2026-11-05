@@ -21,7 +21,7 @@ The dashboard and the month page get their data with `useCostLists()` and show t
 
 1. **Failed**: a `UAlert` with `role="alert"` and a retry button that refreshes both lists. No numbers are shown next to it. The month page shows a banner; the dashboard shows a centred card (see [Dashboard error card](#dashboard-error-card)).
 2. **Loading**: a visually hidden `role="status"` text (month page: also two skeleton blocks marked `aria-hidden`).
-3. **Empty**: dashboard only, a hint and a link to `/costs`. On the month page an empty month shows a card instead of the groups.
+3. **Empty**: dashboard only, a centred card with an "Add your first cost" button (see [Dashboard empty card](#dashboard-empty-card)). On the month page an empty month shows a card instead of the groups.
 4. **Loaded**: the content.
 
 ### Dashboard error card
@@ -36,6 +36,19 @@ Issue #72. When either list fails to load, the dashboard shows a `UAlert` (`role
 The API message is not shown. `dashboard.error` is an object with `title` and `text`; before it was one string. The `h1` (`ref="heading"`, `tabindex="-1"`) is shown in all states. After a retry that succeeds, focus moves to it, because the card with the button is gone. After a retry that fails again, focus does not move.
 
 Tests: the error-state `describe` in `tests/nuxt/dashboard-page.test.ts` checks the card structure, that no API message appears, the focus after a successful retry and no focus move after a failed one; the German test checks the new texts. The card was checked in the browser in light and dark mode, in English and German, at 320 px.
+
+### Dashboard empty card
+
+Issue #70. When there are no costs at all, the dashboard shows a centred `UCard` (classes `card card-state mt-6`) instead of a link to `/costs`:
+
+- A decorative row of four overlapping `CategoryBadge`s (housing, food, insurance, mobility; const `EMPTY_BADGES`), 56 px each, in a ring in the card colour, overlapping by 10 px, the second and fourth lifted by 8 px. The row is `aria-hidden`.
+- An `h2` "No costs yet" (`dashboard.emptyTitle`) and the text "Add a recurring cost or a purchase to see your totals here." (`dashboard.emptyText`).
+- A pill button "Add your first cost" with a plus icon (`dashboard.emptyAdd`). It calls `openAdd()` and opens the empty add dialog. Before, it was a link to `/costs` labelled "Add cost". It is full width on phones and auto width from `sm`.
+- The tip "Tip: start with something monthly, like rent." (`dashboard.emptyTip`; German: "Tipp: Fange mit monatlichen Kosten an, zum Beispiel Deine Miete.").
+
+`main.css` has the modifier `.card.card-state`: the body is a centred flex column with a 12 px gap, padding 40/24/28 px and centred text; `.card-state h2` has no bottom margin. It needs its own rule because the unlayered `.card > [data-slot="body"]` padding beats Tailwind's layered utilities.
+
+Tests: the empty-state `describe` in `tests/nuxt/dashboard-page.test.ts` checks the heading, text, tip and button, four decorative badges with different category classes, that the button opens the empty add dialog and no link to `/costs` is left, and the German texts. The card was checked in the browser. Not checked: a real phone, a screen reader, measured contrast, whether dark mode matches the dark mock exactly.
 
 ### Month page address
 

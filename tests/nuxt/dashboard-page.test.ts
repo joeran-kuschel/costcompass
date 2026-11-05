@@ -71,21 +71,47 @@ describe('dashboard page loading state', () => {
 })
 
 describe('dashboard page empty state', () => {
-  it('explains that there are no costs and links to the costs page', async () => {
+  const card = () => wrapper.find('h2').element.closest('.card-state')!
+  const addButton = () => wrapper.findAll('button').find(button => button.text() === 'Add your first cost')!
+  const dialogState = () => {
+    const { open, cost, month } = useCostDialog()
+    return { open: open.value, cost: cost.value, month: month.value }
+  }
+
+  it('explains that there are no costs and offers the first cost', async () => {
     await mountPage()
     await vi.waitFor(() => expect(wrapper.text()).toContain('No costs yet'))
+    expect(wrapper.find('h2').text()).toBe('No costs yet')
     expect(wrapper.text()).toContain('Add a recurring cost or a purchase to see your totals here.')
-    const add = wrapper.find('a[href="/costs"]')
-    expect(add.exists()).toBe(true)
-    expect(add.text()).toBe('Add cost')
+    expect(wrapper.text()).toContain('Tip: start with something monthly, like rent.')
+    expect(addButton().exists()).toBe(true)
     expect(status().exists()).toBe(false)
     expect(alert().exists()).toBe(false)
+  })
+  it('shows four decorative category badges', async () => {
+    await mountPage()
+    await vi.waitFor(() => expect(wrapper.text()).toContain('No costs yet'))
+    const row = card().querySelector('[aria-hidden="true"]')!
+    const badges = [...row.querySelectorAll('.category-disc')]
+    expect(badges).toHaveLength(4)
+    const classes = badges.map(badge => [...badge.classList].join(' '))
+    expect(new Set(classes).size).toBe(4)
+    expect(row.textContent?.trim()).toBe('')
+  })
+  it('opens the empty add dialog instead of linking to the costs page', async () => {
+    await mountPage()
+    await vi.waitFor(() => expect(addButton()).toBeDefined())
+    expect(wrapper.find('a[href="/costs"]').exists()).toBe(false)
+    expect(dialogState().open).toBe(false)
+    await addButton().trigger('click')
+    expect(dialogState()).toEqual({ open: true, cost: null, month: null })
   })
   it('is German when the language is German', async () => {
     await setLanguage('de')
     await mountPage()
     await vi.waitFor(() => expect(wrapper.text()).toContain('Noch keine Kosten'))
-    expect(wrapper.find('a[href="/costs"]').text()).toBe('Kosten hinzufügen')
+    expect(wrapper.text()).toContain('Erste Kosten hinzufügen')
+    expect(wrapper.text()).toContain('Tip: Fange mit monatlichen Kosten an')
   })
   it('does not show up once there are costs', async () => {
     api.recurring.rows = [rent]

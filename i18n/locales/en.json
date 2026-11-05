@@ -98,6 +98,8 @@
     "retry": "Try again",
     "emptyTitle": "No costs yet",
     "emptyText": "Add a recurring cost or a purchase to see your totals here.",
+    "emptyAdd": "Add your first cost",
+    "emptyTip": "Tip: start with something monthly, like rent.",
     "summary": {
       "title": "Your year {year}",
       "total": "Annual total",

@@ -162,6 +162,18 @@ main section > h2 {
 .card.card-flush > [data-slot="body"] {
   padding: 0;
 }
+/* A centred message card (the dashboard without costs): a column with the spacing of the mock BStateEmpty. */
+.card.card-state > [data-slot="body"] {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 2.5rem 1.5rem 1.75rem;
+  text-align: center;
+}
+.card-state h2 {
+  margin-bottom: 0;
+}
 
 /*
  * Dashboard as flex rows, like the desktop mock: "This month" next to the add tile and the

@@ -1,17 +1,24 @@
 <script lang="ts" setup>
 import { annualSummary, categoryBreakDown, splitPercentages, monthBreakdown, monthChange, costsInMonth, groupMonthCosts, largestCosts} from '~~/shared/utils/costs'
 
+const EMPTY_BADGES = ['housing', 'food', 'insurance', 'mobility'] as const
+const GAP = 0.6
+
 const { t, n } = useI18n()
 const { year, currentYear, currentMonth } = useYear()
 const { monthName, monthYear, monthPath, toRow } = useMonth()
 const { recurring, purchases, failed, loading, retry } = useCostLists()
 const { categoryClass } = useCategory()
+const euros = useMoney()
+const cents = useMoney({ cents: true })
+const { openAdd } = useCostDialog()
+const heading = useTemplateRef<HTMLElement>('heading')
+useHead({ title: () => t('nav.dashboard') })
+
 const years = computed(() => availableYears(purchases.value ?? [], currentYear.value))
 const shownYear = computed(() => years.value.includes(year.value) ? year.value : currentYear.value)
 const empty = computed(() => !failed.value && !loading.value && recurring.value?.length === 0 && purchases.value?.length === 0)
 const summary = computed (() => annualSummary(recurring.value ?? [], purchases.value ?? [], shownYear.value))
-const euros = useMoney()
-const cents = useMoney({ cents: true })
 const categoryRows = computed (() => categoryBreakDown(recurring.value ?? [], purchases.value ?? [], shownYear.value).map(({ category, total, percent}) => ({
     category,
     label: t(`category.${category}`),
@@ -20,7 +27,7 @@ const categoryRows = computed (() => categoryBreakDown(recurring.value ?? [], pu
     value: percent
 })))
 const split = computed(() => splitPercentages(summary.value))
-const GAP = 0.6   // the gap between the two colours, in percent of the ring
+   // the gap between the two colours, in percent of the ring
 const splitRing = computed(() => {
     const { household, business } = split.value
     const filled = (color: string) => `conic-gradient(${color} 0 100%)`
@@ -70,8 +77,6 @@ const thisMonth = computed(() => {
         largest: largestCosts(costs).map(toRow)
     }
 })
-const { openAdd } = useCostDialog()
-const heading = useTemplateRef<HTMLElement>('heading')
 
 async function onRetry() {
     await retry()
@@ -79,8 +84,6 @@ async function onRetry() {
     await nextTick()
     heading.value?.focus()
 }
-
-useHead({ title: () => t('nav.dashboard') })
 </script>
 <template>
     <h1 ref="heading" tabindex="-1">{{ t('nav.dashboard') }}</h1>
@@ -108,9 +111,22 @@ useHead({ title: () => t('nav.dashboard') })
         </template>
     </UAlert>
     <div v-else-if="empty">
-        <h2>{{ t('dashboard.emptyTitle') }}</h2>
-        <p>{{ t('dashboard.emptyText') }}</p>
-        <UButton to="/costs" :label="t('costs.add')" class="pill" />
+        <UCard variant="subtle" class="card card-state mt-6">
+            <div class="mb-3.5 flex justify-center" aria-hidden="true">
+                <div
+                    v-for="(category, index) in EMPTY_BADGES"
+                    :key="category"
+                    class="-mr-2.5 rounded-full border-4 border-elevated last:mr-0"
+                    :class="{ '-translate-y-2': index % 2 === 1 }"
+                >
+                    <CategoryBadge :category="category" :size="56" />
+                </div>
+            </div>
+            <h2 class="text-2xl">{{ t('dashboard.emptyTitle') }}</h2>
+            <p class="max-w-70 text-muted">{{ t('dashboard.emptyText') }}</p>
+            <UButton :label="t('dashboard.emptyAdd')" icon="i-lucide-plus" class="pill pill-shadow mt-3.5 min-h-14 w-full justify-center sm:w-auto" @click="openAdd()" />
+            <p class="mt-1.5 text-[0.8125rem] text-muted">{{ t('dashboard.emptyTip') }}</p>
+        </UCard>
     </div>
     <template v-else>
         <section aria-labelledby="this-month-title">
