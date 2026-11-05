@@ -99,9 +99,17 @@ The icons for the two kinds of cost live in their own composable, `useKind()`, n
 - **A function of its own.** `totalsByCategory` and `categoryBreakdown` work on annual amounts, so they cannot give the totals of one month. The new function takes the month's list from `costsInMonth` and is named `monthCategoryTotals` so the two are not confused.
 - **Shown on phones.** Below `lg` the card is shown below the lists, not hidden.
 - **One list component.** The rows of the dashboard's category card and of this card are one component, `CategoryList`, with the amount formatted by the caller (whole euros and a percentage on the dashboard, cents and no percentage on the month page).
-- **Split left out.** The household and business split at the bottom of the mock's card is not part of #77 and is left for its own issue.
+- **Split in its own issue.** The household and business split at the bottom of the mock's card was not part of #77. It was added in #78, see below.
 
 Details: [By category card](app-structure.md#by-category-card-77).
+
+### Household and business totals on the month page (#78)
+
+- **Two fields, no new function.** `monthSummary` returns `businessTotal` (the sum of the business costs in the month's list) and `householdTotal` (the month's total minus `businessTotal`) next to `count` and `businessCount`. It is the same rule as in `annualSummary` (household is the total minus business), so the two add up to the month's total by construction.
+- **One list component.** The rows of the dashboard's "Household and business" card and of the month page's split are one component, `SplitList`. The caller formats the amounts (whole euros on the dashboard, cents on the month page) and sets the layout classes. The dashboard's ring stays in the page, because the month page has none.
+- **No percentage on the month page.** As in the mock, the month page shows only the two amounts.
+
+Details: [By category card](app-structure.md#by-category-card-77) and [Components](app-structure.md#components).
 
 ## Add/edit form
 
