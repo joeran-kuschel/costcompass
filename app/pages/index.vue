@@ -194,16 +194,7 @@ async function onRetry() {
                 <div class="mb-2.5 mt-4 flex h-3.5 gap-[3px] overflow-hidden rounded-full bg-accented" aria-hidden="true">
                     <div v-for="row in categoryRows" v-show="row.value > 0" :key="row.category" :class="categoryClass(row.category)" :style="{ width: `${row.value}%` }" />
                 </div>
-                <ul class="grid grid-cols-[repeat(auto-fill,minmax(13.75rem,1fr))] gap-x-6 gap-y-1.5">
-                    <li v-for="row in categoryRows" :key="row.category" class="flex items-center gap-3 py-2">
-                        <CategoryBadge :category="row.category" :size="36" />
-                        <span class="min-w-0 flex-1 break-words font-bold">{{ row.label }}</span>
-                        <span class="shrink-0 text-right tabular-nums">
-                            <b class="block font-extrabold">{{ row.amount }}</b>
-                            <span class="text-xs text-muted">{{ row.percent }}</span>
-                        </span>
-                    </li>
-                </ul>
+                <CategoryList :rows="categoryRows" />
             </UCard>
         </section>
         <section aria-labelledby="split-title">

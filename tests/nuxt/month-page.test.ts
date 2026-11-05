@@ -337,10 +337,11 @@ describe('month page content', () => {
   it('has one h1, the groups as lists with a heading each, and nothing in the lists but the rows', async () => {
     await mountOctober()
     expect(wrapper.findAll('h1')).toHaveLength(1)
-    expect(wrapper.findAll('ul')).toHaveLength(2)
+    // Three lists: the two groups and the "By category" card.
+    expect(wrapper.findAll('ul')).toHaveLength(3)
     expect(section('recurring').find('ul').exists()).toBe(true)
     expect(section('purchases').find('ul').exists()).toBe(true)
-    expect(wrapper.findAll('h2').map(heading => heading.text())).toEqual(['Total for October', 'Recurring', 'Purchases'])
+    expect(wrapper.findAll('h2').map(heading => heading.text())).toEqual(['Total for October', 'Recurring', 'Purchases', 'By category'])
   })
 })
 
@@ -626,6 +627,64 @@ describe('month page counts', () => {
     await setLanguage('de')
     await mountOctober()
     expect(textOf(counts())).toBe('5 Kosten · 2 geschäftlich')
+  })
+})
+
+describe('month page "By category" card', () => {
+  const card = () => wrapper.find('aside[aria-labelledby="categories-title"]')
+  // Name and amount of each row; the amount is the bold text on the right.
+  const cardRows = () => card().findAll('li').map(row => [textOf(row.find('span.font-bold')), textOf(row.find('b'))])
+
+  it('is an aside named by its heading "By category"', async () => {
+    await mountOctober()
+    expect(card().exists()).toBe(true)
+    expect(card().find('h2#categories-title').text()).toBe('By category')
+  })
+  it('lists the categories of the month with their totals in cents, the largest first', async () => {
+    // October: laptop and book are appliances, rent and the quarterly phone are housing, liability is insurance.
+    await mountOctober()
+    expect(cardRows()).toEqual([['Appliances', '€912.49'], ['Housing', '€830.25'], ['Insurance', '€120.50']])
+  })
+  it('leaves out categories without costs in the month', async () => {
+    await mountOctober()
+    expect(card().text()).not.toContain('Food')
+    expect(card().text()).not.toContain('Mobility')
+  })
+  it('adds up to the total of the month', async () => {
+    await mountOctober()
+    const sum = cardRows().reduce((acc, [, amount]) => acc + amountOf(amount!), 0)
+    expect(sum).toBeCloseTo(monthlyTotals(october.recurring as never, october.purchases as never, 2026)[9]!, 2)
+  })
+  it('starts every row with a 36 px badge of its category, hidden from screen readers', async () => {
+    await mountOctober()
+    const badges = card().findAll('li').map(row => row.find('[aria-hidden="true"]'))
+    expect(badges.every(badge => badge.exists())).toBe(true)
+    expect(badges.map(badge => badge.attributes('style'))).toSatisfy((styles: (string | undefined)[]) => styles.every(style => style?.includes('36px')))
+  })
+  it('is not shown in a month without costs', async () => {
+    api.recurring.rows = [{ ...taxAdvice }]
+    api.purchases.rows = [{ ...bike }]
+    await mountPage()
+    await vi.waitFor(() => expect(status().exists()).toBe(false))
+    expect(card().exists()).toBe(false)
+  })
+  it('is not shown while the lists load', async () => {
+    api.purchases.delay = 300
+    await mountPage()
+    expect(status().exists()).toBe(true)
+    expect(card().exists()).toBe(false)
+  })
+  it('is not shown after a failed load', async () => {
+    api.purchases.fail = true
+    await mountPage()
+    await vi.waitFor(() => expect(alert().exists()).toBe(true))
+    expect(card().exists()).toBe(false)
+  })
+  it('has a German heading, German names and German amounts', async () => {
+    await setLanguage('de')
+    await mountOctober()
+    expect(card().find('h2').text()).toBe('Nach Kategorie')
+    expect(cardRows()).toEqual([['Geräte', '912,49 €'], ['Wohnen', '830,25 €'], ['Versicherung', '120,50 €']])
   })
 })
 

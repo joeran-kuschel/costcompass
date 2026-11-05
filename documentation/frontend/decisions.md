@@ -93,6 +93,16 @@ Year and month are in the URL (`/months/2026/03`), the month always with two dig
 
 The icons for the two kinds of cost live in their own composable, `useKind()`, not in `useCategory()`: the kind is a different property of a cost than its category. There is no component for now, because it would only wrap one `UIcon`. A `KindLabel` component is worth reconsidering with #85 (an icon next to the kind in the costs table) if icon and word appear together in several places. Details: [Content](app-structure.md#content-25).
 
+### By category card on the month page (#77)
+
+- **Only categories with a cost.** The mock shows only the categories that have a cost in the month, so `monthCategoryTotals` in the core leaves out the categories with 0 and the template stays simple. The dashboard's "Where your money goes" keeps every category, because it shows the year's shares.
+- **A function of its own.** `totalsByCategory` and `categoryBreakdown` work on annual amounts, so they cannot give the totals of one month. The new function takes the month's list from `costsInMonth` and is named `monthCategoryTotals` so the two are not confused.
+- **Shown on phones.** Below `lg` the card is shown below the lists, not hidden.
+- **One list component.** The rows of the dashboard's category card and of this card are one component, `CategoryList`, with the amount formatted by the caller (whole euros and a percentage on the dashboard, cents and no percentage on the month page).
+- **Split left out.** The household and business split at the bottom of the mock's card is not part of #77 and is left for its own issue.
+
+Details: [By category card](app-structure.md#by-category-card-77).
+
 ## Add/edit form
 
 A modal (`UModal`) with one `CostForm` for both kinds of cost, rendered once by the layout. A modal works better on mobile than a slide-over. Details: [Add and edit dialog](app-structure.md#add-and-edit-dialog).

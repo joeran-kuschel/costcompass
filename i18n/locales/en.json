@@ -157,6 +157,7 @@
       "more":"{percent}% more",
       "same": "Same as before",
       "none": "No comparison"
-    }
+    },
+    "byCategory": "By category"
   }
 }

@@ -1,5 +1,5 @@
 import { CATEGORIES, MONTHS } from '~~/shared/types/calculation'
-import type { Cost, CostItem, Purchase, RecurringCost, Category, Interval, Month, AnnualSummary, CategoryTotal, SplitPercentages, MonthTotal, MonthChange, MonthRef, MonthNeighbours, MonthGroups, MonthSummary } from '~~/shared/types/calculation'
+import type { Cost, CostItem, Purchase, RecurringCost, Category, Interval, Month, AnnualSummary, CategoryTotal, SplitPercentages, MonthTotal, MonthChange, MonthRef, MonthNeighbours, MonthGroups, MonthSummary, MonthCategoryTotal } from '~~/shared/types/calculation'
 
 const PERIODS_PER_YEAR: Record<Interval, number> = {
   monthly: 12,
@@ -135,6 +135,11 @@ export function groupMonthCosts<R extends RecurringCost, P extends Purchase>(cos
     const purchasesTotal = purchases.reduce((sum, cost) => sum + cost.amount, 0)
     return { recurring, purchases, recurringTotal, purchasesTotal, total: recurringTotal + purchasesTotal }
 }
+export function monthCategoryTotals<T extends Cost>(costs: T[]): MonthCategoryTotal[] {
+    return CATEGORIES.map((category) => ({category, total: costs.filter(cost => cost.category === category).reduce((sum, cost) => sum + cost.amount, 0)}))
+        .filter(entry => entry.total > 0)
+        .sort((a,b) => b.total - a.total)
+}
 export function monthSummary<R extends RecurringCost, P extends Purchase>(recurring: R[], purchases: P[], year: number, month: Month): MonthSummary<R, P> {
     const costs = costsInMonth(recurring, purchases, year, month)
     return {
@@ -144,6 +149,7 @@ export function monthSummary<R extends RecurringCost, P extends Purchase>(recurr
         largest: largestCosts(costs),
         empty: costs.length === 0,
         count: costs.length,
-        businessCount: costs.filter(cost => cost.business).length
+        businessCount: costs.filter(cost => cost.business).length,
+        categories: monthCategoryTotals(costs)
     }
 }

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import type { RecurringCost, Purchase, CostItem, Month, AnnualSummary, Stored } from '~~/shared/types/calculation'
 import { CATEGORIES } from '~~/shared/types/calculation'
-import { totalAnnualRecurring, totalAnnualPurchases, totalAnnualCost, filterByBusiness, totalsByCategory, occursInMonth, totalMonthlyCost, monthlyTotals, costsInMonth, annualSummary, categoryBreakdown, splitPercentages, monthBreakdown, monthChange, availableYears, monthNeighbours, groupMonthCosts, largestCosts, monthSummary } from '~~/shared/utils/costs'
+import { totalAnnualRecurring, totalAnnualPurchases, totalAnnualCost, filterByBusiness, totalsByCategory, occursInMonth, totalMonthlyCost, monthlyTotals, costsInMonth, annualSummary, categoryBreakdown, splitPercentages, monthBreakdown, monthChange, availableYears, monthNeighbours, groupMonthCosts, largestCosts, monthCategoryTotals, monthSummary } from '~~/shared/utils/costs'
 
 const YEAR = 2026
 
@@ -888,6 +888,61 @@ describe('groupMonthCosts', () => {
   })
 })
 
+describe('monthCategoryTotals', () => {
+  const rent = recurring({ name: 'Rent', amount: 1200, category: 'housing' })
+  const power = recurring({ name: 'Power', amount: 80.5, category: 'housing' })
+  const groceries = purchase({ name: 'Groceries', amount: 310.25, category: 'food' })
+  const ticket = recurring({ name: 'Ticket', amount: 49, category: 'mobility' })
+
+  it('adds up the amounts of each category', () => {
+    expect(monthCategoryTotals([rent, groceries, power])).toEqual([
+      { category: 'housing', total: 1280.5 },
+      { category: 'food', total: 310.25 }
+    ])
+  })
+  it('leaves out categories without costs', () => {
+    const categories = monthCategoryTotals([rent, ticket]).map(entry => entry.category)
+    expect(categories).toEqual(['housing', 'mobility'])
+    expect(categories).not.toContain('insurance')
+  })
+  it('sorts the categories by total, largest first', () => {
+    const categories = monthCategoryTotals([ticket, groceries, rent]).map(entry => entry.category)
+    expect(categories).toEqual(['housing', 'food', 'mobility'])
+  })
+  it('keeps the order of CATEGORIES for equal totals', () => {
+    const insurance = recurring({ amount: 50, category: 'insurance' })
+    const food = purchase({ amount: 50, category: 'food' })
+    const appliances = purchase({ amount: 50, category: 'appliances' })
+    const expected = CATEGORIES.filter(category => ['insurance', 'food', 'appliances'].includes(category))
+    expect(monthCategoryTotals([appliances, insurance, food]).map(entry => entry.category)).toEqual(expected)
+  })
+  it('returns an empty list for a month without costs', () => {
+    expect(monthCategoryTotals([])).toEqual([])
+  })
+  it('adds up to the month total from monthlyTotals', () => {
+    const recurringCosts = [
+      recurring({ amount: 10.1, category: 'housing' }),
+      recurring({ amount: 600.3, category: 'insurance', interval: 'yearly', dueMonth: 3 }),
+      recurring({ amount: 90.2, category: 'mobility', interval: 'quarterly', dueMonth: 1 })
+    ]
+    const purchases = [
+      purchase({ amount: 0.1, category: 'food', date: `${YEAR}-03-15` }),
+      purchase({ amount: 0.2, category: 'housing', date: `${YEAR}-03-16` }),
+      purchase({ amount: 999, category: 'appliances', date: `${YEAR}-04-15` })
+    ]
+    const totals = monthCategoryTotals(costsInMonth(recurringCosts, purchases, YEAR, 3))
+    const sum = totals.reduce((acc, entry) => acc + entry.total, 0)
+    // The sums are added in a different order than in monthlyTotals, so they can differ below a cent.
+    expect(sum).toBeCloseTo(monthlyTotals(recurringCosts, purchases, YEAR)[2]!, 2)
+    expect(totals.map(entry => entry.category)).not.toContain('appliances')
+  })
+  it('does not change the list it is given', () => {
+    const costs = [ticket, rent, groceries]
+    monthCategoryTotals(costs)
+    expect(costs.map(cost => cost.name)).toEqual(['Ticket', 'Rent', 'Groceries'])
+  })
+})
+
 describe('largestCosts', () => {
   const names = (costs: { name: string }[]) => costs.map(cost => cost.name)
   const five = [
@@ -1035,6 +1090,15 @@ describe('monthSummary', () => {
     const result = monthSummary([], [lamp], YEAR, 5)
     expect(result.count).toBe(0)
     expect(result.businessCount).toBe(0)
+  })
+  it('totals the costs of the month per category like monthCategoryTotals', () => {
+    const ticket = recurring({ name: 'Ticket', amount: 49, category: 'mobility' })
+    const result = monthSummary([rent, ticket], [lamp, desk], YEAR, march)
+    expect(result.categories).toEqual(monthCategoryTotals(result.costs))
+    expect(result.categories).toEqual([{ category: 'housing', total: 1500 }, { category: 'mobility', total: 49 }])
+  })
+  it('has no category totals for an empty month', () => {
+    expect(monthSummary([], [lamp], YEAR, 5).categories).toEqual([])
   })
   it('does not change its input', () => {
     const recurringList = [rent, gym]

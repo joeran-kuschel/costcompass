@@ -5,6 +5,7 @@ export function useMonthSummary() {
     const { currentYear, currentMonth } = useYear()
     const { recurring, purchases } = useCostLists()
     const { toRow, monthName } = useMonth()
+    const cents = useMoney({ cents: true })
 
     const monthRef = computed(() => {
         const parsed = monthParamsSchema.safeParse(route.params)
@@ -36,7 +37,12 @@ export function useMonthSummary() {
             comparisonShort: t(`month.changeShort.${direction}`, { percent: Math.abs(percent ?? 0)}),
             icon: { less: 'i-lucide-trending-down', more: 'i-lucide-trending-up', same: 'i-lucide-minus', none: 'i-lucide-minus' }[direction],
             count: summary.count,
-            businessCount: summary.businessCount
+            businessCount: summary.businessCount,
+            categoryRows: summary.categories.map(({ category, total }) => ({
+                category,
+                label: t(`category.${category}`),
+                amount: cents(total)
+            })),
         }
     })
 }

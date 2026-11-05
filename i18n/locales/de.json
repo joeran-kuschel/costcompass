@@ -157,6 +157,7 @@
       "more":"{percent} % mehr",
       "same": "Wie im Vormonat",
       "none": "Kein Vergleich"
-    }
+    },
+    "byCategory": "Nach Kategorie"
   }
 }
