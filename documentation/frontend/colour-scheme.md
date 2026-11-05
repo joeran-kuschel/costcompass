@@ -76,7 +76,7 @@ To colour a new element, use the Nuxt UI colour props (`color="primary"`, `color
 Issue #52. `app/components/BusinessBadge.vue` is the one place that renders the "Business" badge. It takes no props and wraps `UBadge` with `variant="soft"`, `color="secondary"`, bold text and the icon `i-lucide-briefcase` at 14 px (`:ui` `leadingIcon: 'size-3.5'`). The soft variant has no border; the earlier `subtle` and `outline` variants had a ring.
 
 - It is used in the "This month" card on the dashboard and in the rows of the month page. No other badge markup for business costs is left.
-- The text is the shared key `business.label` ("Business" / "Geschäftlich"). The same key is now the column header of the costs table and the label of the business row in the split card. `costs.columns.business`, `dashboard.split.business`, `dashboard.thisMonth.business` and `month.business` were removed. `form.business` ("Business cost") stays. `dashboard.summary.business` was removed later too, because the summary tile reads `business.label`.
+- The text is the shared key `business.label` ("Business" / "Geschäftlich"). The same key is the label of the business row in the split card (the costs table had it as a column header until #84 removed the Business column). `costs.columns.business`, `dashboard.split.business`, `dashboard.thisMonth.business` and `month.business` were removed. `form.business` ("Business cost") stays. `dashboard.summary.business` was removed later too, because the summary tile reads `business.label`.
 - The icon is decoration (`aria-hidden`). The word stays as text, so the meaning does not depend on the icon or the colour.
 - Test: `tests/nuxt/BusinessBadge.test.ts` (text, German after a language switch, one hidden icon, the icon adds no text).
 
