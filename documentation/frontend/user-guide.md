@@ -52,7 +52,7 @@ The Dashboard (**Dashboard** in the sidebar) gives you the overview. It has thes
 
 Amounts on the Dashboard are rounded to whole euros. The Costs page and the month page show cents. Because of the rounding, household plus business can differ from the total by one euro on the Dashboard.
 
-If your costs cannot be loaded, you see a card with "Could not load your costs.", the text "Your data has not changed. Check your connection and try again." and a **Try again** button. Select the button to load the costs again. If you have not added anything yet, you see "No costs yet" and a link to the Costs page.
+If your costs cannot be loaded, you see a card with "Could not load your costs.", the text "Your data has not changed. Check your connection and try again." and a **Try again** button. Select the button to load the costs again. If you have not added anything yet, you see a card with "No costs yet", the text "Add a recurring cost or a purchase to see your totals here." and an **Add your first cost** button. The button opens the form to add a cost. Below it, a tip suggests starting with something monthly, like rent.
 
 **Good to know:** recurring costs have no start or end date yet. When you look at a past year, Costcompass shows your current recurring costs for that year too.
 

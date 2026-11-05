@@ -98,6 +98,8 @@
     "retry": "Erneut versuchen",
     "emptyTitle": "Noch keine Kosten",
     "emptyText": "Füge eine wiederkehrende Ausgabe oder eine Anschaffung hinzu, um hier deine Summen zu sehen.",
+    "emptyAdd": "Erste Kosten hinzufügen",
+    "emptyTip": "Tipp: Fange mit monatlichen Kosten an, zum Beispiel Deine Miete.",
     "summary": {
       "title": "Dein Jahr {year}",
       "total": "Jahressumme",
