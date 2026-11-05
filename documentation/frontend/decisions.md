@@ -91,7 +91,7 @@ Year and month are in the URL (`/months/2026/03`), the month always with two dig
 
 ### Kind icons (#75)
 
-The icons for the two kinds of cost live in their own composable, `useKind()`, not in `useCategory()`: the kind is a different property of a cost than its category. There is no component for now, because it would only wrap one `UIcon`. A `KindLabel` component is worth reconsidering with #85 (an icon next to the kind in the costs table) if icon and word appear together in several places. Details: [Content](app-structure.md#content-25).
+The icons for the two kinds of cost live in their own composable, `useKind()`, not in `useCategory()`: the kind is a different property of a cost than its category. There is no component for now, because it would only wrap one `UIcon`. The costs table's kind column (#85) reuses `useKind()` with a `UIcon` in its cell slot, also without a component: icon and kind word appear together only there (the month page pairs the icon with its group titles, not the kind word). A `KindLabel` component is worth reconsidering if the pair appears in more places. Details: [Content](app-structure.md#content-25).
 
 ### By category card on the month page (#77)
 
