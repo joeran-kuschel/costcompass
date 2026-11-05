@@ -4,10 +4,12 @@ import { mountSuspended } from '@nuxt/test-utils/runtime'
 // useMoney needs the i18n context of a component, so it is called from the setup of a small probe component.
 let euros: (value: number) => string
 let exact: (value: number) => string
+let parts: ReturnType<typeof useMoneyParts>
 const Probe = defineComponent({
   setup() {
     euros = useMoney()
     exact = useMoney({ cents: true })
+    parts = useMoneyParts()
     return () => null
   },
 })
@@ -93,5 +95,31 @@ describe('useMoney with cents in German', () => {
     expect(exact(5000)).toBe('€5,000.00')
     await useNuxtApp().$i18n.setLocale('de')
     expect(plain(exact(5000))).toBe('5.000,00 €')
+  })
+})
+
+describe('useMoneyParts', () => {
+  it('splits an English amount into the whole euros with the sign and the cents', () => {
+    expect(parts(2081)).toEqual({ whole: '€2,081', cents: '.00', after: '' })
+    expect(parts(1234.5)).toEqual({ whole: '€1,234', cents: '.50', after: '' })
+  })
+  it('puts the euro sign after the cents in German', async () => {
+    await useNuxtApp().$i18n.setLocale('de')
+    const result = parts(2081)
+    expect(result.whole).toBe('2.081')
+    expect(result.cents).toBe(',00')
+    expect(plain(result.after)).toBe(' €')
+  })
+  it('gives back the same text as useMoney with cents when joined', async () => {
+    for (const value of [0, 19.99, 2300, 1234567.89]) {
+      const { whole, cents, after } = parts(value)
+      expect(whole + cents + after).toBe(exact(value))
+    }
+    await useNuxtApp().$i18n.setLocale('de')
+    const { whole, cents, after } = parts(1234.5)
+    expect(whole + cents + after).toBe(exact(1234.5))
+  })
+  it('rounds to the nearest cent', () => {
+    expect(parts(10.126).cents).toBe('.13')
   })
 })
