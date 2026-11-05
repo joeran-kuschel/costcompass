@@ -12,14 +12,12 @@ registerEndpoint('/api/purchases', () => [
   { id: 3, kind: 'purchase', name: 'Äpfel', amount: 3, category: 'food', business: false, date: '2026-03-15' },
 ])
 
-// Column positions in the table.
+// Column positions in the table. Category and business are shown in the name cell (#84), not as columns of their own.
 const NAME = 0
-const CATEGORY = 1
-const KIND = 2
-const WHEN = 3
-const AMOUNT = 4
-const BUSINESS = 5
-const ACTIONS = 6
+const KIND = 1
+const WHEN = 2
+const AMOUNT = 3
+const ACTIONS = 4
 
 let wrapper: Awaited<ReturnType<typeof mountSuspended>>
 
@@ -72,20 +70,6 @@ describe('costs table sort buttons', () => {
     await clickHeader(AMOUNT)
     await vi.waitFor(() => expect(column(AMOUNT)).toEqual(['€1,200.50', '€800.00', '€90.00', '€3.00']))
   })
-  it('sorts categories by the text shown in English', async () => {
-    await mountTable()
-    await clickHeader(CATEGORY)
-    await vi.waitFor(() => expect(column(CATEGORY)).toEqual(['Appliances', 'Food', 'Housing', 'Insurance']))
-  })
-  it('sorts categories by the text shown in German, not by the stored id', async () => {
-    await setLanguage('de')
-    await mountTable()
-    await clickHeader(CATEGORY)
-    // By id the order would be appliances, food, housing, insurance, so "Geräte" would come first.
-    await vi.waitFor(() => expect(column(CATEGORY)).toEqual(['Essen', 'Geräte', 'Versicherung', 'Wohnen']))
-    await clickHeader(CATEGORY)
-    await vi.waitFor(() => expect(column(CATEGORY)).toEqual(['Wohnen', 'Versicherung', 'Geräte', 'Essen']))
-  })
   it('sorts kinds by the text shown', async () => {
     await mountTable()
     await clickHeader(KIND)
@@ -93,12 +77,13 @@ describe('costs table sort buttons', () => {
     await clickHeader(KIND)
     await vi.waitFor(() => expect(column(KIND)).toEqual(['Recurring', 'Recurring', 'Purchase', 'Purchase']))
   })
-  it('sorts the business flag with "No" before "Yes"', async () => {
+  it('sorts names with umlauts in German as well', async () => {
+    await setLanguage('de')
     await mountTable()
-    await clickHeader(BUSINESS)
-    await vi.waitFor(() => expect(column(BUSINESS)).toEqual(['No', 'No', 'Yes', 'Yes']))
-    await clickHeader(BUSINESS)
-    await vi.waitFor(() => expect(column(BUSINESS)).toEqual(['Yes', 'Yes', 'No', 'No']))
+    await clickHeader(NAME)
+    await vi.waitFor(() => expect(names()).toEqual(['Äpfel', 'Laptop', 'Liability insurance', 'Rent']))
+    await clickHeader(NAME)
+    await vi.waitFor(() => expect(names()).toEqual(['Rent', 'Liability insurance', 'Laptop', 'Äpfel']))
   })
   it('keeps a row\'s data together when the order changes', async () => {
     await mountTable()
@@ -107,6 +92,10 @@ describe('costs table sort buttons', () => {
     const firstRow = wrapper.findAll('tbody tr')[0]!.text()
     expect(firstRow).toContain('Äpfel')
     expect(firstRow).toContain('Food')
+  })
+  it('has the columns Name, Kind, When, Amount and Actions, without Category and Business', async () => {
+    await mountTable()
+    expect(wrapper.findAll('thead th').map(cell => cell.text())).toEqual(['Name', 'Kind', 'When', 'Amount', 'Actions'])
   })
   it('has no sort button on the "When" and actions columns', async () => {
     await mountTable()
@@ -128,17 +117,17 @@ describe('costs table sort button names', () => {
   })
   it('always contains the visible column text', async () => {
     await mountTable()
-    for (const index of [NAME, CATEGORY, KIND, AMOUNT, BUSINESS]) {
+    for (const index of [NAME, KIND, AMOUNT]) {
       expect(headerButton(index).attributes('aria-label')).toContain(headerButton(index).text())
     }
   })
   it('is German when the language is German', async () => {
     await setLanguage('de')
     await mountTable()
-    expect(headerButton(CATEGORY).attributes('aria-label')).toBe('Nach Kategorie sortieren')
-    await clickHeader(CATEGORY)
-    await vi.waitFor(() => expect(headerButton(CATEGORY).attributes('aria-label')).toBe('Kategorie, aufsteigend sortiert'))
-    await clickHeader(CATEGORY)
-    await vi.waitFor(() => expect(headerButton(CATEGORY).attributes('aria-label')).toBe('Kategorie, absteigend sortiert'))
+    expect(headerButton(KIND).attributes('aria-label')).toBe('Nach Art sortieren')
+    await clickHeader(KIND)
+    await vi.waitFor(() => expect(headerButton(KIND).attributes('aria-label')).toBe('Art, aufsteigend sortiert'))
+    await clickHeader(KIND)
+    await vi.waitFor(() => expect(headerButton(KIND).attributes('aria-label')).toBe('Art, absteigend sortiert'))
   })
 })

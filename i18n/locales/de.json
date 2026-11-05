@@ -26,7 +26,6 @@
     "confirmText": "{name} wird endgültig gelöscht.",
     "columns": {
       "name": "Name",
-      "category": "Kategorie",
       "kind": "Art",
       "amount": "Betrag",
       "when": "Wann",
@@ -43,8 +42,6 @@
     "purchase": "Anschaffung"
   },
   "common": {
-    "yes": "Ja",
-    "no": "Nein",
     "save": "Speichern",
     "cancel": "Abbrechen",
     "delete": "Löschen"

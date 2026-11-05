@@ -26,7 +26,6 @@
     "confirmText": "{name} will be permanently deleted.",
     "columns": {
       "name": "Name",
-      "category": "Category",
       "kind": "Kind",
       "amount": "Amount",
       "when": "When",
@@ -43,8 +42,6 @@
     "purchase": "Purchase"
   },
   "common": {
-    "yes": "Yes",
-    "no": "No",
     "save": "Save",
     "cancel": "Cancel",
     "delete": "Delete"

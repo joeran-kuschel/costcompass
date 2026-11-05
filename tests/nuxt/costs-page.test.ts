@@ -67,6 +67,19 @@ describe('costs page table', () => {
     expect(text).toContain('Yearly, March')
     expect(text).toMatch(/3\/14\/2026/)
   })
+  it('puts edit before delete in every row, both as neutral icon buttons', async () => {
+    await vi.waitFor(() => expect(wrapper.findAll('tbody tr')).toHaveLength(3))
+    for (const row of wrapper.findAll('tbody tr')) {
+      const labels = row.findAll('td').at(-1)!.findAll('button').map(button => button.attributes('aria-label'))
+      expect(labels).toHaveLength(2)
+      expect(labels[0]).toMatch(/^Edit /)
+      expect(labels[1]).toMatch(/^Delete /)
+    }
+    // The red of a delete action belongs to the confirmation dialog, not to the row (BDesktopCosts mock).
+    // Both buttons get the same look, so the classes of the two are the same.
+    const classesOf = (label: string) => wrapper.find(`button[aria-label="${label}"]`).classes().sort()
+    expect(classesOf('Delete Rent')).toEqual(classesOf('Edit Rent'))
+  })
   it('gives every row an edit and a delete button named after the cost', async () => {
     await vi.waitFor(() => expect(wrapper.findAll('tbody tr')).toHaveLength(3))
     for (const name of ['Rent', 'Liability insurance', 'Laptop']) {
@@ -87,6 +100,15 @@ describe('costs page name column', () => {
     expect(cell.find('p').text()).toBe('Rent')
     expect(cell.findAll('p')[1]!.text()).toBe('Housing')
   })
+  it('lets the name and the business badge wrap, so long names do not widen the table', async () => {
+    // jsdom has no layout: this checks the classes; the widths are checked in the browser.
+    await vi.waitFor(() => expect(wrapper.findAll('tbody tr')).toHaveLength(3))
+    const cell = nameCell(1)
+    expect(cell.find('div').classes()).toContain('whitespace-normal')
+    expect(cell.find('p').classes()).toContain('flex-wrap')
+    const whenCell = wrapper.findAll('tbody tr')[1]!.findAll('td')[2]!
+    expect(whenCell.find('span').classes()).toContain('whitespace-normal')
+  })
   it('marks business costs with the business badge and no other row', async () => {
     await vi.waitFor(() => expect(wrapper.findAll('tbody tr')).toHaveLength(3))
     expect(nameCell(0).find('p').text()).toContain('Business')
@@ -96,8 +118,8 @@ describe('costs page name column', () => {
 })
 
 describe('costs page kind column', () => {
-  // Rows are sorted by name: Laptop (purchase), Liability insurance and Rent (recurring). Kind is the third column.
-  const kindCell = (index: number) => wrapper.findAll('tbody tr')[index]!.findAll('td')[2]!
+  // Rows are sorted by name: Laptop (purchase), Liability insurance and Rent (recurring). Kind is the second column.
+  const kindCell = (index: number) => wrapper.findAll('tbody tr')[index]!.findAll('td')[1]!
   const iconIn = (cell: ReturnType<typeof kindCell>, icon: string) => cell.find(`[class*="i-lucide:${icon}"], [class*="i-lucide-${icon}"]`)
 
   it('shows the repeat icon for recurring costs and the shopping bag for purchases', async () => {

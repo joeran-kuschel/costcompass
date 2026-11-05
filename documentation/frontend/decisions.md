@@ -119,6 +119,31 @@ Details: [By category card](app-structure.md#by-category-card-77) and [Component
 
 Details: [Navigation](app-structure.md#navigation-26).
 
+## Costs page
+
+### Costs table without category and business sorting (#84)
+
+The category and the business flag moved into the name column, as in the BDesktopCosts mock, and the Category and Business columns were removed. With them went sorting by category and by business. The author chose to drop both sorts on purpose (option A):
+
+- **Finding one category** will be the job of the category filter chips (#83).
+- **Business costs** have no filter yet.
+- **The mock** has no such sorting either.
+
+Alternatives considered:
+
+- A second sort inside the Name header (by name or by category). More complex, and not in the mock.
+- Accepting the loss without a replacement planned.
+
+The table sorts by Name, Kind and Amount. Details: [Costs page](app-structure.md#costs-page).
+
+### Row actions: edit first, both neutral (#84)
+
+- **Edit before Delete,** as in the BDesktopCosts mock. It is also the keyboard order, so the harmless action comes first.
+- **Delete is neutral, not red.** Both buttons are `color="neutral"` ghost icon buttons. The red belongs to the confirmation dialog (#96), where the deletion actually happens.
+- **44 px targets.** Both keep the `pill-icon` class (44 px) instead of the mock's 40 px, and their accessible names "Edit <name>" and "Delete <name>".
+
+Details: [Costs page](app-structure.md#costs-page).
+
 ## Add/edit form
 
 A modal (`UModal`) with one `CostForm` for both kinds of cost, rendered once by the layout. A modal works better on mobile than a slide-over. Details: [Add and edit dialog](app-structure.md#add-and-edit-dialog).

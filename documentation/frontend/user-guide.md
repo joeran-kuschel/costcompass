@@ -35,9 +35,14 @@ On the **Costs** page, each row has two buttons.
 
 ## Read the costs table
 
-The **Costs** page lists recurring costs and purchases together. The **When** column shows the interval and month for a recurring cost (for example "Yearly, March") and the date for a purchase.
+The **Costs** page lists recurring costs and purchases together. The table has the columns **Name**, **Kind**, **When**, **Amount** and **Actions**.
 
-The table is sorted by name. Select the header of Name, Category, Kind, Amount or Business to sort by it; select it again to reverse the order.
+- **Name** shows a round icon in the colour of the category, the name, a "Business" label where it applies, and the category below the name, for example "Housing".
+- **When** shows the interval and month for a recurring cost (for example "Yearly, March") and the date for a purchase.
+
+The table is sorted by name. Select the header of Name, Kind or Amount to sort by it; select it again to reverse the order. You cannot sort by category or by business.
+
+On a narrow screen the table scrolls sideways inside its card.
 
 ## Read the dashboard
 
