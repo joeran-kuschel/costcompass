@@ -47,7 +47,7 @@ async function onRetry() {
 </script>
 <template>
     <UButton to="/" :label="t('nav.dashboard')" icon="i-lucide-arrow-left" variant="link" color="neutral" class="mb-2 px-0" />
-    <div class="flex flex-wrap items-center gap-2">
+    <div class="grid grid-cols-[2.75rem_1fr_2.75rem] items-center gap-2 sm:flex">
         <UButton
             v-if="neighbours.previous"
             :to="monthPath(neighbours.previous.year, neighbours.previous.month)"
@@ -57,8 +57,10 @@ async function onRetry() {
             color="neutral"
             class="pill-icon"
         />
-        <h1 ref="heading" tabindex="-1">{{ title }}</h1>
-        <UBadge v-if="isCurrentMonth" :label="t('month.thisMonth')" variant="outline" />
+        <div class="col-start-2 flex flex-col items-center gap-1 text-center sm:flex-row sm:gap-2 sm:text-left">
+            <h1 ref="heading" tabindex="-1">{{ title }}</h1>
+            <UBadge v-if="isCurrentMonth" :label="t('month.thisMonth')" variant="outline" />
+        </div>
         <UButton
             v-if="neighbours.next"
             :to="monthPath(neighbours.next.year, neighbours.next.month)"
