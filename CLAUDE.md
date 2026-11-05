@@ -68,7 +68,7 @@ costcompass/
 └── tsconfig.json
 ```
 
-Import rules: inside `app/` use `~/...`; for files outside `app/` (e.g. `shared/`) use `~~/...`. Only the top level of `shared/types/` and `shared/utils/` is auto-imported, not subfolders. Files in `shared/utils/` import their types explicitly (`import type { ... } from '~~/shared/types/calculation'`) instead of relying on auto-import, because the editor's generated types can lag behind. After adding a new auto-imported file, restart the TS server or run `pnpm dlx nuxt prepare`.
+Import rules: inside `app/` use `~/...`; for files outside `app/` (e.g. `shared/`) use `~~/...`. Only the top level of `shared/types/` and `shared/utils/` is auto-imported, not subfolders. Files in `shared/utils/` import their types explicitly (`import type { ... } from '~~/shared/types/calculation'`) instead of relying on auto-import, because the editor's generated types can lag behind. If Nuxt's auto-import misses a value from `shared/types/`, import it explicitly (`import { INTERVALS } from '~~/shared/types/calculation'` in `CostForm`: Nuxt registered `CATEGORIES` and `MONTHS` but not `INTERVALS`, #76). After adding a new auto-imported file, restart the TS server or run `pnpm dlx nuxt prepare`.
 
 Order inside `<script setup>` in `.vue` files, top to bottom:
 
@@ -222,7 +222,7 @@ Design and dashboard decisions (details in [`documentation/frontend/decisions.md
 - Costs table and year: should the table be filtered by the selected year? Only purchases have a year, recurring costs have none
 ## Current status
 
-Roadmap steps 1-5 are done; step 6 (UI) is in progress. 664 Vitest tests in 29 files pass. The cost core in `shared/`, the Drizzle schema and migration and the API (`GET`, `POST`, `PATCH`, `DELETE` for recurring costs and purchases) are done; the API routes and the real SQL are tested by hand against the local Postgres, not by automated tests (that would need a test Postgres). The UI has the layout with sidebar and tab bar, the central add/edit dialog, `/costs` (sortable table, edit, delete), the dashboard (including its loading, error and empty states) and the month page with its navigation. Details per page: [`documentation/frontend/app-structure.md`](documentation/frontend/app-structure.md); tests: [`documentation/backend/testing.md`](documentation/backend/testing.md).
+Roadmap steps 1-5 are done; step 6 (UI) is in progress. 666 Vitest tests in 29 files pass. The cost core in `shared/`, the Drizzle schema and migration and the API (`GET`, `POST`, `PATCH`, `DELETE` for recurring costs and purchases) are done; the API routes and the real SQL are tested by hand against the local Postgres, not by automated tests (that would need a test Postgres). The UI has the layout with sidebar and tab bar, the central add/edit dialog, `/costs` (sortable table, edit, delete), the dashboard (including its loading, error and empty states) and the month page with its navigation. Details per page: [`documentation/frontend/app-structure.md`](documentation/frontend/app-structure.md); tests: [`documentation/backend/testing.md`](documentation/backend/testing.md).
 
 Next: the "This month" card overflowed sideways at 320 px before the hero restyle (long names broke into single letters, #38; not looked at again since). Still open: the `RecurringCost` union type in the core (the API already enforces `dueMonth`), and the rate calculator (later).
 
