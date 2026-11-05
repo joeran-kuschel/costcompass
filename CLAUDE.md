@@ -203,7 +203,7 @@ Architecture and data decisions, in short. The details and reasons are in [`docu
 Design and dashboard decisions (details in [`documentation/frontend/decisions.md`](documentation/frontend/decisions.md)):
 
 - Dashboard money and year: whole euros on the dashboard, cents for the "This month" subtotals; today is read once in `useYear()`; year fallback #30. See [Dashboard money and year](documentation/frontend/decisions.md#dashboard-money-and-year)
-- Colour scheme (#50): Cobalt, applied by CSS variables in `main.css`. See [Colour scheme](documentation/frontend/decisions.md#colour-scheme-50-steps-1-to-3) and [`colour-scheme.md`](documentation/frontend/colour-scheme.md)
+- Colour scheme (#50, open): Cobalt, applied by CSS variables in `main.css`; steps 1 to 3 (colours, type and shape, category badges) are done, step 4 (components and layouts per mock) is in progress. See [Colour scheme](documentation/frontend/decisions.md#colour-scheme-50-steps-1-to-3) and [`colour-scheme.md`](documentation/frontend/colour-scheme.md)
 - Category badge (#51): a disc with a white icon, the author keeps the mock's dark-mode mobility colour (4.10:1). See [Category badge](documentation/frontend/decisions.md#category-badge-51)
 - Months chart colours (#69): `--chart-soft` is below 3:1 in light mode, kept by the author. See [Months chart colours](documentation/frontend/decisions.md#months-chart-colours-69)
 - Favicon and manifest (#58): static icon set and manifest, not an installable app. See [Favicon and manifest](documentation/frontend/decisions.md#favicon-and-manifest-58)

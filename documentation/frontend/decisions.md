@@ -49,9 +49,7 @@ The dashboard is laid out as flex rows with `:has(#this-month-title)` on the lay
 - The rows stretch (`align-items: stretch`), so the sections of one row are equally tall (a section alone in its row keeps its height). Each section is a flex column and its `.card` has `flex: 1`, so the card fills it. The hero card (`card-hero`, also used by the month page's total card) is a flex column whose bottom row (`mt-auto`) sits at the bottom (#111; no test, jsdom has no layout).
 - The `sr-only` texts of the months chart are kept inside its scroll area with `relative`, which also removed the sideways page scroll at 320 px.
 
-Not done yet, because they need new elements (later steps of #50): the category badges with icons, the segmented type control, the business row of the form, the cobalt hero card, the phone layouts, the logo and favicon (`mockups/cobalt/brand`) and the dark field fill details. The delete red and the input border of the mocks are not applied outside the variables above.
-
-Note: this list is the status as recorded in `CLAUDE.md`. Some of these items were done later (the category badges, the hero card, the phone layouts, the logo and the favicon, see [colour-scheme.md](colour-scheme.md)). The "Known limits" in [colour-scheme.md](colour-scheme.md#known-limits) is older still and differs in places (for example on pill buttons and the font). The code was not re-checked for this move *(to verify)*.
+Status of #50 (it is still open): steps 1 to 3 are done (colour scheme, type and shape, category badges). Step 4, components and layouts per mock, is in progress: done are the hero card, the sidebar, the phone tab bar with its add and language buttons, the logo and the favicon. Not done: the segmented type control and the business row of the form, the phone layouts of the costs list and the add cost sheet, and a check of the dark field fill against the mock *(to verify)*. The delete red and the input border of the mocks are not applied outside the variables above. Details in [Known limits](colour-scheme.md#known-limits).
 
 ## Category badge (#51)
 
@@ -78,3 +76,15 @@ Lists with bars (the months) and the stacked category bar (#66, decorative, widt
 The short values above the month bars (#68) are formatted with `n()` plus the locale key `dashboard.months.thousand` (`"{value}k"`), not with `Intl.NumberFormat` compact notation. The issue asked for compact notation, but German short compact does not abbreviate thousands ("2100", "12.600") and the long form ("2,1 Tausend") is too wide for a 24 px column. The mock builds "2.1k" by hand too.
 
 A chart library is only a candidate for trend charts. It would need to be evaluated for server rendering, keyboard and screen reader support first.
+
+## Dashboard links (#18, #19)
+
+The "This month" card links to today's month; the month bars link to the selected year. The card ignores the selected year, so its link does too. The chart scrolls sideways with columns of at least 44 px, so touch targets stay big enough on phones. Details: [Dashboard links to month pages](app-structure.md#dashboard-links-to-month-pages).
+
+## Month pages
+
+Year and month are in the URL (`/months/2026/03`), the month always with two digits. The page can be bookmarked, the back button works, and every month has exactly one address. Details: [app-structure.md](app-structure.md).
+
+## Add/edit form
+
+A modal (`UModal`) with one `CostForm` for both kinds of cost, rendered once by the layout. A modal works better on mobile than a slide-over. Details: [Add and edit dialog](app-structure.md#add-and-edit-dialog).

@@ -1,6 +1,6 @@
 # Decisions
 
-A short log of what was decided and why. Written for: developers and contributors. The full working agreement is [`CLAUDE.md`](../../CLAUDE.md); this page summarizes it.
+A short log of what was decided and why. Written for: developers and contributors. The full working agreement is [`CLAUDE.md`](../../CLAUDE.md); this page summarizes it. Design and dashboard decisions are on the [frontend decisions page](../frontend/decisions.md).
 
 ## Decided
 
@@ -19,14 +19,6 @@ A short log of what was decided and why. Written for: developers and contributor
 | PATCH on recurring costs | Merge patch into the stored row, validate the result, write `dueMonth: null` for monthly | No stale month stays behind |
 | Row ids | `Stored<T> = T & { id: number }` in the UI, core types without `id` | Core and its tests stay id-free |
 | i18n | `@nuxtjs/i18n`, `en` default and `de`, strategy `no_prefix`, cookie for a manual choice | URL does not change with the language |
-| Dashboard money | Whole euros on the dashboard, cents in tables and on the month page | Display is rounded, the calculation is exact; household plus business can differ from the total by 1 on screen |
-| Today | Read once in `useYear()` (UTC) and stored with `useState` | Server and browser agree around New Year |
-| Charts | Hand-built bars with real text, no chart library for now | Every value must be text, month bars must be links, works without JavaScript |
-| Short values on the month bars | Formatted by hand: below 1,000 the whole number, from 1,000 up the thousands with one decimal at most and a "k" from the locale key `dashboard.months.thousand`; a month of 0 shows "0" | `Intl` compact notation does not abbreviate thousands in German ("2100", long form "2,1 Tausend"), which is too wide for a narrow column; the mock builds "2.1k" by hand too (#68) |
-| Soft colour of the month bars | `--chart-soft` is `#b9c5f6` (light) and `#5b6ac0` (dark), the values of the mocks; the light value has 1.70:1 against the white card and so misses the 3:1 asked for in #69, the dark value has 3.59:1 | Every amount is also text (the value above the bar, the link text) and the highlight is not colour alone (bold label and value). A colour with 3:1 (about `#7488E4`, 3.29:1) would be only 2.05:1 against the cobalt of the current month and weaken the highlight. Figures are computed, not measured (#69; same kind of decision as #51) |
-| Dashboard links | The "This month" card links to today's month; the month bars link to the selected year; the chart scrolls sideways with columns of at least 44 px | The card ignores the selected year, so its link does too; touch targets stay big enough on phones (#18, #19) |
-| Month pages | Year and month are in the URL (`/months/2026/03`), month always two digits | Bookmarkable, back button works, one address per month |
-| Add/edit form | A modal (`UModal`) with one `CostForm` for both kinds | Better on mobile than a slide-over |
 
 ## Details of the architecture and data decisions
 
@@ -48,7 +40,7 @@ The table above is the short form. These are the details as they were recorded i
 - **PATCH:** the body is a partial of the create fields (`patchRecurringCostSchema`, `patchPurchaseSchema`); an empty patch is rejected. For recurring costs `interval` and `dueMonth` can change. `updateRecurringCost` loads the stored row, merges the patch, validates the result with `createRecurringCostSchema` (400 if, for example, a yearly cost has no `dueMonth`) and writes `dueMonth: null` when the result is monthly, so no stale month stays behind. The 400 is thrown inside the util function.
 - **Row ids in the UI:** `Cost` and the other core types have no `id` (the API sends it at runtime). Edit and delete use the wrapper type `Stored<T> = T & { id: number }` for data from the API, so the core types and their tests stay id-free. Implemented: `Stored<T>` is in `shared/types/calculation.ts`; `costs.vue` types the fetched rows as `Stored<...>`.
 
-The design and dashboard decisions (colours, charts, money display on the dashboard, favicon) are on the [frontend decisions page](../frontend/decisions.md). Some of them are also summarized in the table above.
+Design and dashboard decisions are on the [frontend decisions page](../frontend/decisions.md).
 
 ## Open
 

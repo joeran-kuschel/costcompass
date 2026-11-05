@@ -6,7 +6,7 @@ How the Cobalt colour scheme is built, how to change a colour and how to check i
 
 The active design direction is Cobalt, with a light mode and a dark mode ("Cobalt midnight"). The design source is the mocks in `mockups/cobalt`. That folder is git-ignored, so it is not in the repository; the author keeps it locally. The teal direction is parked.
 
-This covers steps 1 and 1b of GitHub issue #50: colours, error and warning colours, and the corner radius. All of it is set in CSS; no template changed.
+This page covers the colour part of GitHub issue #50 (step 1: colours, error and warning colours, and the corner radius), set only in CSS. Type and shape (step 2: Manrope, card radius, pill buttons) and the category badges (step 3, see [Category badge](#category-badge)) are done too and are described in [decisions.md](decisions.md#colour-scheme-50-steps-1-to-3) and below. Step 4 (components and layouts per mock) is in progress, and #50 is still open.
 
 ## How it is built
 
@@ -228,19 +228,17 @@ Not checked: how the favicon looks in a browser tab (especially at 16 px), the A
 
 ## Known limits
 
-Not done yet (later steps of #50). These need template changes, not only CSS:
+Done from the former list (steps 2 and 3 of #50 and later work): pill buttons of at least 44 px (`pill`, `pill-icon` in `main.css`), light fields filled with `bg-muted` without a visible ring (`:ui` on every `UInput` and `USelect`), the dialogs with `bg-elevated` and 32 px corners, the font Manrope (`--font-sans` in `main.css`, downloaded at build time by Nuxt UI's font module and served from our own server), the category badges, the logo and favicon, the hero card, and the phone navigation (tab bar, round add button, compact language button).
 
-- Pill-shaped buttons with a height of 44 px.
-- Light fields without a border, and the dark field fill of the mocks.
-- A white dialog on the grey page.
-- The segmented type control and the business row of the form (the category badges are done, see [Category badge](#category-badge)).
-- The phone layouts of the mocks.
-- The logo and the favicon are done, see [Logo mark](#logo-mark) and [Favicon, app icons and web manifest](#favicon-app-icons-and-web-manifest).
-- The font Manrope. CSS can set it, but Nuxt UI's font module would download it from Google at build time. Whether to use it, and how, is undecided.
+Not done yet (step 4 of #50). These need template changes, not only CSS:
+
+- The segmented type control and the business row of the form: `CostForm.vue` still uses a `URadioGroup` for the kind and a `UCheckbox` for the business flag.
+- The phone layouts of the costs list and the add cost sheet from the mocks: `costs.vue` has no responsive classes of its own, and the add form is a modal, not a sheet.
+- Whether the dark field fill matches the dark mock in every detail. The fields use `dark:bg-accented dark:ring-accented`; the mocks are not in the repository, so this was not compared *(to verify)*.
 
 Also open:
 
-- The corner radii are 18 px and 24 px, not the 16 px and 28 px of the mocks.
+- The corner radii are 18 px and 24 px, not the 16 px and 28 px of the mocks (fields and buttons are set to 16 px with a class where it matters, cards to 28 px with `card`; the variable-based radii stay approximate).
 - The dimmed-text colours (`--ui-text-dimmed`) and the light accented border (`--ui-border-accented`) are not in the mocks. They were derived from the surrounding colours and may be adjusted.
-- No colour-contrast check (WCAG) has been run on the final values.
+- No full colour-contrast check (WCAG) has been run on the final values. Single figures in this page are computed, not measured.
 - The app has no theme switch. The mode follows the system setting.
