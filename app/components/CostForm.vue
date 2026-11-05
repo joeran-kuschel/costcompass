@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { INTERVALS } from '~~/shared/types/calculation'
 import type { FormSubmitEvent } from '@nuxt/ui'
 import type { CreatePurchase, CreateRecurringCost } from '~~/shared/utils/validation'
 import { monthDateRange } from '~~/shared/utils/dates'

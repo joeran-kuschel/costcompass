@@ -116,9 +116,10 @@ async function onRetry() {
                     <p class="font-extrabold tabular-nums">{{ section.total }}</p>
                 </div>
                 <ul class="mt-3 flex flex-col gap-1.5">
-                    <li v-for="row in section.rows" :key="row.key" class="flex items-center justify-between gap-4 rounded-[18px] bg-muted px-3 py-2.5">
-                        <div class="min-w-0">
-                            <p class="break-words font-bold">
+                    <li v-for="row in section.rows" :key="row.key" class="flex items-center gap-3 rounded-[18px] bg-muted px-3 py-2.5">
+                        <CategoryBadge :category="row.category" :size="40" />
+                        <div class="min-w-0 flex-1">
+                            <p class="flex flex-wrap items-center gap-1.5 break-words font-bold">
                                 {{ row.name }}
                                 <BusinessBadge v-if="row.business" />
                             </p>
