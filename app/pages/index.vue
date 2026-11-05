@@ -13,7 +13,6 @@ const euros = useMoney()
 const cents = useMoney({ cents: true })
 const { openAdd } = useCostDialog()
 const heading = useTemplateRef<HTMLElement>('heading')
-useHead({ title: () => t('nav.dashboard') })
 
 const years = computed(() => availableYears(purchases.value ?? [], currentYear.value))
 const shownYear = computed(() => years.value.includes(year.value) ? year.value : currentYear.value)
@@ -77,6 +76,8 @@ const thisMonth = computed(() => {
         largest: largestCosts(costs).map(toRow)
     }
 })
+
+useHead({ title: () => t('nav.dashboard') })
 
 async function onRetry() {
     await retry()

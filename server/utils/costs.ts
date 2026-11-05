@@ -29,14 +29,6 @@ export async function createPurchase(input: CreatePurchase): Promise<Purchase> {
     if (!row) throw new Error('Insert returned no row')
     return toPurchase(row)
 }
-export async function deleteRecurringCosts(id: number): Promise<boolean> {
-    const rows = await db.delete(recurringCosts).where(eq(recurringCosts.id, id)).returning({ id: recurringCosts.id})
-    return rows.length > 0
-}
-export async function deletePurchase(id: number): Promise<boolean> {
-    const rows = await db.delete(purchases).where(eq(purchases.id, id)).returning({ id: purchases.id})
-    return rows.length > 0
-}
 export async function updateRecurringCost(id: number, patch: PatchRecurringCost): Promise<RecurringCost | undefined> {
     const [existing] = await db.select().from(recurringCosts).where(eq(recurringCosts.id, id))
     if (!existing) return undefined
@@ -55,4 +47,12 @@ export async function updateRecurringCost(id: number, patch: PatchRecurringCost)
 export async function updatePurchase(id: number, patch: PatchPurchase): Promise<Purchase | undefined> {
     const [row] = await db.update(purchases).set(patch).where(eq(purchases.id, id)).returning()
     return row ? toPurchase(row) : undefined
+}
+export async function deleteRecurringCosts(id: number): Promise<boolean> {
+    const rows = await db.delete(recurringCosts).where(eq(recurringCosts.id, id)).returning({ id: recurringCosts.id})
+    return rows.length > 0
+}
+export async function deletePurchase(id: number): Promise<boolean> {
+    const rows = await db.delete(purchases).where(eq(purchases.id, id)).returning({ id: purchases.id})
+    return rows.length > 0
 }

@@ -1,12 +1,16 @@
 import { z } from 'zod'
 import { CATEGORIES, INTERVALS } from '~~/shared/types/calculation'
+
 const monthSchema = z.number().int().min(1).max(12)
+const notEmpty = (o: object) => Object.keys(o).length > 0
 const baseFields = {
   name: z.string().trim().min(1).max(200),
   amount: z.number().positive(),
   category: z.enum(CATEGORIES),
   business: z.boolean(),
 }
+
+// Create
 export const createRecurringCostSchema = z.discriminatedUnion('interval', [
   z.object({ ...baseFields, interval: z.literal('monthly') }),
   z.object({ ...baseFields, interval: z.literal('quarterly'), dueMonth: monthSchema }),
@@ -19,21 +23,22 @@ export const createPurchaseSchema = z.object({
   date: z.iso.date(),
 })
 export type CreatePurchase = z.infer<typeof createPurchaseSchema>
-export const idParamsSchema = z.object({
-  id: z.coerce.number().int().positive(),
-})
-const notEmpty = (o: object) => Object.keys(o).length > 0
 
+// Patch
 export const patchRecurringCostSchema = z.object({
   ...baseFields,
   interval: z.enum(INTERVALS),
   dueMonth: monthSchema,
 }).partial().refine(notEmpty, 'Empty patch')
+export type PatchRecurringCost = z.infer<typeof patchRecurringCostSchema>
 
 export const patchPurchaseSchema = createPurchaseSchema.partial().refine(notEmpty, 'Empty patch')
-
-export type PatchRecurringCost = z.infer<typeof patchRecurringCostSchema>
 export type PatchPurchase = z.infer<typeof patchPurchaseSchema>
+
+// Params
+export const idParamsSchema = z.object({
+  id: z.coerce.number().int().positive(),
+})
 
 export const monthParamsSchema = z.object({
     year: z.string().regex(/^\d{4}$/).transform(Number),

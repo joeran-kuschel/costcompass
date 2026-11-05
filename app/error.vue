@@ -5,7 +5,6 @@ const props = defineProps<{ error: NuxtError }>()
 const { t } = useI18n()
 const { currentYear, currentMonth } = useYear()
 const { monthYear, monthPath } = useMonth()
-useAppHead()
 const notFound = computed(() => props.error.status === 404)
 const monthMissing = computed(() => (props.error.data as { reason?: string } | undefined)?.reason === 'month')
 const variant = computed(() => {
@@ -16,6 +15,7 @@ const variant = computed(() => {
 const title = computed(() => t(`error.${variant.value}Title`))
 const text = computed(() => t(`error.${variant.value}Text`))
 
+useAppHead()
 useHead({ title: () => title.value })
 function back() {
     clearError({ redirect: '/' })

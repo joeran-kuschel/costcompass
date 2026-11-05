@@ -1,17 +1,17 @@
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui'
 
-const { openAdd, openEdit } = useCostDialog()
-
 type SortableColumn = {
     getIsSorted: () => false | 'asc' | 'desc'
     toggleSorting: (desc?: boolean) => void
 }
 
 const { t, n, locale } = useI18n()
+const { openAdd, openEdit } = useCostDialog()
 const { recurring, purchases, failed, loading, retry } = useCostLists()
 const toast = useToast()
 const UButton = resolveComponent('UButton')
+const toDelete = ref<Stored<Cost> | null>(null)
 const costs = computed<Stored<Cost>[]>(() => [
     ...(recurring.value ?? []),
     ...(purchases.value ?? []),
@@ -25,22 +25,7 @@ const columns = computed<TableColumn<Stored<Cost>>[]>(()  => [
     { accessorKey: 'business', header: sortableHeader(t('business.label')) },
     { id: 'actions', header: t('costs.columns.actions') },
 ])
-const toDelete = ref<Stored<Cost> | null>(null)
 useHead({ title: () => t('costs.title') })
-
-function monthName(month: number): string {
-    return new Intl.DateTimeFormat(locale.value, { month: 'long', timeZone: 'UTC' })
-        .format(new Date(Date.UTC(2000, month - 1, 1)))
-}
-
-function whenLabel(cost: Cost): string {
-    if (cost.kind === 'purchase') {
-        return new Date(cost.date).toLocaleDateString(locale.value, { timeZone: 'UTC' })
-    }
-    const interval = t(`interval.${cost.interval}`)
-    if (cost.dueMonth === undefined) return interval
-    return `${interval}, ${monthName(cost.dueMonth)}`
-}
 
 async function onDelete (cost: Stored<Cost>) {
     const url = cost.kind === 'recurring' ? '/api/recurring-costs' : '/api/purchases'
@@ -56,6 +41,20 @@ async function confirmDelete() {
     if (!toDelete.value) return
     await onDelete(toDelete.value)
     toDelete.value = null
+}
+
+function monthName(month: number): string {
+    return new Intl.DateTimeFormat(locale.value, { month: 'long', timeZone: 'UTC' })
+        .format(new Date(Date.UTC(2000, month - 1, 1)))
+}
+
+function whenLabel(cost: Cost): string {
+    if (cost.kind === 'purchase') {
+        return new Date(cost.date).toLocaleDateString(locale.value, { timeZone: 'UTC' })
+    }
+    const interval = t(`interval.${cost.interval}`)
+    if (cost.dueMonth === undefined) return interval
+    return `${interval}, ${monthName(cost.dueMonth)}`
 }
 
 function sortableHeader(label: string) {
