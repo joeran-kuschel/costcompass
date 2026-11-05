@@ -9,7 +9,7 @@ pnpm test          # watch mode
 pnpm vitest run    # single run
 ```
 
-The setup is Vitest with `@nuxt/test-utils`, environment `nuxt` (`vitest.config.ts`), `happy-dom`, and `@vue/test-utils` (a dev dependency that `mountSuspended` needs). Tests are in `tests/nuxt/` (the folder the Nuxt TypeScript config includes) and end in `.test.ts`. At the time of writing: 28 files, 661 tests, all passing, about 10 to 15 seconds. No database is needed.
+The setup is Vitest with `@nuxt/test-utils`, environment `nuxt` (`vitest.config.ts`), `happy-dom`, and `@vue/test-utils` (a dev dependency that `mountSuspended` needs). Tests are in `tests/nuxt/` (the folder the Nuxt TypeScript config includes) and end in `.test.ts`. At the time of writing: 29 files, 664 tests, all passing, about 10 to 15 seconds. No database is needed.
 
 ## Conventions
 
@@ -31,7 +31,7 @@ The setup is Vitest with `@nuxt/test-utils`, environment `nuxt` (`vitest.config.
 | Server functions on a mocked `db` (`vi.mock`): the logic between the Drizzle calls, such as the PATCH merge, not the SQL | `server-costs.test.ts` |
 | Pages | `dashboard-states.test.ts`, `dashboard-summary.test.ts`, `dashboard-months.test.ts`, `dashboard-month-cards.test.ts`, `costs-page.test.ts`, `costs-page-sorting.test.ts`, `month-page.test.ts`, `error-page.test.ts` |
 | Components | `CostForm.test.ts`, `LanguageSwitcher.test.ts`, `YearSelect.test.ts` |
-| Composables | `useMoney.test.ts`, `useMonth.test.ts`, `useYear.test.ts` |
+| Composables | `useMoney.test.ts`, `useMonth.test.ts`, `useYear.test.ts`, `useKind.test.ts` |
 | App level | `app-locale.test.ts` (built-in texts, `<html lang>`, `dir`, titles), `route-announcer.test.ts` |
 
 ### Core and server tests

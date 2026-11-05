@@ -44,7 +44,7 @@ costcompass/
 │   ├── app.vue               # Root component; error.vue is the error page
 │   ├── assets/css/main.css   # Tailwind and Nuxt UI imports, the Cobalt colour scheme (light and dark)
 │   ├── components/           # Reusable Vue components (CostForm, YearSelect, LanguageSwitcher, MobileBar, badges, LogoMark, DashboardSkeleton)
-│   ├── composables/          # Reusable stateful logic (useXxx): money (useMoney, useMoneyParts), year, month, month summary (useMonthSummary), cost lists, cost dialog, category, nav items, app head
+│   ├── composables/          # Reusable stateful logic (useXxx): money (useMoney, useMoneyParts), year, month, month summary (useMonthSummary), cost lists, cost dialog, category, kind (useKind), nav items, app head
 │   ├── layouts/              # Page layouts (default.vue: sidebar, tab bar, the one add/edit dialog)
 │   ├── middleware/           # (planned) Client route middleware
 │   └── pages/                # Pages (auto-routing): index.vue (dashboard), costs.vue, months/[year]/[month].vue
@@ -222,7 +222,7 @@ Design and dashboard decisions (details in [`documentation/frontend/decisions.md
 - Costs table and year: should the table be filtered by the selected year? Only purchases have a year, recurring costs have none
 ## Current status
 
-Roadmap steps 1-5 are done; step 6 (UI) is in progress. 661 Vitest tests in 28 files pass. The cost core in `shared/`, the Drizzle schema and migration and the API (`GET`, `POST`, `PATCH`, `DELETE` for recurring costs and purchases) are done; the API routes and the real SQL are tested by hand against the local Postgres, not by automated tests (that would need a test Postgres). The UI has the layout with sidebar and tab bar, the central add/edit dialog, `/costs` (sortable table, edit, delete), the dashboard (including its loading, error and empty states) and the month page with its navigation. Details per page: [`documentation/frontend/app-structure.md`](documentation/frontend/app-structure.md); tests: [`documentation/backend/testing.md`](documentation/backend/testing.md).
+Roadmap steps 1-5 are done; step 6 (UI) is in progress. 664 Vitest tests in 29 files pass. The cost core in `shared/`, the Drizzle schema and migration and the API (`GET`, `POST`, `PATCH`, `DELETE` for recurring costs and purchases) are done; the API routes and the real SQL are tested by hand against the local Postgres, not by automated tests (that would need a test Postgres). The UI has the layout with sidebar and tab bar, the central add/edit dialog, `/costs` (sortable table, edit, delete), the dashboard (including its loading, error and empty states) and the month page with its navigation. Details per page: [`documentation/frontend/app-structure.md`](documentation/frontend/app-structure.md); tests: [`documentation/backend/testing.md`](documentation/backend/testing.md).
 
 Next: the "This month" card overflowed sideways at 320 px before the hero restyle (long names broke into single letters, #38; not looked at again since). Still open: the `RecurringCost` union type in the core (the API already enforces `dueMonth`), and the rate calculator (later).
 
