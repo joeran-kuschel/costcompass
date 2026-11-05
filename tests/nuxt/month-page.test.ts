@@ -263,7 +263,7 @@ describe('month page content', () => {
     expect(rowsOf('purchases')).toHaveLength(2)
     expect(section('purchases').text()).not.toContain('Bike')
   })
-  it('shows the category and the interval under a recurring cost, and the category and the date under a purchase', async () => {
+  it('shows the category and the interval under a recurring cost, and the category and the full date under a purchase', async () => {
     await mountOctober()
     const rentRow = textOf(rowsOf('recurring').find(row => row.text().includes('Rent'))!)
     expect(rentRow).toContain('Housing · Monthly')
@@ -272,8 +272,33 @@ describe('month page content', () => {
     expect(phoneRow).toContain('Housing · Quarterly')
     expect(phoneRow).toContain('€30.25')
     const bookRow = textOf(rowsOf('purchases').find(row => row.text().includes('Book'))!)
-    expect(bookRow).toContain('Appliances · Oct 20')
+    expect(bookRow).toContain('Appliances · October 20')
     expect(bookRow).toContain('€12.50')
+  })
+  it('starts every row with a 40 px badge of its own category, hidden from screen readers', async () => {
+    await mountOctober()
+    const expected: Record<string, string> = { 'Rent': 'housing', 'Liability insurance': 'insurance', 'Phone': 'housing', 'Laptop': 'appliances', 'Book': 'appliances' }
+    const rows = [...rowsOf('recurring'), ...rowsOf('purchases')]
+    expect(rows).toHaveLength(5)
+    for (const row of rows) {
+      const name = row.find('p').text().replace('Business', '').trim()
+      const badge = row.element.firstElementChild!
+      expect(badge.classList.contains('category-disc'), name).toBe(true)
+      expect(badge.classList.contains(`bg-[var(--category-${expected[name]})]`), name).toBe(true)
+      expect(badge.getAttribute('style'), name).toContain('--category-size: 40px')
+      expect(badge.getAttribute('aria-hidden'), name).toBe('true')
+    }
+  })
+  it('adds the due month to a yearly cost, not to a quarterly or monthly one', async () => {
+    await mountOctober()
+    const liabilityRow = textOf(rowsOf('recurring').find(row => row.text().includes('Liability insurance'))!)
+    expect(liabilityRow).toContain('Insurance · Yearly, October')
+    const phoneRow = textOf(rowsOf('recurring').find(row => row.text().includes('Phone'))!)
+    expect(phoneRow).toContain('Housing · Quarterly')
+    expect(phoneRow).not.toContain('Quarterly,')
+    const rentRow = textOf(rowsOf('recurring').find(row => row.text().includes('Rent'))!)
+    expect(rentRow).toContain('Housing · Monthly')
+    expect(rentRow).not.toContain('Monthly,')
   })
   it('adds up: each subtotal is the sum of its rows and the total is the sum of both subtotals', async () => {
     await mountOctober()
@@ -496,7 +521,9 @@ describe('month page content in German', () => {
     const rentRow = textOf(rowsOf('recurring').find(row => row.text().includes('Rent'))!)
     expect(rentRow).toContain('Wohnen · Monatlich')
     const bookRow = textOf(rowsOf('purchases').find(row => row.text().includes('Book'))!)
-    expect(bookRow).toContain('Geräte · 20. Okt.')
+    expect(bookRow).toContain('Geräte · 20. Oktober')
+    const liabilityRow = textOf(rowsOf('recurring').find(row => row.text().includes('Liability insurance'))!)
+    expect(liabilityRow).toContain('Versicherung · Jährlich, Oktober')
     expect(wrapper.text()).toContain('Geschäftlich')
   })
 })

@@ -26,9 +26,9 @@ export function useMonthSummary() {
             recurringTotal: summary.groups.recurringTotal,
             purchasesTotal: summary.groups.purchasesTotal,
             empty: summary.empty,
-            recurringRows: summary.groups.recurring.map(toRow),
-            purchaseRows: summary.groups.purchases.map(toRow),
-            largestRows: summary.largest.map(toRow),
+            recurringRows: summary.groups.recurring.map(cost => toRow(cost, 'long')),
+            purchaseRows: summary.groups.purchases.map(cost => toRow(cost, 'long')),
+            largestRows: summary.largest.map(cost => toRow(cost)),
             comparison: t(`dashboard.thisMonth.${direction}`, {
                 percent: Math.abs(percent ?? 0),
                 previous: monthName(month === 1 ? 12 : month - 1),

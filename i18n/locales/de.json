@@ -12,7 +12,8 @@
   "interval": {
     "monthly": "Monatlich",
     "quarterly": "Vierteljährlich",
-    "yearly": "Jährlich"
+    "yearly": "Jährlich",
+    "yearlyIn": "Jährlich, {month}"
   },
   "costs": {
     "title": "Kosten",
