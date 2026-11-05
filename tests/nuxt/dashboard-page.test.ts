@@ -63,6 +63,61 @@ describe('dashboard page loading state', () => {
     expect(wrapper.text()).not.toContain('No costs yet')
     await vi.waitFor(() => expect(wrapper.text()).toContain('No costs yet'), { timeout: 2000 })
   })
+  describe('skeleton', () => {
+    const busy = () => wrapper.find('[aria-busy="true"]')
+    const skeleton = () => busy().find('[aria-hidden="true"]')
+
+    it('is a busy region that holds the status text and the hidden skeleton', async () => {
+      api.recurring.delay = 300
+      await mountPage()
+      expect(busy().exists()).toBe(true)
+      expect(busy().find('[role="status"]').exists()).toBe(true)
+      expect(skeleton().exists()).toBe(true)
+    })
+    it('keeps the status text visually hidden', async () => {
+      api.recurring.delay = 300
+      await mountPage()
+      expect(status().classes()).toContain('sr-only')
+    })
+    it('is not announced: hidden from assistive technology and no alert inside', async () => {
+      api.recurring.delay = 300
+      await mountPage()
+      expect(skeleton().findAll('[role="alert"]')).toHaveLength(0)
+      expect(skeleton().text()).toBe('')
+      expect(skeleton().findAll('[role="presentation"]').length).toBeGreaterThan(0)
+    })
+    it('has the hero, the tiles and the list as three cards', async () => {
+      api.recurring.delay = 300
+      await mountPage()
+      expect(skeleton().findAll('.card')).toHaveLength(3)
+      expect(skeleton().find('.card-hero').exists()).toBe(true)
+    })
+    it('stops animating for people who prefer reduced motion', async () => {
+      api.recurring.delay = 300
+      await mountPage()
+      const blocks = skeleton().findAll('[role="presentation"]')
+      expect(blocks.every(block => block.classes().includes('motion-reduce:animate-none'))).toBe(true)
+    })
+    it('is gone when the lists have arrived', async () => {
+      api.recurring.delay = 300
+      await mountPage()
+      await vi.waitFor(() => expect(wrapper.text()).toContain('No costs yet'), { timeout: 2000 })
+      expect(busy().exists()).toBe(false)
+      expect(wrapper.find('[role="presentation"]').exists()).toBe(false)
+    })
+    it('is gone after an error', async () => {
+      api.recurring.fail = true
+      await mountPage()
+      await vi.waitFor(() => expect(alert().exists()).toBe(true))
+      expect(busy().exists()).toBe(false)
+    })
+    it('has a German status text when the language is German', async () => {
+      await setLanguage('de')
+      api.recurring.delay = 300
+      await mountPage()
+      expect(status().text()).toBe('Kosten werden geladen …')
+    })
+  })
   it('always shows the page heading', async () => {
     api.recurring.delay = 300
     await mountPage()
@@ -111,7 +166,7 @@ describe('dashboard page empty state', () => {
     await mountPage()
     await vi.waitFor(() => expect(wrapper.text()).toContain('Noch keine Kosten'))
     expect(wrapper.text()).toContain('Erste Kosten hinzufügen')
-    expect(wrapper.text()).toContain('Tip: Fange mit monatlichen Kosten an')
+    expect(wrapper.text()).toContain('Tipp: Fange mit monatlichen Kosten an')
   })
   it('does not show up once there are costs', async () => {
     api.recurring.rows = [rent]

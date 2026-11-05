@@ -87,7 +87,10 @@ async function onRetry() {
 </script>
 <template>
     <h1 ref="heading" tabindex="-1">{{ t('nav.dashboard') }}</h1>
-    <p v-if="loading" role="status">{{ t('dashboard.loading') }}</p>
+    <div v-if="loading" :aria-busy="loading" class="flex flex-col gap-4">
+    <p role="status" class="sr-only">{{ t('dashboard.loading') }}</p>
+        <DashboardSkeleton />
+    </div>
     <UAlert
         v-else-if="failed"
         role="alert"

@@ -20,9 +20,27 @@ Month pages are reached from the dashboard (see [Dashboard links to month pages]
 The dashboard and the month page get their data with `useCostLists()` and show these states, in this order of priority:
 
 1. **Failed**: a `UAlert` with `role="alert"` and a retry button that refreshes both lists. No numbers are shown next to it. The month page shows a banner; the dashboard shows a centred card (see [Dashboard error card](#dashboard-error-card)).
-2. **Loading**: a visually hidden `role="status"` text (month page: also two skeleton blocks marked `aria-hidden`).
+2. **Loading**: a visually hidden `role="status"` text plus skeleton blocks marked `aria-hidden`: two on the month page, three cards on the dashboard (see [Dashboard loading skeleton](#dashboard-loading-skeleton)).
 3. **Empty**: dashboard only, a centred card with an "Add your first cost" button (see [Dashboard empty card](#dashboard-empty-card)). On the month page an empty month shows a card instead of the groups.
 4. **Loaded**: the content.
+
+### Dashboard loading skeleton
+
+Issue #71. While the lists load, the dashboard shows placeholder blocks instead of only a text. Below the `h1`, `pages/index.vue` renders a wrapper `div` with `:aria-busy="loading"` (flex column, 16 px gap). It holds the visually hidden status text (`role="status"`, `sr-only`; `dashboard.loading`, "Loading your costs…", German "Kosten werden geladen …") and `<DashboardSkeleton />`.
+
+`components/DashboardSkeleton.vue` has no props and is static. Its root is `aria-hidden="true"`. It follows the mock BStateLoading with three cards:
+
+- A hero block (`card card-hero` at 35% opacity) with four translucent white `USkeleton` bars.
+- A tile card (`card card-flush`): a grid of two columns, four from `lg`, with four tiles that each have a label bar and a value bar of different widths.
+- A list card: a heading bar, a rule bar and three rows, each with a circle, a bar and a short bar.
+
+Every `USkeleton` has `role="presentation"`, because `USkeleton` renders `role="alert"` itself and would be announced twice (as on the month page), and `motion-reduce:animate-none`, so the animation stops for people who ask for reduced motion.
+
+The dashboard needs both lists before it shows numbers, because every total depends on both. One slow list therefore keeps the skeleton on screen. This is intended.
+
+Known limit: the skeleton does not have exactly the height of the loaded dashboard, so the layout can still move when the content arrives.
+
+Tests: the `skeleton` `describe` in the loading state of `tests/nuxt/dashboard-page.test.ts` checks the busy region with the status text and the skeleton, that the status text is `sr-only`, that the skeleton is hidden from assistive technology with no alert inside, the three cards, the reduced motion class on every block, that it is gone after a load and after an error, that the page keeps loading until both lists have arrived, and the German status text. The page was checked in the browser (reload with the API delayed by 5 seconds). Not checked: a real phone, a screen reader, measured contrast, whether dark mode matches the dark mock.
 
 ### Dashboard error card
 
@@ -422,6 +440,7 @@ Checked by hand in the browser: the dashboard and month page buttons open the di
 | `BusinessBadge.vue` | The "Business" badge with a briefcase icon, no props. See [Business badge](colour-scheme.md#business-badge) |
 | `CategoryBadge.vue` | Round disc with a white category icon; props `category` and `size` (28, 32, 36, 40, 44, 56). Decoration only (`aria-hidden`), the name is text in the parent. See [Category badge](colour-scheme.md#category-badge) |
 | `LogoMark.vue` | The Costcompass mark (disc, ring, compass needle) as an inline SVG, no props. Decoration only (`aria-hidden`), sized by the parent. Used in the sidebar title. See [Logo mark](colour-scheme.md#logo-mark) |
+| `DashboardSkeleton.vue` | The loading placeholder of the dashboard: three cards of `USkeleton` bars, no props. Decoration only (`aria-hidden`). See [Dashboard loading skeleton](#dashboard-loading-skeleton) |
 | `MobileBar.vue` | The bottom tab bar below `lg`: a named `nav` with three tab links from `useNavItems()`, and the round add button. No props. See [Bottom tab bar](#bottom-tab-bar) |
 | `LanguageSwitcher.vue` | Switches the language with `setLocale()`. Without props: a `USelect` in a `UFormField` with the visible label `language.label`, in the footer slot of the sidebar, see [Sidebar navigation](#sidebar-navigation). With `compact`: a round button with the language code and a menu of the languages, at the top right below `lg`, see [Compact language button](#compact-language-button-on-phones) |
 
