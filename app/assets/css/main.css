@@ -301,20 +301,14 @@ main > div:has(#this-month-title) > section[aria-labelledby="split-title"] {
   pointer-events: none;
 }
 
-/* Costs page: the heading and the add button share a row, the table card takes the full width below. */
+/* Costs page: the header (heading and summary line) and the table card each take the full width; the row gap puts 16 px between them. */
 main > div:has(table) {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 1rem 1.5rem;
 }
-main > div:has(table) > h1 {
-  flex: 1 1 0;
-  margin-bottom: 0;
-}
-main > div:has(table) > button {
-  flex: 0 0 auto;
-}
+main > div:has(table) > header,
 main > div:has(table) > div {
   flex: 1 1 100%;
   min-width: 0;

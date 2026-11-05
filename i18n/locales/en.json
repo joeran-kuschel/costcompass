@@ -35,6 +35,11 @@
       "none": "Sort by {column}",
       "asc": "{column}, sorted ascending",
       "desc": "{column}, sorted descending"
+    },
+    "summary": {
+      "recurring": "{n} recurring cost | {n} recurring costs",
+      "purchases": "{n} purchase | {n} purchases",
+      "line": "{recurring} and {purchases} · {total} in {year}"
     }
   },
   "kind": {

@@ -11,6 +11,8 @@ const { openAdd, openEdit } = useCostDialog()
 const { recurring, purchases, failed, loading, retry } = useCostLists()
 const toast = useToast()
 const { kindIcon } = useKind()
+const yearSummary = useYearSummary()
+const euros = useMoney()
 
 const UButton = resolveComponent('UButton')
 const toDelete = ref<Stored<Cost> | null>(null)
@@ -72,7 +74,15 @@ function sortableHeader(label: string) {
 }
 </script>
 <template>
-    <h1>{{ t('costs.title') }}</h1>
+    <header>
+        <h1>{{ t('costs.title') }}</h1>
+        <i18n-t v-if="!loading" keypath="costs.summary.line" tag="p" class="mt-1 text-muted" scope="global">
+            <template #recurring>{{ t('costs.summary.recurring', yearSummary.recurringCount) }}</template>
+            <template #purchases>{{ t('costs.summary.purchases', yearSummary.purchasesCount) }}</template>
+            <template #total><b class="font-extrabold tabular-nums text-default">{{ euros(yearSummary.total) }}</b></template>
+            <template #year>{{ yearSummary.year }}</template>
+        </i18n-t>
+    </header>
     <UTable :data="costs" :columns="columns" class="card" :ui="{ root: 'overflow-x-auto px-5 pb-2 pt-1', th: 'px-2 pb-2.5 pt-3.5 text-[13px] font-extrabold uppercase tracking-wide text-muted', td: 'px-2 py-2.5 text-sm text-default' }">
         <template #name-cell="{ row }">
             <div class="flex min-w-48 items-center gap-3 whitespace-normal">
