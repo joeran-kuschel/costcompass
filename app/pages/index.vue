@@ -1,12 +1,13 @@
 <script lang="ts" setup>
-import { annualSummary, categoryBreakdown, splitPercentages, monthBreakdown, monthChange, costsInMonth, groupMonthCosts, largestCosts} from '~~/shared/utils/costs'
+import { annualSummary, categoryBreakdown, splitPercentages, monthBreakdown } from '~~/shared/utils/costs'
 
 const EMPTY_BADGES = ['housing', 'food', 'insurance', 'mobility'] as const
 const GAP = 0.6
 
 const { t, n } = useI18n()
 const { year, currentYear, currentMonth } = useYear()
-const { monthName, monthYear, monthPath, toRow } = useMonth()
+const { monthName, monthYear, monthPath } = useMonth()
+const thisMonthSummary = useMonthSummary()
 const { recurring, purchases, failed, loading, retry } = useCostLists()
 const { categoryClass } = useCategory()
 const euros = useMoney()
@@ -59,23 +60,6 @@ const monthRows = computed (() => monthBreakdown(recurring.value ?? [], purchase
         value: shortAmount(total)
     }
 }))
-const thisMonth = computed(() => {
-    const change = monthChange(recurring.value ?? [], purchases.value ?? [], currentYear.value, currentMonth.value)
-    const percent = change.percent
-    const direction = percent === null ? 'none' : percent < 0 ? 'less': percent > 0 ? 'more' : 'same'
-    const costs = costsInMonth(recurring.value ?? [], purchases.value ?? [], currentYear.value, currentMonth.value)
-    const groups = groupMonthCosts(costs)
-    return {
-        title: t('dashboard.thisMonth.title', { month: monthName(currentMonth.value), year: currentYear.value}),
-        total: euros(change.current),
-        comparison: t(`dashboard.thisMonth.${direction}`, { percent: Math.abs(percent ?? 0), previous: monthName (currentMonth.value === 1 ? 12 : currentMonth.value - 1) }),
-        icon: { less: 'i-lucide-trending-down', more: 'i-lucide-trending-up', same: 'i-lucide-minus', none: 'i-lucide-minus'}[direction],
-        recurringTotal: cents(groups.recurringTotal),
-        purchasesTotal: cents(groups.purchasesTotal),
-        empty: costs.length === 0,
-        largest: largestCosts(costs).map(toRow)
-    }
-})
 
 useHead({ title: () => t('nav.dashboard') })
 
@@ -95,7 +79,7 @@ async function onRetry() {
     <UAlert
         v-else-if="failed"
         role="alert"
-        variant="naked"
+        variant="subtle"
         class="card mt-6"
         :ui="{
             root: 'flex-col items-center gap-2.5 px-6 pb-7 pt-9 text-center',
@@ -136,24 +120,24 @@ async function onRetry() {
         <section aria-labelledby="this-month-title">
             <UCard variant="subtle" class="card card-hero">
                 <span class="hero-ring" aria-hidden="true" />
-                <h2 id="this-month-title">{{ thisMonth.title }}</h2>
-                <p class="hero-total">{{ thisMonth.total }}</p>
-                <p class="mt-3 inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1">
-                    <UIcon :name="thisMonth.icon" aria-hidden="true" />
-                    {{ thisMonth.comparison }}
+                <h2 id="this-month-title">{{ t('dashboard.thisMonth.title', { month: monthName(thisMonthSummary.month), year: thisMonthSummary.year }) }}</h2>
+                <p class="hero-total">{{ euros(thisMonthSummary.total) }}</p>
+                <p class="hero-pill mt-3">
+                    <UIcon :name="thisMonthSummary.icon" class="size-3.5 sm:size-4" aria-hidden="true" />
+                    {{ thisMonthSummary.comparison }}
                 </p>
                 <div class="mt-auto flex w-full flex-wrap items-center justify-between gap-3 pt-10">
                     <dl class="flex flex-wrap gap-x-8 gap-y-2">
                         <div>
                             <dt class="text-sm">{{ t('month.recurring') }}</dt>
-                            <dd class="font-semibold tabular-nums">{{ thisMonth.recurringTotal }}</dd>
+                            <dd class="font-semibold tabular-nums">{{ cents(thisMonthSummary.recurringTotal) }}</dd>
                         </div>
                         <div>
                             <dt class="text-sm">{{ t('month.purchases') }}</dt>
-                            <dd class="font-semibold tabular-nums">{{ thisMonth.purchasesTotal }}</dd>
+                            <dd class="font-semibold tabular-nums">{{ cents(thisMonthSummary.purchasesTotal) }}</dd>
                         </div>
                     </dl>
-                    <div v-if="thisMonth.empty" class="flex flex-wrap items-center gap-3">
+                    <div v-if="thisMonthSummary.empty" class="flex flex-wrap items-center gap-3">
                         <p class="text-sm">{{ t('dashboard.thisMonth.empty') }}</p>
                         <UButton :label="t('costs.add')" class="pill border-white/60 text-white hover:bg-white/15 focus-visible:outline-white" color="neutral" variant="outline" @click="openAdd()" />
                     </div>
@@ -170,8 +154,8 @@ async function onRetry() {
         <section aria-labelledby="largest-title">
             <UCard variant="subtle" class="card">
                 <h2 id="largest-title">{{ t('dashboard.largest.title') }}</h2>
-                <ul v-if="thisMonth.largest.length" aria-labelledby="largest-title" class="flex flex-col gap-1.5">
-                    <li v-for="row in thisMonth.largest" :key="row.key" class="flex items-center gap-3 rounded-[1.125rem] bg-muted px-3 py-2.5">
+                <ul v-if="thisMonthSummary.largestRows.length" aria-labelledby="largest-title" class="flex flex-col gap-1.5">
+                    <li v-for="row in thisMonthSummary.largestRows" :key="row.key" class="flex items-center gap-3 rounded-[1.125rem] bg-muted px-3 py-2.5">
                         <CategoryBadge :category="row.category" :size="40"/>
                         <div class="min-w-0 flex-1">
                             <p class="flex flex-wrap items-center gap-1.5 break-words font-bold">

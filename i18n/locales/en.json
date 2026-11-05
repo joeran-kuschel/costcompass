@@ -148,6 +148,14 @@
     "previous": "Previous month, {month}",
     "next": "Next month, {month}",
     "emptyTitle": "No costs in {month}",
-    "emptyText": "Add a cost that falls in this month to see it here."
+    "emptyText": "Add a cost that falls in this month to see it here.",
+    "costCount": "{n} cost | {n} costs",
+    "businessCount": "{n} business",
+    "changeShort": {
+      "less":"{percent}% less",
+      "more":"{percent}% more",
+      "same": "Same as before",
+      "none": "No comparison"
+    }
   }
 }

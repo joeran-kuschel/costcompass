@@ -148,6 +148,14 @@
     "previous": "Vorheriger Monat, {month}",
     "next": "Nächster Monat, {month}",
     "emptyTitle": "Keine Kosten im {month}",
-    "emptyText": "Füge Kosten hinzu, die in diesen Monat fallen, um sie hier zu sehen."
+    "emptyText": "Füge Kosten hinzu, die in diesen Monat fallen, um sie hier zu sehen.",
+    "costCount": "{n} Kosten",
+    "businessCount": "{n} geschäftlich",
+    "changeShort": {
+      "less":"{percent} % weniger",
+      "more":"{percent} % mehr",
+      "same": "Wie im Vormonat",
+      "none": "Kein Vergleich"
+    }
   }
 }
