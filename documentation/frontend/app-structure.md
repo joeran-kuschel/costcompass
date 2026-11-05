@@ -125,7 +125,7 @@ The total card is a `UCard` with `class="card card-hero"`, labelled by its `h2` 
 - The pill holds the trend icon (`aria-hidden`) and two texts. Below `sm` (640 px) the short text is visible (`month.changeShort.*`: "46% more", "57% less", "Same as before", "No comparison"); it is `aria-hidden` and `sm:hidden`. The long text (`dashboard.thisMonth.*`, the same sentence as on the dashboard: "46% more than September") is `sr-only sm:not-sr-only`, so a screen reader always reads only the long sentence, and from `sm` it is the visible text. Like the counts line, the pill is not rendered in a month without costs.
 - The counts line `p.hero-meta` "5 costs · 2 business" (`month.costCount`, which has a singular and a plural form, "1 cost"; `month.businessCount`). It has `hidden sm:block`, so it does not show on phones, and it is not rendered in a month without costs, where the empty card explains the month.
 
-Tests: `describe('month page comparison with the month before')` and `describe('month page counts')` in `tests/nuxt/month-page.test.ts`, see [Testing](testing.md#pages). Not checked in a browser: 320 px and light mode. Known limit: on phones the heading row with the arrows and the "This month" badge wraps into two lines (issue #118).
+Tests: `describe('month page comparison with the month before')` and `describe('month page counts')` in `tests/nuxt/month-page.test.ts`, see [Testing](testing.md#pages). Not checked in a browser: 320 px and light mode. The heading row above the hero stays on one line on phones since #118, see [Navigation](#navigation-26).
 
 #### By category card (#77)
 
@@ -145,11 +145,23 @@ Decisions: [By category card on the month page](decisions.md#by-category-card-on
 
 No new colours, so there are no new contrast values: the badge colours are under [Category badge](colour-scheme.md#category-badge), the icons of the split use `text-primary` and `text-secondary` as on the dashboard, the divider uses `border-default`, and the text uses the existing tokens.
 
-Tests: `describe('month page "By category" card')` and `describe('month page household and business totals')` in `tests/nuxt/month-page.test.ts`, see [Testing](testing.md#pages), and `monthCategoryTotals` and `monthSummary` in `tests/nuxt/costs.test.ts`. Checked by the author in the browser (the category list, #77): light and dark mode, German, 320 px. Not checked: the switch at the `lg` breakpoint, a real phone, a screen reader; contrast is not measured (no new colours). The split (#78) has not been checked in the browser yet: its look in the aside, light and dark mode, German and 320 px are still to verify.
+Tests: `describe('month page "By category" card')` and `describe('month page household and business totals')` in `tests/nuxt/month-page.test.ts`, see [Testing](testing.md#pages), and `monthCategoryTotals` and `monthSummary` in `tests/nuxt/costs.test.ts`. Checked by the author in the browser (the category list, #77, and the household and business split, #78): light and dark mode, German, 320 px. Not checked: the switch at the `lg` breakpoint, a real phone, a screen reader; contrast is not measured (no new colours).
 
 #### Navigation (#26)
 
-A "Dashboard" link sits above the heading. A previous and a next month icon link sit on either side of the heading (`UButton` with `to`, so real `<a>` elements, 36 px square). Their accessible name is an `aria-label` that names the target ("Previous month, September 2026"); the paths come from `monthPath`. The targets come from `monthNeighbours` with `availableYears` as the valid years, so a link that would lead to a year without data is hidden. Until the lists have loaded only the current year counts, so the links inside a year are there from the start. Keyboard order: Dashboard, previous, next.
+A "Dashboard" link sits above the heading. A previous and a next month icon link sit on either side of the heading (`UButton` with `to`, so real `<a>` elements, 44 px square through the `pill-icon` class in `main.css`). Their accessible name is an `aria-label` that names the target ("Previous month, September 2026"); the paths come from `monthPath`. The targets come from `monthNeighbours` with `availableYears` as the valid years, so a link that would lead to a year without data is hidden. Until the lists have loaded only the current year counts, so the links inside a year are there from the start. Keyboard order: Dashboard, previous, next.
+
+Issue #118 keeps the heading row on one line on phones, as in the BPhoneMonth mock. Before, the row was a wrapping flex row (`flex flex-wrap items-center gap-2`), and on a phone the "This month" badge pushed it onto two lines. Now:
+
+- The row is `grid grid-cols-[2.75rem_1fr_2.75rem] items-center gap-2 sm:flex`. Below `sm` (640 px) it has three columns: the arrows at the edges (2.75rem, the 44 px of `pill-icon`) and the title in the middle.
+- The `h1` and the badge sit in a wrapper `div` (`col-start-2 flex flex-col items-center gap-1 text-center sm:flex-row sm:gap-2 sm:text-left`). On a phone the badge sits below the title, both centred.
+- The wrapper is fixed to column 2. When the previous arrow is hidden (the first month with data), the title still sits in the middle; the next arrow is placed in column 3 by the grid. When the next arrow is hidden, column 3 stays empty.
+- From `sm` the row is the old flex row again, with the badge next to the title. `col-start-2` has no effect in a flex row.
+- The source order is unchanged (previous, title, next), so the keyboard order stays Dashboard, previous, next. The `h1` keeps `tabindex="-1"` for the focus after a retry.
+
+Decision: [Month heading row on phones](decisions.md#month-heading-row-on-phones-118).
+
+Tests: `describe('month page navigation')` in `tests/nuxt/month-page.test.ts`, see [Testing](testing.md#pages). jsdom has no layout, so the tests for #118 check the markup only: the grid classes, the middle column with one arrow hidden, the source order and the `tabindex`. Checked by the author in the browser: 320 and 390 px in English and German, the first and the last month with data (one arrow hidden, the title stays centred), the row from `sm` unchanged, light and dark mode. Not checked: a real phone, a screen reader.
 
 #### Empty month (#28) and adding a cost (#31)
 
@@ -267,7 +279,7 @@ Issue #67. The section `aria-labelledby="split-title"` is one card. Its `h2` rea
 - A 96 px hole in the surface colour shows the household percentage (22 px, bold, tabular figures) and the word "household" (`dashboard.split.household`).
 - Beside the ring, two rows: house icon, "Household", amount; briefcase icon, "Business", amount (whole euros, `useMoney()`). Since #78 the rows are the `SplitList` component (see [Components](#components)), shared with the month page's [By category card](#by-category-card-77); the page passes the amounts already formatted and the layout classes `min-w-[8.75rem] flex-1`. The ring stays in the page. The icons are `aria-hidden`, coloured `text-primary` and `text-secondary`, and have `shrink-0`, so the flex row cannot squeeze them (#123: the author saw them shrink at about 1230 px). The ring and the rows sit in a wrapping flex row, so on a phone the rows stack under the ring. The percentage legend of the old bar is gone; the business percentage is only in the ring's label.
 
-Tests: `tests/nuxt/dashboard-summary.test.ts`, "dashboard page household versus business split" (11 tests: heading, label, centre text, rows with amounts, hidden icons, ring colours and gap, German, full household ring, full business ring, empty ring and 0%, a 1% share). Not checked: the look of the ring and the gaps, light and dark mode, German, 320 px and the layout next to the categories card in the browser; a real phone; a screen reader. The #123 fix has not been checked again in the browser at about 1230 px yet.
+Tests: `tests/nuxt/dashboard-summary.test.ts`, "dashboard page household versus business split" (11 tests: heading, label, centre text, rows with amounts, hidden icons, ring colours and gap, German, full household ring, full business ring, empty ring and 0%, a 1% share). Not checked: the look of the ring and the gaps, light and dark mode, German, 320 px and the layout next to the categories card in the browser; a real phone; a screen reader. Checked by the author after the #123 fix: both icons keep their size at about 1230 px and from 320 px up, in English and German, light and dark mode.
 
 ### Dashboard links to month pages
 

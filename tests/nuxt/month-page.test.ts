@@ -784,6 +784,40 @@ describe('month page navigation', () => {
     expect(link('Previous month')).toBeUndefined()
     expect(link('Next month')!.attributes('href')).toBe('/months/2025/02')
   })
+  // jsdom has no layout: these tests check the markup the phone grid relies on; the look is checked in the browser.
+  const headingRow = () => wrapper.find('h1').element.parentElement!.parentElement!
+  it('puts the arrows and the title in a three-column grid on phones and a flex row from sm', async () => {
+    await mountAt('/months/2026/06')
+    expect(headingRow().className).toContain('grid-cols-[2.75rem_1fr_2.75rem]')
+    expect(headingRow().className).toContain('sm:flex')
+  })
+  it('keeps the title and the badge together in the middle column', async () => {
+    await mountAt('/months/2026/10')
+    const middle = wrapper.find('h1').element.parentElement!
+    expect(middle.className).toContain('col-start-2')
+    expect(middle.textContent).toContain('This month')
+  })
+  it('keeps the title in the middle column when one arrow is hidden', async () => {
+    await mountAt('/months/2025/01')
+    expect(link('Previous month')).toBeUndefined()
+    expect(wrapper.find('h1').element.parentElement!.className).toContain('col-start-2')
+    wrapper.unmount()
+    await mountAt('/months/2026/12')
+    expect(link('Next month')).toBeUndefined()
+    expect(wrapper.find('h1').element.parentElement!.className).toContain('col-start-2')
+  })
+  it('keeps previous, title and next in this order in the source', async () => {
+    await mountAt('/months/2026/06')
+    const children = [...headingRow().children]
+    expect(children).toHaveLength(3)
+    expect(children[0]!.getAttribute('aria-label')).toBe('Previous month, May 2026')
+    expect(children[1]!.querySelector('h1')).not.toBeNull()
+    expect(children[2]!.getAttribute('aria-label')).toBe('Next month, July 2026')
+  })
+  it('keeps the title focusable from code only', async () => {
+    await mountAt('/months/2026/06')
+    expect(wrapper.find('h1').attributes('tabindex')).toBe('-1')
+  })
   it('uses real links that are big enough to hit', async () => {
     await mountAt('/months/2026/06')
     for (const label of ['Previous month', 'Next month'] as const) {
