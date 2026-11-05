@@ -91,7 +91,10 @@
   },
   "dashboard": {
     "loading": "Loading your costs…",
-    "error": "Could not load your costs.",
+    "error": {
+      "title": "Could not load your costs.",
+      "text": "Your data has not changed. Check your connection and try again."
+    },
     "retry": "Try again",
     "emptyTitle": "No costs yet",
     "emptyText": "Add a recurring cost or a purchase to see your totals here.",

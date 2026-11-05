@@ -71,19 +71,42 @@ const thisMonth = computed(() => {
     }
 })
 const { openAdd } = useCostDialog()
+const heading = useTemplateRef<HTMLElement>('heading')
+
+async function onRetry() {
+    await retry()
+    if (failed.value) return
+    await nextTick()
+    heading.value?.focus()
+}
 
 useHead({ title: () => t('nav.dashboard') })
 </script>
 <template>
-    <h1>{{ t('nav.dashboard') }}</h1>
+    <h1 ref="heading" tabindex="-1">{{ t('nav.dashboard') }}</h1>
     <p v-if="loading" role="status">{{ t('dashboard.loading') }}</p>
     <UAlert
         v-else-if="failed"
         role="alert"
-        color="error"
-        :title="t('dashboard.error')"
-        :actions="[{label: t('dashboard.retry'), onClick: retry}]"
-    />
+        variant="naked"
+        class="card mt-6"
+        :ui="{
+            root: 'flex-col items-center gap-2.5 px-6 pb-7 pt-9 text-center',
+            wrapper: 'flex flex-col items-center gap-2.5',
+            description: 'max-w-72'
+        }"
+    >
+        <template #leading>
+            <span class="mb-2 flex size-[4.5rem] items-center justify-center rounded-full bg-error/10 text-error" aria-hidden="true">
+                <UIcon name="i-lucide-circle-alert" class="size-8" />
+            </span>
+        </template>
+        <template #title><h2 class="text-[1.375rem]">{{ t('dashboard.error.title') }}</h2></template>
+        <template #description><p class="m-0 text-muted">{{ t('dashboard.error.text') }}</p></template>
+        <template #actions>
+            <UButton :label="t('dashboard.retry')" icon="i-lucide-refresh-cw" class="pill mt-3.5 min-h-14 w-full justify-center sm:w-auto" @click="onRetry" />
+        </template>
+    </UAlert>
     <div v-else-if="empty">
         <h2>{{ t('dashboard.emptyTitle') }}</h2>
         <p>{{ t('dashboard.emptyText') }}</p>

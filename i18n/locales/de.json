@@ -91,7 +91,10 @@
   },
   "dashboard": {
     "loading": "Kosten werden geladen …",
-    "error": "Die Kosten konnten nicht geladen werden.",
+    "error": {
+      "title": "Die Kosten konnten nicht geladen werden.",
+      "text": "Deine Daten haben sich nicht verändert. Überprüfe Deine Internet-Verbindung und versuche es noch einmal."
+    },
     "retry": "Erneut versuchen",
     "emptyTitle": "Noch keine Kosten",
     "emptyText": "Füge eine wiederkehrende Ausgabe oder eine Anschaffung hinzu, um hier deine Summen zu sehen.",

@@ -19,10 +19,23 @@ Month pages are reached from the dashboard (see [Dashboard links to month pages]
 
 The dashboard and the month page get their data with `useCostLists()` and show these states, in this order of priority:
 
-1. **Failed**: a `UAlert` with `role="alert"` and a retry button that refreshes both lists. No numbers are shown next to it.
+1. **Failed**: a `UAlert` with `role="alert"` and a retry button that refreshes both lists. No numbers are shown next to it. The month page shows a banner; the dashboard shows a centred card (see [Dashboard error card](#dashboard-error-card)).
 2. **Loading**: a visually hidden `role="status"` text (month page: also two skeleton blocks marked `aria-hidden`).
 3. **Empty**: dashboard only, a hint and a link to `/costs`. On the month page an empty month shows a card instead of the groups.
 4. **Loaded**: the content.
+
+### Dashboard error card
+
+Issue #72. When either list fails to load, the dashboard shows a `UAlert` (`role="alert"`, `variant="naked"`, class `card`) laid out as a centred card instead of a banner:
+
+- A decorative 72 px round disc with a circle-alert icon in the error tint (`aria-hidden`).
+- The `title` slot: an `h2` "Could not load your costs." (`dashboard.error.title`).
+- The `description` slot: "Your data has not changed. Check your connection and try again." (`dashboard.error.text`, about 18rem wide).
+- The `actions` slot: a "Try again" pill button with a refresh icon (`dashboard.retry`, also used by the month page). It is full width on phones and auto width from `sm`. It refreshes both lists.
+
+The API message is not shown. `dashboard.error` is an object with `title` and `text`; before it was one string. The `h1` (`ref="heading"`, `tabindex="-1"`) is shown in all states. After a retry that succeeds, focus moves to it, because the card with the button is gone. After a retry that fails again, focus does not move.
+
+Tests: the error-state `describe` in `tests/nuxt/dashboard-page.test.ts` checks the card structure, that no API message appears, the focus after a successful retry and no focus move after a failed one; the German test checks the new texts. The card was checked in the browser in light and dark mode, in English and German, at 320 px.
 
 ### Month page address
 
@@ -431,7 +444,7 @@ Checked by hand in the browser: the dashboard and month page buttons open the di
 - The split ring is a `role="img"` with a translated `aria-label`; the rows beside it carry the amounts as text.
 - The month chart items are links named by a visually hidden text ("January: €800"); the bar and the short label are `aria-hidden`; the focused link has an outline; the current month is bold, not only coloured (cobalt against the soft colour).
 - The costs table sets no `aria-sort`, so the sort buttons carry the state in their `aria-label` (`costs.sort.*`).
-- After a successful retry on the month page, focus moves to the `h1`, which has `tabindex="-1"`.
+- After a successful retry on the month page and on the dashboard, focus moves to the `h1`, which has `tabindex="-1"`. After a failed retry the focus stays where it is and the new error is announced.
 - `<NuxtRouteAnnouncer />` announces the new title after each navigation.
 
 ## Calculation core

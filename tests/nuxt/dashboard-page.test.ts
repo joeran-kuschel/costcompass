@@ -112,6 +112,21 @@ describe('dashboard page error state', () => {
     expect(status().exists()).toBe(false)
     expect(wrapper.text()).not.toContain('No costs yet')
   })
+  it('is a card with a heading, an explanation and a decorative icon', async () => {
+    api.recurring.fail = true
+    await mountPage()
+    await vi.waitFor(() => expect(alert().exists()).toBe(true))
+    expect(alert().find('h2').text()).toBe('Could not load your costs.')
+    expect(alert().text()).toContain('Your data has not changed. Check your connection and try again.')
+    expect(alert().find('[aria-hidden="true"]').exists()).toBe(true)
+    expect(alert().classes()).toContain('card')
+  })
+  it('does not show the message of the failed request', async () => {
+    api.recurring.fail = true
+    await mountPage()
+    await vi.waitFor(() => expect(alert().exists()).toBe(true))
+    expect(alert().text()).not.toContain('boom')
+  })
   it('shows the error when only the purchases fail', async () => {
     api.purchases.fail = true
     await mountPage()
@@ -137,12 +152,32 @@ describe('dashboard page error state', () => {
     await sleep(100)
     expect(alert().exists()).toBe(true)
   })
+  it('moves the focus to the heading after a successful retry, so it is not lost', async () => {
+    api.recurring.fail = true
+    // The page has to be in the document, otherwise nothing can have the focus.
+    wrapper = await mountSuspended(DashboardPage, { attachTo: document.body })
+    await vi.waitFor(() => expect(alert().exists()).toBe(true))
+    api.recurring.fail = false
+    await alert().find('button').trigger('click')
+    await vi.waitFor(() => expect(alert().exists()).toBe(false))
+    await vi.waitFor(() => expect(document.activeElement).toBe(wrapper.find('h1').element))
+  })
+  it('does not move the focus when the retry fails again', async () => {
+    api.recurring.fail = true
+    wrapper = await mountSuspended(DashboardPage, { attachTo: document.body })
+    await vi.waitFor(() => expect(alert().exists()).toBe(true))
+    await alert().find('button').trigger('click')
+    await sleep(100)
+    expect(alert().exists()).toBe(true)
+    expect(document.activeElement).not.toBe(wrapper.find('h1').element)
+  })
   it('is German when the language is German', async () => {
     await setLanguage('de')
     api.recurring.fail = true
     await mountPage()
     await vi.waitFor(() => expect(alert().exists()).toBe(true))
-    expect(alert().text()).toContain('Die Kosten konnten nicht geladen werden.')
+    expect(alert().find('h2').text()).toBe('Die Kosten konnten nicht geladen werden.')
+    expect(alert().text()).toContain('Deine Daten haben sich nicht verändert.')
     expect(alert().find('button').text()).toBe('Erneut versuchen')
   })
 })
