@@ -164,6 +164,14 @@ The confirmation follows the BStateDelete and BDarkStateDelete mocks: a red tras
 
 Details: [Costs page](app-structure.md#costs-page).
 
+### One delete request (#7)
+
+- **`loading-auto` instead of an own `deleting` ref.** Nuxt UI disables the Delete button while the `confirmDelete` promise is pending, which is all a double click needs. Less code, and the state cannot get stuck, because `onDelete` catches its own errors.
+- **Cancel and Escape are not locked.** The author's choice: they close the dialog during the request, the request still completes and deletes the cost. No second request can start, so nothing is harmed.
+- **The add/edit form needs no change.** Its Save button already shows a loading state through `UForm`'s `loadingAuto`; checked in the browser with network throttling.
+
+Details: [Costs page](app-structure.md#costs-page).
+
 ## Add/edit form
 
 A modal (`UModal`) with one `CostForm` for both kinds of cost, rendered once by the layout. A modal works better on mobile than a slide-over. Details: [Add and edit dialog](app-structure.md#add-and-edit-dialog).

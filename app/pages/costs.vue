@@ -140,7 +140,7 @@ function sortableHeader(label: string) {
             <span class="block text-[1.375rem] font-extrabold">{{ t('costs.confirmTitle') }}</span>
         </template>
         <template #footer>
-            <UButton color="error" :label="t('common.delete')" class="pill justify-center" block @click="confirmDelete" />
+            <UButton loading-auto color="error" :label="t('common.delete')" class="pill justify-center" block @click="confirmDelete" />
             <UButton ref="cancel" color="primary" variant="soft" :label="t('common.cancel')" class="pill justify-center" block @click="toDelete = null" />
         </template>
     </UModal>
