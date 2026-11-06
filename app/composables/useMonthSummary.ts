@@ -1,4 +1,16 @@
 import { monthSummary } from "~~/shared/utils/costs"
+/**
+ * One month, ready for display: totals, rows, the comparison text and the category list.
+ *
+ * @remarks
+ * On a month page the month comes from the URL; everywhere else (the dashboard's "This month"
+ * cards) it is today's month. Texts follow the current language.
+ *
+ * @returns A computed. `total`, `recurringTotal`, `purchasesTotal` and `percent` are numbers, so
+ * the caller can format them; rows, `categoryRows`, `householdTotal` and `businessTotal` are already
+ * formatted strings with cents. `direction` is `'less'`, `'more'`, `'same'` or `'none'` (no costs
+ * in the previous month) and picks the `comparison` text and the trend `icon`.
+ */
 export function useMonthSummary() {
     const route = useRoute()
     const { t } = useI18n()
