@@ -95,6 +95,7 @@
     "amount": "Betrag",
     "category": "Kategorie",
     "business": "Geschäftliche Kosten",
+    "businessHint": "Getrennt von den Haushaltskosten gezählt",
     "interval": "Intervall",
     "dueMonth": "Fälligkeitsmonat",
     "date": "Datum",

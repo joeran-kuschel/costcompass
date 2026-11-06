@@ -67,9 +67,11 @@ async function onSubmit(event: FormSubmitEvent<CreateRecurringCost | CreatePurch
         <UFormField :label="t('form.amount')" :ui="{ labelWrapper: 'justify-center' }" name="amount">
             <div class="flex items-baseline justify-center gap-1">
                 <span class="text-[28px] font-extrabold text-muted" aria-hidden="true">€</span>
-                <UInput
-                    v-model="state.amount" type="number" step="0.01" variant="none" class="w-[210px]"
-                    :ui="{ base: 'p-0 text-center text-[52px] font-extrabold tracking-[-0.04em]' }"
+                <UInputNumber
+                    v-model="state.amount" :increment="false" :decrement="false" :step="0.01" :locale="locale"
+                    :format-options="{ useGrouping: false, minimumFractionDigits: 2, maximumFractionDigits: 2 }"
+                    variant="none" class="w-[210px]"
+                    :ui="{ base: 'p-0 text-center text-[52px] md:text-[52px] leading-tight font-extrabold tracking-[-0.04em]' }"
                 />
             </div>
         </UFormField>
@@ -79,9 +81,9 @@ async function onSubmit(event: FormSubmitEvent<CreateRecurringCost | CreatePurch
                 :ui="{
                     legend: 'sr-only',
                     fieldset: 'flex-nowrap gap-1 rounded-full bg-muted p-1',
-                    item: 'group flex-1 justify-center min-h-[42px] rounded-full border-0 hover:bg-transparent has-data-[state=checked]:bg-inverted has-focus-visible:ring-2 has-focus-visible:ring-primary',
+                    item: 'group flex-1 items-center justify-center min-h-10 py-0 rounded-full border-0 hover:bg-transparent has-data-[state=checked]:bg-inverted has-focus-visible:ring-2 has-focus-visible:ring-primary',
                     wrapper: 'flex-row gap-1.5',
-                    label: 'text-sm font-bold text-muted group-has-data-[state=checked]:text-inverted'
+                    label: 'text-sm font-bold text-muted group-has-data-[state=checked]:text-inverted dark:group-has-data-[state=checked]:text-(--ui-bg-elevated)'
                 }"
             />
         </UFormField>
@@ -97,9 +99,9 @@ async function onSubmit(event: FormSubmitEvent<CreateRecurringCost | CreatePurch
                 :ui ="{
                     legend: 'mb-2 text-sm font-medium text-default',
                     fieldset: 'gap-2',
-                    item: 'group min-h-11 items-center rounded-full border-0 ps-1.5 pe-3.5 bg-muted hover:bg-accented has-data-[state=checked]:bg-inverted has-focus-visible:ring-2 has-focus-visible:ring-primary',
+                    item: 'group min-h-11 items-center py-0 rounded-full border-0 ps-1.5 pe-3.5 bg-muted hover:bg-accented has-data-[state=checked]:bg-inverted has-focus-visible:ring-2 has-focus-visible:ring-primary',
                     wrapper: 'flex-row',
-                    label: 'text-sm font-bold text-default group-has-data-[state=checked]:text-inverted'
+                    label: 'text-sm font-bold text-default group-has-data-[state=checked]:text-inverted dark:group-has-data-[state=checked]:text-(--ui-bg-elevated)'
                 }"
             >
                 <template #label="{ item }">
@@ -113,25 +115,54 @@ async function onSubmit(event: FormSubmitEvent<CreateRecurringCost | CreatePurch
         <UFormField v-if="kind === 'purchase'" :label="t('form.date')" name="date" :hint="month ? t('form.dateHint', { month: monthYear(month.year, month.month) }) : undefined">
             <UInput class="w-full" :ui="{ base: 'min-h-12 rounded-[1rem] font-semibold bg-muted ring-transparent dark:bg-accented dark:ring-accented' }" v-model="state.date" type="date" :min="range?.first" :max="range?.last" />
         </UFormField>
-        <UFormField v-if="kind === 'recurring'" name="interval" :label="t('form.interval')">
-            <URadioGroup :disabled="!!cost" v-model="state.interval" :items="intervalItems"
-                variant="card" indicator="hidden" orientation="horizontal"
-                :ui="{
-                    legend: 'sr-only',
-                    fieldset: 'flex-nowrap gap-1 rounded-full bg-muted p-1',
-                    item: 'group flex-1 justify-center min-h-[42px] rounded-full border-0 hover:bg-transparent has-data-[state=checked]:bg-inverted has-focus-visible:ring-2 has-focus-visible:ring-primary',
-                    wrapper: 'flex-row gap-1.5',
-                    label: 'text-sm font-bold text-muted group-has-data-[state=checked]:text-inverted'
-                }"
-            />
-        </UFormField>
-        <UFormField v-if="kind === 'recurring' && state.interval !== 'monthly'" :label="t('form.dueMonth')" name="dueMonth">
-            <USelect class="w-full" :ui="{ base: 'min-h-12 rounded-[1rem] font-semibold bg-muted ring-transparent dark:bg-accented dark:ring-accented' }" v-model="state.dueMonth" :items="monthItems" />
-        </UFormField>
+        <div
+            v-if="kind === 'recurring'"
+            :class="['col-span-full grid items-end gap-3', state.interval !== 'monthly' && 'sm:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]']"
+        >
+            <UFormField name="interval" :label="t('form.interval')">
+                <URadioGroup :disabled="!!cost" v-model="state.interval" :items="intervalItems"
+                    variant="card" indicator="hidden" orientation="horizontal"
+                    :ui="{
+                        legend: 'sr-only',
+                        fieldset: 'flex-nowrap gap-1 rounded-full bg-muted p-1',
+                        item: 'group flex-1 items-center justify-center min-h-10 py-0 rounded-full border-0 hover:bg-transparent has-data-[state=checked]:bg-inverted has-focus-visible:ring-2 has-focus-visible:ring-primary',
+                        wrapper: 'flex-row gap-1.5',
+                        label: 'text-sm font-bold text-muted group-has-data-[state=checked]:text-inverted dark:group-has-data-[state=checked]:text-(--ui-bg-elevated)'
+                    }"
+                />
+            </UFormField>
+            <UFormField v-if="state.interval !== 'monthly'" :label="t('form.dueMonth')" name="dueMonth">
+                <USelect class="w-full" :ui="{ base: 'min-h-12 rounded-[1rem] font-semibold bg-muted ring-transparent dark:bg-accented dark:ring-accented' }" v-model="state.dueMonth" :items="monthItems" />
+            </UFormField>
+        </div>
         <UFormField name="business">
-            <UCheckbox v-model="state.business" :label="t('form.business')" />
+            <UCheckbox
+                v-model="state.business" :label="t('form.business')" :description="t('form.businessHint')"
+                variant="card" indicator="end" color="secondary"
+                :ui="{
+                    root: 'min-h-14 items-center gap-3 rounded-2xl border-0 px-4 py-2 bg-(--business-tint) has-focus-visible:ring-2 has-focus-visible:ring-primary',
+                    wrapper: 'ms-0',
+                    base: 'size-[22px] ring-secondary',
+                    label: 'flex items-center gap-3 font-extrabold text-secondary',
+                    description: 'ps-8 text-[13px] font-semibold text-secondary'
+                }"
+            >
+                <template #label>
+                    <UIcon name="i-lucide-briefcase" class="size-5" />
+                    {{ t('form.business') }}
+                </template>
+            </UCheckbox>
         </UFormField>
-        <UButton type="submit" class="pill">{{ cost ? t('common.save') : t('form.submit') }}</UButton>
-        <UButton color="neutral" variant="outline" :label="t('common.cancel')" class="pill" @click="emit('cancel')" />
+        <div class="col-span-full flex justify-end gap-3 pt-2">
+            <UButton
+                :label="t('common.cancel')" variant="soft"
+                class="min-h-12 rounded-full bg-accented px-6 font-extrabold text-primary-600 max-sm:hidden dark:text-[#afc0ff]"
+                @click="emit('cancel')"
+            />
+            <UButton
+                type="submit" :label="cost ? t('common.save') : t('form.submit')"
+                class="pill-shadow min-h-12 justify-center rounded-full px-7 font-extrabold max-sm:min-h-14 max-sm:w-full max-sm:text-base"
+            />
+        </div>
     </UForm>
 </template>

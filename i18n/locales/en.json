@@ -95,6 +95,7 @@
     "amount": "Amount",
     "category": "Category",
     "business": "Business cost",
+    "businessHint": "Counted apart from household costs",
     "interval": "Interval",
     "dueMonth": "Due month",
     "date": "Date",
