@@ -39,6 +39,12 @@ const confirmText = computed(() => {
         ? t('costs.confirmRecurring', { name: cost.name, amount, interval: t(`interval.${cost.interval}`).toLocaleLowerCase(locale.value) })
         : t('costs.confirmPurchase', { name: cost.name, amount, date: formatDate(cost.date, 'long') })
 })
+const kindFilter = ref<'all' | Cost['kind']>('all')
+const shownCosts = computed(() =>
+    kindFilter.value === 'all'
+        ? costs.value
+        : costs.value.filter(cost => cost.kind === kindFilter.value)
+)
 useHead({ title: () => t('costs.title') })
 
 async function onDelete (cost: Stored<Cost>) {
@@ -87,13 +93,6 @@ function sortableHeader(label: string) {
         })
     }
 }
-const kindFilter = ref<'all' | Cost['kind']>('all')
-
-const shownCosts = computed(() =>
-    kindFilter.value === 'all'
-        ? costs.value
-        : costs.value.filter(cost => cost.kind === kindFilter.value)
-)
 
 </script>
 <template>
@@ -108,9 +107,8 @@ const shownCosts = computed(() =>
     </header>
     <section class="w-full">
         <div role="group" :aria-label="t('costs.filterLabel')" class="inline-flex gap-1 rounded-full bg-elevated p-1 shadow-xs">
-            <p role="status" class="sr-only">{{ t('costs.shown', shownCosts.length) }}</p>
             <UButton
-                :color="kindFilter === 'all' ? 'neutral' : 'neutral'"
+                color="neutral"
                 :variant="kindFilter === 'all' ? 'solid' : 'ghost'"
                 class="focus-visible:outline-2 focus-visible:outline-primary min-h-10 rounded-full px-4 text-sm font-bold aria-[pressed=false]:text-muted"
                 @click="kindFilter= 'all'"
@@ -137,6 +135,7 @@ const shownCosts = computed(() =>
                 :icon="kindFilter === 'purchase' ? 'i-lucide-check' : undefined"
             />
         </div>
+        <p role="status" class="sr-only">{{ t('costs.shown', shownCosts.length) }}</p>
     </section>
     <UTable :data="shownCosts" :columns="columns" class="card" :ui="{ root: 'overflow-x-auto px-5 pb-2 pt-1', th: 'px-2 pb-2.5 pt-3.5 text-[13px] font-extrabold uppercase tracking-wide text-muted', td: 'px-2 py-2.5 text-sm text-default' }">
         <template #name-cell="{ row }">
