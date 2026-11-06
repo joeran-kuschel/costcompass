@@ -222,6 +222,88 @@ describe('costs page kind column', () => {
   })
 })
 
+describe('costs page kind filter', () => {
+  // Two recurring costs (Liability insurance, Rent) and one purchase (Laptop); rows are sorted by name.
+  const group = () => wrapper.find('[role="group"]')
+  const chips = () => group().findAll('button')
+  const chip = (label: string) => chips().find(c => c.text() === label)
+  // The name is the first text in the cell; the business badge follows it.
+  const names = () => wrapper.findAll('tbody tr').map(row => row.find('td p').element.firstChild!.textContent!.trim())
+  const status = () => wrapper.find('[role="status"]')
+  async function loaded() {
+    await vi.waitFor(() => expect(wrapper.findAll('tbody tr')).toHaveLength(3))
+  }
+
+  it('is a group labelled "Show" with three chips and their counts', async () => {
+    await loaded()
+    expect(group().attributes('aria-label')).toBe('Show')
+    expect(chips().map(c => c.text())).toEqual(['All 3', 'Recurring 2', 'Purchases 1'])
+  })
+  it('selects "All" by default and shows every cost', async () => {
+    await loaded()
+    expect(chips().map(c => c.attributes('aria-pressed'))).toEqual(['true', 'false', 'false'])
+    expect(names()).toEqual(['Laptop', 'Liability insurance', 'Rent'])
+  })
+  it('shows only the recurring costs', async () => {
+    await loaded()
+    await chip('Recurring 2')!.trigger('click')
+    expect(names()).toEqual(['Liability insurance', 'Rent'])
+  })
+  it('shows only the purchases', async () => {
+    await loaded()
+    await chip('Purchases 1')!.trigger('click')
+    expect(names()).toEqual(['Laptop'])
+  })
+  it('shows every cost again after "All"', async () => {
+    await loaded()
+    await chip('Purchases 1')!.trigger('click')
+    await chip('All 3')!.trigger('click')
+    expect(names()).toEqual(['Laptop', 'Liability insurance', 'Rent'])
+  })
+  it('presses exactly one chip at a time and marks it with a check icon, not by colour alone', async () => {
+    await loaded()
+    await chip('Recurring 2')!.trigger('click')
+    expect(chips().map(c => c.attributes('aria-pressed'))).toEqual(['false', 'true', 'false'])
+    expect(chips().map(c => c.find('[class*="check"]').exists())).toEqual([false, true, false])
+  })
+  it('gives every chip a primary focus outline', async () => {
+    await loaded()
+    for (const c of chips()) {
+      expect(c.classes()).toContain('focus-visible:outline-primary')
+    }
+  })
+  it('keeps the counts of all costs whatever chip is pressed', async () => {
+    await loaded()
+    await chip('Purchases 1')!.trigger('click')
+    expect(chips().map(c => c.text())).toEqual(['All 3', 'Recurring 2', 'Purchases 1'])
+  })
+  it('announces how many costs are shown', async () => {
+    await loaded()
+    expect(status().text()).toBe('3 costs shown')
+    await chip('Purchases 1')!.trigger('click')
+    expect(status().text()).toBe('1 cost shown')
+  })
+  it('keeps the sort of the table when the filter changes', async () => {
+    await loaded()
+    await wrapper.find('th button').trigger('click')
+    await wrapper.find('th button').trigger('click')
+    expect(names()).toEqual(['Rent', 'Liability insurance', 'Laptop'])
+    await chip('Recurring 2')!.trigger('click')
+    expect(names()).toEqual(['Rent', 'Liability insurance'])
+  })
+  it('has German labels and counts', async () => {
+    await loaded()
+    await useNuxtApp().$i18n.setLocale('de')
+    try {
+      await vi.waitFor(() => expect(group().attributes('aria-label')).toBe('Anzeigen'))
+      expect(chips().map(c => c.text())).toEqual(['Alle 3', 'Wiederkehrend 2', 'Anschaffung 1'])
+      expect(status().text()).toBe('3 Posten angezeigt')
+    } finally {
+      await useNuxtApp().$i18n.setLocale('en')
+    }
+  })
+})
+
 describe('costs page add and edit', () => {
   // The dialog itself lives in the layout (see CostDialog.test.ts); the page only asks for it.
   const dialogState = () => {

@@ -341,6 +341,11 @@ nav [data-slot="link"][aria-current="page"]::before {
   background-color: #262a45;
   color: #ffffff;
 }
+/* The selected filter chip on the costs page: in dark mode Nuxt UI's solid neutral has white text on the light inverted background; the mock has dark text there. */
+.dark [role="group"] [aria-pressed="true"] {
+  color: var(--ui-bg-elevated);
+  background-color: #fff;
+}
 /* The icon of the current item has the colour of its text (white, as in the mocks); Nuxt UI gives it the primary colour, which is too dark on the pill. */
 nav [data-slot="link"][aria-current="page"] [data-slot="linkLeadingIcon"] {
   color: inherit;

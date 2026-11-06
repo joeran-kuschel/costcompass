@@ -172,6 +172,15 @@ Details: [Costs page](app-structure.md#costs-page).
 
 Details: [Costs page](app-structure.md#costs-page).
 
+### Kind filter chips (#82)
+
+- **Counts of all costs.** The author's choice: the numbers on the chips always count every cost. They do not change with the selected chip, and are planned not to change with search (#81) or the category chips (#83) either. The live region says how many rows are shown.
+- **On all widths until #86.** The phone mock BPhoneCosts has no kind chips, because its list is grouped by kind. The chips stay on phones until #86 brings that list and hides them there; until then the 320 px layout check fails.
+- **Primary focus outline.** Nuxt UI's default focus outline (`outline-inverted/25`) is about 1.7:1 (light) and 2.1:1 (dark) against the pill, below the 3:1 a focus indicator needs. The chips use `outline-primary` instead (about 6.75:1 light, 3.3:1 dark).
+- **White selected chip in dark mode.** The dark mock has `#ECEDF7` with `#15172A` text; the author chose pure white for the background. The override sits in `main.css` because Nuxt UI's solid neutral put white text on the light background.
+
+Details: [Costs page](app-structure.md#costs-page).
+
 ## Add/edit form
 
 A modal (`UModal`) with one `CostForm` for both kinds of cost, rendered once by the layout. A modal works better on mobile than a slide-over. Details: [Add and edit dialog](app-structure.md#add-and-edit-dialog).

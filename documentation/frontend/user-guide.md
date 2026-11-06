@@ -48,6 +48,15 @@ The table is sorted by name. Select the header of Name, Kind or Amount to sort b
 
 On a narrow screen the table scrolls sideways inside its card.
 
+### Show only one kind of cost
+
+Above the table, three buttons choose what the table shows: **All**, **Recurring** and **Purchases**. Each one names how many costs it covers, for example "All 3", "Recurring 2" and "Purchases 1".
+
+1. Select **Recurring** to see only your recurring costs, or **Purchases** to see only your purchases.
+2. Select **All** to see every cost again.
+
+The selected button is filled and has a tick. The numbers on the buttons always count all your costs; they stay the same whichever button you select. The table keeps its sort order when you switch. A screen reader announces how many costs are shown, for example "2 costs shown".
+
 ## Read the dashboard
 
 The Dashboard (**Dashboard** in the sidebar) gives you the overview. It has these parts, from top to bottom:
