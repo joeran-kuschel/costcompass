@@ -8,11 +8,14 @@ mockNuxtImport('useToast', () => () => ({ add: addToast }))
 // The page talks to the real $fetch; the endpoints below stand in for the API and record what arrives.
 const deleteCalls: string[] = []
 let failDelete = false
+// When set, a DELETE waits for this promise, so a test can act while the request is in flight.
+let holdDelete: Promise<void> | null = null
 for (const url of ['/api/recurring-costs/1', '/api/purchases/2']) {
   registerEndpoint(url, {
     method: 'DELETE',
-    handler: () => {
+    handler: async () => {
       deleteCalls.push(url)
+      if (holdDelete) await holdDelete
       if (failDelete) throw new Error('boom')
       return ''
     },
@@ -32,6 +35,7 @@ let wrapper: Awaited<ReturnType<typeof mountSuspended>>
 beforeEach(async () => {
   deleteCalls.length = 0
   failDelete = false
+  holdDelete = null
   addToast.mockReset()
   wrapper = await mountSuspended(CostsPage)
 })
@@ -285,6 +289,49 @@ describe('costs page delete', () => {
     await vi.waitFor(() => expect(button('Delete')).toBeTruthy())
     await click(button('Delete'))
     await vi.waitFor(() => expect(addToast).toHaveBeenCalledWith(expect.objectContaining({ color: 'error' })))
+  })
+})
+
+describe('costs page delete in flight', () => {
+  let release: () => void
+  beforeEach(() => {
+    holdDelete = new Promise(resolve => { release = resolve })
+  })
+  async function startDelete(label: string) {
+    await vi.waitFor(() => expect(wrapper.findAll('tbody tr')).toHaveLength(3))
+    await click(wrapper.find(`button[aria-label="${label}"]`).element)
+    await vi.waitFor(() => expect(button('Delete')).toBeTruthy())
+    await click(button('Delete'))
+    await vi.waitFor(() => expect(deleteCalls).toHaveLength(1))
+  }
+
+  it('disables the Delete button while the request runs', async () => {
+    await startDelete('Delete Rent')
+    expect(button('Delete')?.disabled).toBe(true)
+    release()
+    await vi.waitFor(() => expect(button('Delete')).toBeUndefined())
+  })
+  it('sends exactly one DELETE when Delete is clicked twice', async () => {
+    await startDelete('Delete Rent')
+    // Like a double click: the second click comes before the first request has answered.
+    button('Delete')?.click()
+    await nextTick()
+    release()
+    await vi.waitFor(() => expect(button('Delete')).toBeUndefined())
+    expect(deleteCalls).toEqual(['/api/recurring-costs/1'])
+    expect(addToast).not.toHaveBeenCalled()
+  })
+  it('lets the user try again after a failed delete', async () => {
+    failDelete = true
+    await startDelete('Delete Rent')
+    release()
+    await vi.waitFor(() => expect(addToast).toHaveBeenCalledWith(expect.objectContaining({ color: 'error' })))
+    holdDelete = null
+    await click(wrapper.find('button[aria-label="Delete Rent"]').element)
+    await vi.waitFor(() => expect(button('Delete')).toBeTruthy())
+    expect(button('Delete')?.disabled).toBe(false)
+    await click(button('Delete'))
+    await vi.waitFor(() => expect(deleteCalls).toHaveLength(2))
   })
 })
 
