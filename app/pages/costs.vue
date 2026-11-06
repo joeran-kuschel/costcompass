@@ -117,7 +117,7 @@ function sortableHeader(label: string) {
                 :icon="kindFilter === 'all' ? 'i-lucide-check' : undefined"
             />
             <UButton
-                :color="kindFilter === 'recurring' ? 'neutral' : 'neutral'"
+                color="neutral"
                 :variant="kindFilter === 'recurring' ? 'solid' : 'ghost'"
                 class="focus-visible:outline-2 focus-visible:outline-primary min-h-10 rounded-full px-4 text-sm font-bold aria-[pressed=false]:text-muted"
                 @click="kindFilter = 'recurring'"
@@ -126,7 +126,7 @@ function sortableHeader(label: string) {
                 :icon="kindFilter === 'recurring' ? 'i-lucide-check' : undefined"
             />
             <UButton
-                :color="kindFilter === 'purchase' ? 'neutral' : 'neutral'"
+                color="neutral"
                 :variant="kindFilter === 'purchase' ? 'solid' : 'ghost'"
                 class="focus-visible:outline-2 focus-visible:outline-primary min-h-10 rounded-full px-4 text-sm font-bold aria-[pressed=false]:text-muted"
                 @click="kindFilter = 'purchase'"
