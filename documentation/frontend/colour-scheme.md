@@ -134,6 +134,15 @@ Issue #60. The "This month" card on the dashboard is a solid cobalt card, `class
 - `.card-hero .hero-meta`: the month page's counts line ("5 costs · 2 business"), 14 px, `#dce2fb` in light mode and `#f2f4ff` in dark mode.
 - Contrast, computed (not measured in a tool), on `#2D4BD8`: white 6.75:1, `#dce2fb` 5.25:1, `#c9d2f8` (cents) 4.52:1, `#f2f4ff` (counts, dark mode) 6.16:1. White text on the pill: 4.81:1 on the 16% white tint in light mode, 8.24:1 on `#2840BC` in dark mode. Not measured: the "View" and "Add cost" buttons on the cobalt and the white focus outline. Not checked in a browser: the month hero in light mode and at 320 px.
 
+## Kind filter chips
+
+Issue #82. The kind chips on `/costs` sit in one pill (`bg-elevated`, `shadow-xs`). Details: [Costs page](app-structure.md#costs-page).
+
+- Selected chip: Nuxt UI `solid` `neutral`. In dark mode that gave white text on the light inverted background, so `main.css` overrides it: `.dark [role="group"] [aria-pressed="true"] { color: var(--ui-bg-elevated); background-color: #fff; }`. The dark mock has `#ECEDF7` with `#15172A` text; the author chose pure white. See [Kind filter chips](decisions.md#kind-filter-chips-82).
+- Other chips: `ghost` with `text-muted`.
+- Focus outline: `outline-primary` instead of Nuxt UI's `outline-inverted/25` (about 1.7:1 light, 2.1:1 dark against the pill). Computed from the colours measured in the browser: `#2D4BD8` on white about 6.75:1, `#3B5BEB` on `#15172A` about 3.3:1.
+- Not measured: the text of the selected and the muted chips on their backgrounds.
+
 ## Category badge
 
 Issue #51. `app/components/CategoryBadge.vue` shows a round disc with a white icon for a category. Props: `category` and `size` (`CategorySize`: 28, 32, 36, 40, 44 or 56 px, from `CATEGORY_SIZES` in `app/composables/useCategory.ts`).
