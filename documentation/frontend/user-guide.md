@@ -57,6 +57,24 @@ Above the table, three buttons choose what the table shows: **All**, **Recurring
 
 The selected button is filled and has a tick. The numbers on the buttons always count all your costs; they stay the same whichever button you select. The table keeps its sort order when you switch. A screen reader announces how many costs are shown, for example "2 costs shown".
 
+### Show only one category
+
+Next to the kind buttons, one button per category filters the table: **Housing**, **Insurance**, **Appliances**, **Food** and **Mobility**.
+
+1. Select a category, for example **Housing**. The table shows only your housing costs.
+2. Select another category to switch to it. Only one category can be selected at a time.
+3. Select the selected category again to see every category.
+
+The selected category is filled and has a tick. On a phone the category buttons sit in one row that you can swipe sideways.
+
+### Combine the filters
+
+The kind and the category work together. Select **Purchases** and **Appliances** to see only the appliances you bought. The numbers on the kind buttons still count all your costs.
+
+### When no cost matches
+
+If no cost matches the kind and category you selected, the table is replaced by a card: "No costs match these filters" and "Choose another kind or category." Select **Clear filters** to see every cost again. Both filters go back to the start: **All** is selected and no category. A screen reader announces "0 costs shown".
+
 ## Read the dashboard
 
 The Dashboard (**Dashboard** in the sidebar) gives you the overview. It has these parts, from top to bottom:

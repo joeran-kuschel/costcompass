@@ -125,7 +125,7 @@ Details: [Navigation](app-structure.md#navigation-26).
 
 The category and the business flag moved into the name column, as in the BDesktopCosts mock, and the Category and Business columns were removed. With them went sorting by category and by business. The author chose to drop both sorts on purpose (option A):
 
-- **Finding one category** will be the job of the category filter chips (#83).
+- **Finding one category** is the job of the category filter chips (#83).
 - **Business costs** have no filter yet.
 - **The mock** has no such sorting either.
 
@@ -178,6 +178,23 @@ Details: [Costs page](app-structure.md#costs-page).
 - **On all widths until #86.** The phone mock BPhoneCosts has no kind chips, because its list is grouped by kind. The chips stay on phones until #86 brings that list and hides them there; until then the 320 px layout check fails.
 - **Primary focus outline.** Nuxt UI's default focus outline (`outline-inverted/25`) is about 1.7:1 (light) and 2.1:1 (dark) against the pill, below the 3:1 a focus indicator needs. The chips use `outline-primary` instead (about 6.75:1 light, 3.3:1 dark).
 - **White selected chip in dark mode.** The dark mock has `#ECEDF7` with `#15172A` text; the author chose pure white for the background. The override sits in `main.css` because Nuxt UI's solid neutral put white text on the light background.
+
+Details: [Costs page](app-structure.md#costs-page).
+
+### Category filter chips (#83)
+
+- **Single selection, toggle to clear.** The author's choice: one category at a time. Clicking the selected chip again clears the filter, so no extra control is needed to reset it.
+- **No "All" category chip on desktop,** as in the BDesktopCosts mock. The phone mock's "All" chip comes with #86, on phones only: there the selected chip can be scrolled out of view, and "All" gives a visible reset and shows that no filter is on. #86 also hides the kind chips on phones (decided in #82).
+- **One `filter`, one condition per filter.** `shownCosts` combines the kind and the category with `&&`, so search (#81) becomes a third line instead of a nested branch.
+
+Details: [Costs page](app-structure.md#costs-page).
+
+### No-match card on the costs page (#83)
+
+- **No mock, the empty-month pattern.** No mock covers filters that match nothing. The card reuses the month page's empty card (icon, `h2`, text, one button), so the app has one look for "nothing here".
+- **Focus to "All" after "Clear filters".** The button disappears with the card, so without a move the focus would be lost. "All" is the first chip of the filter row and the control that was just reset.
+- **Table hidden, not removed.** The costs page layout in `main.css` (`main > div:has(table)`) finds the page container by its table. Removing the table with `v-if` would drop that layout, so a wrapping `div` hides it with `v-show` (`UTable` does not take `v-show` itself).
+- **Only when costs exist.** With no costs at all the card would wrongly blame the filters, so it is not shown. A "No costs yet" state for the costs page is still open.
 
 Details: [Costs page](app-structure.md#costs-page).
 
