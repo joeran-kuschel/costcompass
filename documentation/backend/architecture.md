@@ -41,6 +41,8 @@ tests/nuxt/     Vitest tests
 - Categories are the fixed list `housing`, `insurance`, `appliances`, `food`, `mobility`. Display names come from the locale files.
 - Money is a plain euro number, no integer cents. The database column is `numeric(10, 2)`.
 
+The types in `shared/types/calculation.ts`, the schemas in `shared/utils/validation.ts` and the functions in `server/utils/costs.ts` have TSDoc comments: what each schema enforces, why `updateRecurringCost` validates the merged row, and which return values the routes turn into a 404. Keep them in step with the code.
+
 ## Configuration
 
 | Setting | Where | Notes |

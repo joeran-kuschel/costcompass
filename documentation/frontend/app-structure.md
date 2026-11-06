@@ -623,6 +623,8 @@ Checked by hand in the browser: the dashboard and month page buttons open the di
 
 ## Composables
 
+The composables in the table below carry TSDoc comments (not `useAppHead`, `useKind` and `useNavItems`, whose names say enough): where their data comes from, which results are numbers and which are already formatted, and examples of the formatters. The table is the overview; the comments are the detail.
+
 | Composable | Returns |
 | --- | --- |
 | `useMoney(options?)` | A formatter for euros: whole euros, or cents with `useMoney({ cents: true })` |
