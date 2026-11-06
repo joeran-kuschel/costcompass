@@ -88,8 +88,27 @@ async function onSubmit(event: FormSubmitEvent<CreateRecurringCost | CreatePurch
         <UFormField :label="t('form.name')" name="name">
             <UInput class="w-full" :ui="{ base: 'min-h-12 rounded-[1rem] font-semibold bg-muted ring-transparent dark:bg-accented dark:ring-accented' }" v-model="state.name" />
         </UFormField>
-        <UFormField :label="t('form.category')" name="category">
-            <USelect class="w-full" :ui="{ base: 'min-h-12 rounded-[1rem] font-semibold bg-muted ring-transparent dark:bg-accented dark:ring-accented' }" v-model="state.category" :items="categoryItems" />
+        <UFormField name="category">
+            <URadioGroup
+                v-model="state.category"
+                :items="categoryItems"
+                :legend="t('form.category')"
+                variant="card" indicator="hidden" orientation="horizontal"
+                :ui ="{
+                    legend: 'mb-2 text-sm font-medium text-default',
+                    fieldset: 'gap-2',
+                    item: 'group min-h-11 items-center rounded-full border-0 ps-1.5 pe-3.5 bg-muted hover:bg-accented has-data-[state=checked]:bg-inverted has-focus-visible:ring-2 has-focus-visible:ring-primary',
+                    wrapper: 'flex-row',
+                    label: 'text-sm font-bold text-default group-has-data-[state=checked]:text-inverted'
+                }"
+            >
+                <template #label="{ item }">
+                    <span class="flex items-center gap-2">
+                        <CategoryBadge :category="item.value" :size="32" />
+                        {{ item.label }}
+                    </span>
+                </template>
+            </URadioGroup>
         </UFormField>
         <UFormField v-if="kind === 'purchase'" :label="t('form.date')" name="date" :hint="month ? t('form.dateHint', { month: monthYear(month.year, month.month) }) : undefined">
             <UInput class="w-full" :ui="{ base: 'min-h-12 rounded-[1rem] font-semibold bg-muted ring-transparent dark:bg-accented dark:ring-accented' }" v-model="state.date" type="date" :min="range?.first" :max="range?.last" />
