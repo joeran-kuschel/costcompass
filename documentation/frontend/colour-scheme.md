@@ -140,8 +140,9 @@ Issue #82. The kind chips on `/costs` sit in one pill (`bg-elevated`, `shadow-xs
 
 - Selected chip: Nuxt UI `solid` `neutral`. In dark mode that gave white text on the light inverted background, so `main.css` overrides it: `.dark [role="group"] [aria-pressed="true"] { color: var(--ui-bg-elevated); background-color: #fff; }`. The dark mock has `#ECEDF7` with `#15172A` text; the author chose pure white. See [Kind filter chips](decisions.md#kind-filter-chips-82).
 - Other chips: `ghost` with `text-muted`.
+- Category chips (#83): the same dark selected rule applies, because they also sit in a `role="group"` and use `aria-pressed`. Unselected category chips are `ghost` with `bg-elevated shadow-xs hover:bg-muted` and the normal text colour, not `text-muted`.
 - Focus outline: `outline-primary` instead of Nuxt UI's `outline-inverted/25` (about 1.7:1 light, 2.1:1 dark against the pill). Computed from the colours measured in the browser: `#2D4BD8` on white about 6.75:1, `#3B5BEB` on `#15172A` about 3.3:1.
-- Not measured: the text of the selected and the muted chips on their backgrounds.
+- Not measured: the text of the selected and the muted chips on their backgrounds, and the text of the category chips.
 
 ## Category badge
 

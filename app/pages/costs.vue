@@ -16,9 +16,11 @@ const euros = useMoney()
 const cents = useMoney({ cents: true })
 const { formatDate } = useMonth()
 const cancelButton = useTemplateRef<{ $el: HTMLElement }>('cancel')
+const allChip = useTemplateRef<{ $el: HTMLElement }>('allChip')
 
 const UButton = resolveComponent('UButton')
 const toDelete = ref<Stored<Cost> | null>(null)
+const categoryFilter = ref<Category | null>(null)
 const dialogContent = { role: 'alertdialog', onOpenAutoFocus: focusCancel }
 const costs = computed<Stored<Cost>[]>(() => [
     ...(recurring.value ?? []),
@@ -41,9 +43,10 @@ const confirmText = computed(() => {
 })
 const kindFilter = ref<'all' | Cost['kind']>('all')
 const shownCosts = computed(() =>
-    kindFilter.value === 'all'
-        ? costs.value
-        : costs.value.filter(cost => cost.kind === kindFilter.value)
+    costs.value.filter(cost =>
+        (kindFilter.value === 'all' || cost.kind === kindFilter.value)
+        && (categoryFilter.value === null || cost.category === categoryFilter.value)
+    )
 )
 useHead({ title: () => t('costs.title') })
 
@@ -61,6 +64,13 @@ async function confirmDelete() {
     if (!toDelete.value) return
     await onDelete(toDelete.value)
     toDelete.value = null
+}
+// The button disappears with the card, so the focus moves to the "All" chip instead of getting lost.
+async function clearFilters() {
+    kindFilter.value = 'all'
+    categoryFilter.value = null
+    await nextTick()
+    allChip.value?.$el.focus()
 }
 function focusCancel(event: Event) {
     event.preventDefault()
@@ -105,9 +115,10 @@ function sortableHeader(label: string) {
             <template #year>{{ yearSummary.year }}</template>
         </i18n-t>
     </header>
-    <section class="w-full">
+    <section class="flex w-full flex-wrap items-center gap-2">
         <div role="group" :aria-label="t('costs.filterLabel')" class="inline-flex gap-1 rounded-full bg-elevated p-1 shadow-xs">
             <UButton
+                ref="allChip"
                 color="neutral"
                 :variant="kindFilter === 'all' ? 'solid' : 'ghost'"
                 class="focus-visible:outline-2 focus-visible:outline-primary min-h-10 rounded-full px-4 text-sm font-bold aria-[pressed=false]:text-muted"
@@ -135,8 +146,33 @@ function sortableHeader(label: string) {
                 :icon="kindFilter === 'purchase' ? 'i-lucide-check' : undefined"
             />
         </div>
+        <span aria-hidden="true" class="mx-1 hidden h-7 w-px bg-accented sm:block" />
+        <div role="group" :aria-label="t('costs.filterByCategoryLabel')" class="-my-1 flex w-full gap-2 overflow-x-auto py-1 [scrollbar-width:none] sm:my-0 sm:w-auto sm:flex-wrap sm:overflow-visible sm:py-0">
+            <UButton
+                v-for="category in CATEGORIES"
+                :key="category"
+                color="neutral"
+                :variant="categoryFilter === category ? 'solid' : 'ghost'"
+                :class="categoryFilter === category ? '' : 'bg-elevated shadow-xs hover:bg-muted'"
+                class="min-h-10 shrink-0 gap-1.5 rounded-full pl-1.5 pr-3.5 text-sm font-bold focus-visible:outline-2 focus-visible:outline-primary"
+                :aria-pressed="categoryFilter === category"
+                @click="categoryFilter = categoryFilter === category ? null : category"
+            >
+                <CategoryBadge :category="category" :size="28" />
+                {{ t(`category.${category}`) }}
+                <UIcon v-if="categoryFilter === category" name="i-lucide-check" class="size-4" aria-hidden="true" />
+            </UButton>
+        </div>
         <p role="status" class="sr-only">{{ t('costs.shown', shownCosts.length) }}</p>
     </section>
+    <UCard v-if="costs.length > 0 && shownCosts.length === 0" variant="subtle" class="card w-full text-center">
+        <UIcon name="i-lucide-filter-x" class="size-8" aria-hidden="true" />
+        <h2>{{ t('costs.noMatchTitle') }}</h2>
+        <p>{{ t('costs.noMatchText') }}</p>
+        <UButton :label="t('costs.clearFilters')" class="pill mt-4" @click="clearFilters" />
+    </UCard>
+    <!-- Hidden, not removed: the page layout in main.css finds this container by its table. UTable does not take v-show itself. -->
+    <div v-show="costs.length === 0 || shownCosts.length > 0">
     <UTable :data="shownCosts" :columns="columns" class="card" :ui="{ root: 'overflow-x-auto px-5 pb-2 pt-1', th: 'px-2 pb-2.5 pt-3.5 text-[13px] font-extrabold uppercase tracking-wide text-muted', td: 'px-2 py-2.5 text-sm text-default' }">
         <template #name-cell="{ row }">
             <div class="flex min-w-48 items-center gap-3 whitespace-normal">
@@ -163,6 +199,7 @@ function sortableHeader(label: string) {
             <UButton icon="i-lucide-trash-2" color="neutral" variant="ghost" class="pill-icon" @click="toDelete = row.original" :aria-label="t('costs.delete', { name: row.original.name })"/>
         </template>
     </UTable>
+    </div>
     <UModal
         :open="toDelete !== null"
         :title="t('costs.confirmTitle')"

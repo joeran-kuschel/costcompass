@@ -304,6 +304,163 @@ describe('costs page kind filter', () => {
   })
 })
 
+describe('costs page category filter', () => {
+  // Rent is housing and recurring, Liability insurance is insurance and recurring, the laptop is appliances and a purchase.
+  const kindGroup = () => wrapper.find('[role="group"][aria-label="Show"]')
+  const group = () => wrapper.find('[role="group"][aria-label="Filter by category"]')
+  const chips = () => group().findAll('button')
+  const chip = (name: string) => chips().find(c => c.text() === name)
+  const kindChip = (label: string) => kindGroup().findAll('button').find(c => c.text() === label)
+  const names = () => wrapper.findAll('tbody tr').map(row => row.find('td p').element.firstChild!.textContent!.trim())
+  const status = () => wrapper.find('p[role="status"]')
+  async function loaded() {
+    await vi.waitFor(() => expect(wrapper.findAll('tbody tr')).toHaveLength(3))
+  }
+
+  it('is a group labelled "Filter by category" with one chip per category, in the CATEGORIES order', async () => {
+    await loaded()
+    expect(chips().map(c => c.text())).toEqual(['Housing', 'Insurance', 'Appliances', 'Food', 'Mobility'])
+  })
+  it('shows a decorative 28 px badge in each chip, so the name alone names the chip', async () => {
+    await loaded()
+    for (const c of chips()) {
+      const badge = c.find('.category-disc')
+      expect(badge.attributes('aria-hidden')).toBe('true')
+      expect(badge.attributes('style')).toContain('--category-size: 28px')
+    }
+  })
+  it('presses no chip and filters nothing at first', async () => {
+    await loaded()
+    expect(chips().map(c => c.attributes('aria-pressed'))).toEqual(['false', 'false', 'false', 'false', 'false'])
+    expect(names()).toEqual(['Laptop', 'Liability insurance', 'Rent'])
+  })
+  it('shows only the costs of the selected category and marks the chip with a check, not by colour alone', async () => {
+    await loaded()
+    await chip('Insurance')!.trigger('click')
+    expect(names()).toEqual(['Liability insurance'])
+    expect(chip('Insurance')!.attributes('aria-pressed')).toBe('true')
+    expect(chips().map(c => c.find('[class*="check"]').exists())).toEqual([false, true, false, false, false])
+  })
+  it('selects one category at a time', async () => {
+    await loaded()
+    await chip('Insurance')!.trigger('click')
+    await chip('Housing')!.trigger('click')
+    expect(names()).toEqual(['Rent'])
+    expect(chips().map(c => c.attributes('aria-pressed'))).toEqual(['true', 'false', 'false', 'false', 'false'])
+  })
+  it('clears the filter when the selected chip is clicked again', async () => {
+    await loaded()
+    await chip('Housing')!.trigger('click')
+    await chip('Housing')!.trigger('click')
+    expect(names()).toEqual(['Laptop', 'Liability insurance', 'Rent'])
+    expect(chip('Housing')!.attributes('aria-pressed')).toBe('false')
+  })
+  it('works together with the kind chips', async () => {
+    await loaded()
+    await kindChip('Recurring 2')!.trigger('click')
+    await chip('Insurance')!.trigger('click')
+    expect(names()).toEqual(['Liability insurance'])
+    await kindChip('All 3')!.trigger('click')
+    await chip('Appliances')!.trigger('click')
+    expect(names()).toEqual(['Laptop'])
+  })
+  it('leaves the counts on the kind chips at all costs', async () => {
+    await loaded()
+    await chip('Housing')!.trigger('click')
+    expect(kindGroup().findAll('button').map(c => c.text())).toEqual(['All 3', 'Recurring 2', 'Purchases 1'])
+  })
+  it('announces how many costs are shown', async () => {
+    await loaded()
+    await chip('Appliances')!.trigger('click')
+    expect(status().text()).toBe('1 cost shown')
+  })
+  it('scrolls sideways without a scrollbar on phones and wraps from sm', async () => {
+    await loaded()
+    expect(group().classes()).toEqual(expect.arrayContaining(['overflow-x-auto', '[scrollbar-width:none]', 'sm:flex-wrap', 'sm:overflow-visible']))
+    for (const c of chips()) expect(c.classes()).toContain('shrink-0')
+  })
+  it('has German labels', async () => {
+    await loaded()
+    await useNuxtApp().$i18n.setLocale('de')
+    try {
+      await vi.waitFor(() => expect(wrapper.find('[role="group"][aria-label="Nach Kategorie filtern"]').exists()).toBe(true))
+      expect(wrapper.find('[role="group"][aria-label="Nach Kategorie filtern"]').findAll('button').map(c => c.text()))
+        .toEqual(['Wohnen', 'Versicherung', 'Geräte', 'Essen', 'Mobilität'])
+    } finally {
+      await useNuxtApp().$i18n.setLocale('en')
+    }
+  })
+})
+
+describe('costs page no match', () => {
+  const card = () => wrapper.find('.card.text-center')
+  const names = () => wrapper.findAll('tbody tr').map(row => row.find('td p').element.firstChild!.textContent!.trim())
+  const button = (label: string) => wrapper.findAll('button').find(b => b.text() === label)
+  // Housing has only Rent, a recurring cost, so Purchases + Housing matches nothing.
+  async function noMatch() {
+    await vi.waitFor(() => expect(wrapper.findAll('tbody tr')).toHaveLength(3))
+    await button('Purchases 1')!.trigger('click')
+    await button('Housing')!.trigger('click')
+  }
+  const tableHidden = () => {
+    let element: HTMLElement | null = wrapper.find('table').element
+    while (element && element.style.display !== 'none') element = element.parentElement
+    return element !== null
+  }
+
+  it('shows a card instead of the table when the filters match nothing', async () => {
+    await noMatch()
+    expect(card().find('h2').text()).toBe('No costs match these filters')
+    expect(card().text()).toContain('Choose another kind or category.')
+    expect(tableHidden()).toBe(true)
+    expect(wrapper.find('p[role="status"]').text()).toBe('0 costs shown')
+  })
+  it('keeps the table in the page, so the layout in main.css still finds it', async () => {
+    await noMatch()
+    expect(wrapper.find('table').exists()).toBe(true)
+  })
+  it('shows no card while costs match', async () => {
+    await vi.waitFor(() => expect(wrapper.findAll('tbody tr')).toHaveLength(3))
+    await button('Housing')!.trigger('click')
+    expect(card().exists()).toBe(false)
+    expect(tableHidden()).toBe(false)
+  })
+  it('shows no card when there are no costs at all', async () => {
+    await vi.waitFor(() => expect(wrapper.findAll('tbody tr')).toHaveLength(3))
+    const { recurring, purchases } = useCostLists()
+    recurring.value = []
+    purchases.value = []
+    await nextTick()
+    expect(card().exists()).toBe(false)
+  })
+  it('clears both filters with "Clear filters"', async () => {
+    await noMatch()
+    await button('Clear filters')!.trigger('click')
+    await nextTick()
+    expect(card().exists()).toBe(false)
+    expect(names()).toEqual(['Laptop', 'Liability insurance', 'Rent'])
+    expect(wrapper.findAll('[aria-pressed="true"]').map(b => b.text())).toEqual(['All 3'])
+  })
+  it('moves the focus to the "All" chip, because the button disappears with the card', async () => {
+    wrapper.unmount()
+    wrapper = await mountSuspended(CostsPage, { attachTo: document.body })
+    await noMatch()
+    await button('Clear filters')!.trigger('click')
+    await vi.waitFor(() => expect(document.activeElement?.textContent?.trim()).toBe('All 3'))
+  })
+  it('has German texts', async () => {
+    await noMatch()
+    await useNuxtApp().$i18n.setLocale('de')
+    try {
+      await vi.waitFor(() => expect(card().find('h2').text()).toBe('Keine Posten passen zu diesen Filtern'))
+      expect(card().text()).toContain('Wähle eine andere Art oder Kategorie.')
+      expect(card().find('button').text()).toBe('Filter zurücksetzen')
+    } finally {
+      await useNuxtApp().$i18n.setLocale('en')
+    }
+  })
+})
+
 describe('costs page add and edit', () => {
   // The dialog itself lives in the layout (see CostDialog.test.ts); the page only asks for it.
   const dialogState = () => {
