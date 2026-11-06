@@ -1,4 +1,19 @@
 import type { Stored, RecurringCost, Purchase } from '~~/shared/types/calculation'
+/**
+ * Month and date formatting in the current language, and the list row of a cost.
+ *
+ * @remarks
+ * Every date is formatted in UTC, like the core reads it, so a purchase on the 1st never shows as
+ * the last day of the month before.
+ *
+ * @returns
+ * - `monthName(month, style?)`: "March" or "Mar"; `month` is 1-12.
+ * - `monthYear(year, month)`: "March 2026".
+ * - `monthPath(year, month)`: the month page URL with a two-digit month, `/months/2026/03`.
+ * - `formatDate(date, form?)`: day and month without the year: "Mar 14" or "March 14", in German "14. März".
+ * - `toRow(cost, form?)`: name, category subline, formatted amount with cents and a `key` unique
+ *   across both lists (`recurring-1`, `purchase-1`). The `'long'` form adds the due month to yearly costs.
+ */
 export function useMonth() {
     const { t, locale } = useI18n()
     const euros = useMoney({ cents: true })

@@ -4,6 +4,8 @@ Reference for the pure functions in `shared/utils/costs.ts` and `shared/utils/da
 
 The functions take lists and a year (and month) and return numbers or small objects. They never read "today", touch the database or use Vue state, so they run on client and server and are easy to test. Years of ISO dates are read in UTC, so results do not depend on the time zone. All functions are auto-imported; the types are in `shared/types/calculation.ts`.
 
+Every exported function in `shared/utils/costs.ts` and every type in `shared/types/calculation.ts` has a TSDoc comment with its units, edge cases and rules, so the editor shows them on hover. This page stays the full reference; when a function changes, update both.
+
 Terms used below:
 
 - **Recurring cost**: an amount repeated at an `interval` (`monthly`, `quarterly`, `yearly`).
