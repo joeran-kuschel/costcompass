@@ -46,6 +46,9 @@
       "asc": "{column}, sorted ascending",
       "desc": "{column}, sorted descending"
     },
+    "search": {
+      "label": "Search costs"
+    },
     "summary": {
       "recurring": "{n} recurring cost | {n} recurring costs",
       "purchases": "{n} purchase | {n} purchases",

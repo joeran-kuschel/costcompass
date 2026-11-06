@@ -46,6 +46,9 @@
       "asc": "{column}, aufsteigend sortiert",
       "desc": "{column}, absteigend sortiert"
     },
+    "search": {
+      "label": "Kosten durchsuchen"
+    },
     "summary": {
       "recurring": "{n} wiederkehrender Posten | {n} wiederkehrende Posten",
       "purchases": "{n} Anschaffung | {n} Anschaffungen",

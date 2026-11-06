@@ -19,6 +19,7 @@ const cancelButton = useTemplateRef<{ $el: HTMLElement }>('cancel')
 const allChip = useTemplateRef<{ $el: HTMLElement }>('allChip')
 
 const UButton = resolveComponent('UButton')
+const search = ref('')
 const toDelete = ref<Stored<Cost> | null>(null)
 const categoryFilter = ref<Category | null>(null)
 const dialogContent = { role: 'alertdialog', onOpenAutoFocus: focusCancel }
@@ -42,12 +43,14 @@ const confirmText = computed(() => {
         : t('costs.confirmPurchase', { name: cost.name, amount, date: formatDate(cost.date, 'long') })
 })
 const kindFilter = ref<'all' | Cost['kind']>('all')
-const shownCosts = computed(() =>
-    costs.value.filter(cost =>
+const shownCosts = computed(() => {
+    const term = normalize(search.value.trim())
+    return costs.value.filter(cost =>
         (kindFilter.value === 'all' || cost.kind === kindFilter.value)
         && (categoryFilter.value === null || cost.category === categoryFilter.value)
+        && (term === '' || normalize(`${cost.name} ${t(`category.${cost.category}`)}`).includes(term))
     )
-)
+})
 useHead({ title: () => t('costs.title') })
 
 async function onDelete (cost: Stored<Cost>) {
@@ -103,7 +106,9 @@ function sortableHeader(label: string) {
         })
     }
 }
-
+function normalize(text: string): string {
+    return text.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLocaleLowerCase(locale.value)
+}
 </script>
 <template>
     <header>
@@ -115,6 +120,17 @@ function sortableHeader(label: string) {
             <template #year>{{ yearSummary.year }}</template>
         </i18n-t>
     </header>
+    <section class="w-full self-end sm:w-80">
+        <UInput
+            type="search"
+            class="w-full"
+            v-model="search"
+            icon="i-lucide-search"
+            :placeholder="t('costs.search.label')"
+            :aria-label="t('costs.search.label')"
+            :ui="{ base: 'min-h-11 rounded-full bg-elevated font-semibold shadow-xs ring-transparent' }"
+        />
+    </section>
     <section class="flex w-full flex-wrap items-center gap-2">
         <div role="group" :aria-label="t('costs.filterLabel')" class="inline-flex gap-1 rounded-full bg-elevated p-1 shadow-xs">
             <UButton

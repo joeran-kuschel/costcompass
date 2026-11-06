@@ -308,7 +308,10 @@ main > div:has(table) {
   align-items: center;
   gap: 1rem 1.5rem;
 }
-main > div:has(table) > header,
+main > div:has(table) > header {
+  flex: 1 1 auto;
+  min-width: 0;
+}
 main > div:has(table) > div {
   flex: 1 1 100%;
   min-width: 0;
