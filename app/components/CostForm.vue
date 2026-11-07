@@ -70,8 +70,8 @@ async function onSubmit(event: FormSubmitEvent<CreateRecurringCost | CreatePurch
                 <UInputNumber
                     v-model="state.amount" :increment="false" :decrement="false" :step="0.01" :locale="locale"
                     :format-options="{ useGrouping: false, minimumFractionDigits: 2, maximumFractionDigits: 2 }"
-                    variant="none" class="w-[210px]"
-                    :ui="{ base: 'p-0 text-center text-[52px] md:text-[52px] leading-tight font-extrabold tracking-[-0.04em]' }"
+                    variant="none" class="w-auto"
+                    :ui="{ base: 'min-w-[2ch] field-sizing-content p-0 text-center text-[52px] md:text-[52px] leading-tight font-extrabold tabular-nums tracking-[-0.04em]' }"
                 />
             </div>
         </UFormField>

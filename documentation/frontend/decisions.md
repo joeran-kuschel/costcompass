@@ -201,3 +201,15 @@ Details: [Costs page](app-structure.md#costs-page).
 ## Add/edit form
 
 A modal (`UModal`) with one `CostForm` for both kinds of cost, rendered once by the layout. A modal works better on mobile than a slide-over. Details: [Add and edit dialog](app-structure.md#add-and-edit-dialog).
+
+### Initial focus in the cost dialog (#87)
+
+- **Default focus, no `onOpenAutoFocus`.** The author's decision: the add/edit dialog does not move the focus itself. Reka's dialog focuses the first focusable element, which is the close button in the header, so the amount is one Tab away. Focusing the amount (as the mock's order suggests) or the name would open the phone keyboard at once. To be revisited if an accessibility review flags it; the delete confirmation on `/costs` shows how to set it (`onOpenAutoFocus`).
+
+Details: [Add and edit dialog](app-structure.md#add-and-edit-dialog).
+
+### Business hint inside the label (#91)
+
+- **No separate `aria-describedby`.** The author's decision: the hint "Counted apart from household costs" stays the checkbox's `description`. With `variant="card"` the whole row is the `<label>`, so screen readers announce the hint as part of the checkbox's accessible name ("Business cost Counted apart from household costs, checkbox"). The visible label comes first, so Label in Name (WCAG 2.5.3) is met. `UCheckbox` renders the description without an `id`, so linking it with `aria-describedby` would need a custom slot, and announcing it as a description would add nothing.
+
+Details: [Cost form](app-structure.md#cost-form).

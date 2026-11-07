@@ -585,6 +585,7 @@ What the layout does:
 
 - The title is "Add cost" or "Edit <name>", depending on `cost`.
 - `CostForm` gets `:cost` and `:month`.
+- Focus on open is not set by the app: Reka's dialog focuses the first focusable element, the close button, so the amount is one Tab away (author's decision, [Initial focus in the cost dialog](decisions.md#initial-focus-in-the-cost-dialog-87)).
 - When the modal closes (close button, backdrop, Escape), `@update:open` calls `close()`. `@cancel` calls `close()` too.
 - On `@saved` the layout awaits `retry()` from `useCostLists()` and then calls `close()`. Every page that shows the lists updates.
 - The layout calls `useCostLists()`. The pages fetch the same lists, so this adds no requests.
@@ -601,6 +602,7 @@ State lives in `useState`, not in provide/inject, so any component can open the 
 - **Edit:** with the optional `cost` prop (`Stored<Cost>`) the form is pre-filled once, the kind radio group is disabled (a cost cannot change its kind), the submit button says "Save" and submit sends a `PATCH` to `/api/<resource>/<id>` instead of a `POST`.
 - **Month prop:** the optional `month` prop (`{ year, month }`, set when a month page or the phone's add button calls `openAdd(monthRef)`) starts a purchase on the first day of that month, limits the date field to that month with `min` and `max` and names the month in a hint ("Pre-filled with October 2026. Pick the day."). A yearly or quarterly cost starts with that month as `dueMonth`, which stays free to change. The first and last day come from `monthDateRange` in `shared/utils/dates.ts` (UTC, leap years included).
 - **Limit of the month prop:** the browser limits the date field, the Zod schema does not, so the API still accepts a purchase on any day.
+- **Business hint:** the business checkbox shows the hint "Counted apart from household costs" (`form.businessHint`) as its `description`. The whole card row is the label, so the hint is announced as part of the checkbox's name, not through `aria-describedby` (author's decision, [Business hint inside the label](decisions.md#business-hint-inside-the-label-91)).
 - **Defaults are read once** when the form is created, like the `cost` prefill, and an edited cost keeps its own values. Without the `month` prop the form is unchanged; the sidebar and `/costs` use `openAdd()`.
 
 ### Known limit: the costs table loads on the client
