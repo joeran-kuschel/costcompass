@@ -95,11 +95,21 @@
     "amount": "Amount",
     "category": "Category",
     "business": "Business cost",
+    "businessHint": "Counted apart from household costs",
     "interval": "Interval",
     "dueMonth": "Due month",
+    "repeats": {
+      "quarterly": "Repeats in {months}.",
+      "yearly": "Repeats every year in {months}."
+    },
     "date": "Date",
     "submit": "Add cost",
     "error": "Could not save the cost. Please try again.",
+    "amountError": "Enter an amount greater than €0.",
+    "nameError": "Enter a name, for example \"Rent\".",
+    "categoryError": "Pick a category for the cost.",
+    "dateError": "Enter the date of purchase.",
+    "dueMonthError": "Pick the month the cost is due.",
     "dateHint": "Pre-filled with {month}. Pick the day."
   },
   "dashboard": {

@@ -585,6 +585,7 @@ What the layout does:
 
 - The title is "Add cost" or "Edit <name>", depending on `cost`.
 - `CostForm` gets `:cost` and `:month`.
+- Focus on open is not set by the app: Reka's dialog focuses the first focusable element, the close button, so the amount is one Tab away (author's decision, [Initial focus in the cost dialog](decisions.md#initial-focus-in-the-cost-dialog-87)).
 - When the modal closes (close button, backdrop, Escape), `@update:open` calls `close()`. `@cancel` calls `close()` too.
 - On `@saved` the layout awaits `retry()` from `useCostLists()` and then calls `close()`. Every page that shows the lists updates.
 - The layout calls `useCostLists()`. The pages fetch the same lists, so this adds no requests.
@@ -598,9 +599,19 @@ State lives in `useState`, not in provide/inject, so any component can open the 
 - **Add:** on submit it POSTs `event.data` (already stripped by Zod) to the matching route and emits `saved`. The layout refreshes both lists (`retry` of `useCostLists()`) and closes the dialog.
 - **Failure:** if the request fails, a toast (`useToast`, text from `form.error`) is shown and the modal stays open with the entered values.
 - **Fresh start:** a closed modal unmounts its content, so the form starts empty each time. A Cancel button emits `cancel`; the layout closes the dialog, which clears the state, so the next "Add cost" starts empty.
-- **Edit:** with the optional `cost` prop (`Stored<Cost>`) the form is pre-filled once, the kind radio group is disabled (a cost cannot change its kind), the submit button says "Save" and submit sends a `PATCH` to `/api/<resource>/<id>` instead of a `POST`.
+- **Edit:** with the optional `cost` prop (`Stored<Cost>`) the form is pre-filled once, the kind radio group is disabled (a cost cannot change its kind), the submit button says "Save" and submit sends a `PATCH` to `/api/<resource>/<id>` instead of a `POST`. The interval stays free to change; the API merges the patch and drops the due month of a cost that becomes monthly.
 - **Month prop:** the optional `month` prop (`{ year, month }`, set when a month page or the phone's add button calls `openAdd(monthRef)`) starts a purchase on the first day of that month, limits the date field to that month with `min` and `max` and names the month in a hint ("Pre-filled with October 2026. Pick the day."). A yearly or quarterly cost starts with that month as `dueMonth`, which stays free to change. The first and last day come from `monthDateRange` in `shared/utils/dates.ts` (UTC, leap years included).
 - **Limit of the month prop:** the browser limits the date field, the Zod schema does not, so the API still accepts a purchase on any day.
+- **Business hint:** the business checkbox shows the hint "Counted apart from household costs" (`form.businessHint`) as its `description`. The whole card row is the label, so the hint is announced as part of the checkbox's name, not through `aria-describedby` (author's decision, [Business hint inside the label](decisions.md#business-hint-inside-the-label-91)).
+- **Layout (Cobalt, #87-#91):** top to bottom: the amount, Type, name, category, then the date (purchase) or Interval and due month (recurring), the business row and the buttons.
+  - *Amount:* a `UInputNumber` without stepper buttons, 52 px, tabular numerals, with a decorative "€" in front. It formats with `Intl` in the active language (`25,50` in German), two decimals, no grouping, and rounds on blur. Its width follows the text (`field-sizing: content`, at least 2 characters, at most the row; Firefox keeps a fixed width).
+  - *Type and Interval:* segmented controls, both a `URadioGroup` (`variant="card"`, `indicator="hidden"`) with the same copied `ui`. Arrow keys move the selection, the group is one Tab stop. Type shows the kind icons from `useKind()`. See [Segmented controls as radio groups](decisions.md#segmented-controls-as-radio-groups-88-89).
+  - *Category:* a `URadioGroup` of chips, each with a 32 px `CategoryBadge`; they wrap onto two rows.
+  - *Due month:* always below Interval (the German labels did not fit beside it). A help text names the repeat months ("Repeats in February, May, August, and November.", "Fällig im …"), built in the form from `monthItems` and `Intl.ListFormat`, months in calendar order.
+  - *Business:* a tinted card row (`UCheckbox`, `variant="card"`), full width on all screens, with a briefcase icon and the hint.
+  - *Buttons:* Cancel (hidden below `sm`, where the dialog's close button remains) and the submit button, full width on phones.
+- **Required fields:** amount, name, category, date and due month carry native `required` on the control (for screen readers) and `required` on the `UFormField` (the asterisk). `UForm` has `novalidate`, so the browser shows no bubbles of its own.
+- **Errors (#94):** each field shows a short translated message with an alert icon below it (`form.amountError`, `nameError`, `categoryError`, `dateError`, `dueMonthError`), through the `#error` slot of `UFormField`; invalid inputs get a red ring, the amount a red line. `UFormField` links the message with `aria-describedby` and sets `aria-invalid` (on the `fieldset` for the category). Fields are checked on submit and, once touched, on `change` and `input`, not on `blur` (`:validate-on="['input', 'change']"`). After a failed submit the first invalid field gets the focus. See [Form errors](decisions.md#form-errors-94).
 - **Defaults are read once** when the form is created, like the `cost` prefill, and an edited cost keeps its own values. Without the `month` prop the form is unchanged; the sidebar and `/costs` use `openAdd()`.
 
 ### Known limit: the costs table loads on the client
@@ -609,9 +620,12 @@ State lives in `useState`, not in provide/inject, so any component can open the 
 
 ### Tests
 
+- `tests/nuxt/CostForm.test.ts`: add and edit (POST, PATCH, failure toast), the month prop, the controls (kind, category chips with arrow keys and one tab stop, interval, due month default and repeat hint in en and de, amount parsing and formatting in en and de, business hint) and the error messages (none on open, each message in en and de, `aria-describedby`, cleared once valid).
 - `tests/nuxt/CostDialog.test.ts` (mounted on the layout): opens empty (also from the sidebar button), pre-filled for an edit and for a month (date on the first day, `min` and `max`, hint); Cancel and the close button clear the state; no leftover cost or month in the next dialog; focus returns to the element that had it before the dialog opened; both lists are loaded again and the dialog closes after a save; German.
 - `dashboard-states.test.ts`, `dashboard-month-cards.test.ts`, `costs-page.test.ts` and `month-page.test.ts` only check that the page asks for the dialog with the right state (`open`, `cost`, `month` of `useCostDialog()`), and that the page shows new numbers after `refreshNuxtData()`.
 - Every file that touches the dialog closes its state after each test, because `useState` outlives a test.
+
+Known limit: on a window lower than about 790 px the dialog scrolls, and the error messages make it taller still (#136).
 
 Checked by hand in the browser: the dashboard and month page buttons open the dialog, and the costs table updates after a save. The sidebar button opens the dialog (test in `CostDialog.test.ts`). Not checked: the dialog on a phone *(to verify)*.
 
