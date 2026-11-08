@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { INTERVALS } from '~~/shared/types/calculation'
-import type { FormSubmitEvent, FormErrorEvent } from '@nuxt/ui'
+import type { Form, FormSubmitEvent, FormErrorEvent } from '@nuxt/ui'
 import type { CreatePurchase, CreateRecurringCost } from '~~/shared/utils/validation'
 import { monthDateRange } from '~~/shared/utils/dates'
 
@@ -14,7 +14,7 @@ const { monthYear } = useMonth()
 const { currentMonth } = useYear()
 const toast = useToast()
 const { kindIcon } = useKind()
-const form = useTemplateRef('form')
+const form = useTemplateRef<Form<typeof createPurchaseSchema>>('form')
 const kind = ref<'recurring' | 'purchase'>('purchase')
 const state = reactive({
     name: '',
@@ -158,7 +158,7 @@ async function onError(event: FormErrorEvent) {
         </UFormField>
         <div v-if="kind === 'recurring'" :class="['col-span-full grid gap-[18px]']" >
             <UFormField required name="interval" :label="t('form.interval')">
-                <URadioGroup required :disabled="!!cost" v-model="state.interval" :items="intervalItems"
+                <URadioGroup required v-model="state.interval" :items="intervalItems"
                     variant="card" indicator="hidden" orientation="horizontal"
                     :ui="{
                         legend: 'sr-only',

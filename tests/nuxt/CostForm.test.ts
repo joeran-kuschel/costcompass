@@ -316,6 +316,20 @@ describe('CostForm controls', () => {
     await radio(wrapper, 'yearly').trigger('click')
     await vi.waitFor(() => expect(hint().text()).toBe('Repeats every year in November.'))
   })
+  it('names the repeat months in German', async () => {
+    await useNuxtApp().$i18n.setLocale('de')
+    try {
+      const wrapper = await mountSuspended(CostForm, { props: { month: { year: 2026, month: 11 } } })
+      await radio(wrapper, 'recurring').trigger('click')
+      await vi.waitFor(() => expect(radio(wrapper, 'quarterly').exists()).toBe(true))
+      await radio(wrapper, 'quarterly').trigger('click')
+      await vi.waitFor(() => expect(wrapper.text()).toContain('Fällig im Februar, Mai, August und November.'))
+      await radio(wrapper, 'yearly').trigger('click')
+      await vi.waitFor(() => expect(wrapper.text()).toContain('Fällig jedes Jahr im November.'))
+    } finally {
+      await useNuxtApp().$i18n.setLocale('en')
+    }
+  })
   it('reads the amount as a number and shows it with two decimals', async () => {
     const wrapper = await mountSuspended(CostForm)
     await setAmount(wrapper, '25.5')
