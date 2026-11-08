@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { INTERVALS } from '~~/shared/types/calculation'
-import type { FormSubmitEvent } from '@nuxt/ui'
+import type { FormSubmitEvent, FormErrorEvent } from '@nuxt/ui'
 import type { CreatePurchase, CreateRecurringCost } from '~~/shared/utils/validation'
 import { monthDateRange } from '~~/shared/utils/dates'
 
@@ -14,6 +14,7 @@ const { monthYear } = useMonth()
 const { currentMonth } = useYear()
 const toast = useToast()
 const { kindIcon } = useKind()
+const form = useTemplateRef('form')
 const kind = ref<'recurring' | 'purchase'>('purchase')
 const state = reactive({
     name: '',
@@ -37,10 +38,12 @@ const monthItems = computed(() => MONTHS.map(m => ({
     value: m,
 })))
 const range = computed(() => props.month ? monthDateRange(props.month) : null)
+// UFormField hides its help text whenever an error slot exists, so the due month gets its slot only while it is invalid.
+const dueMonthInvalid = computed(() => !!form.value?.getErrors('dueMonth').length)
 const repeatText = computed(() => {
     if (state.interval === 'monthly' || !state.dueMonth) return undefined
     const due = state.dueMonth
-    const months = state.interval === 'quarterly' ? [0, 3, 6, 9].map(k => (due - 1 + k) % 12 + 1) : [due]
+    const months = state.interval === 'quarterly' ? [0, 3, 6, 9].map(k => (due - 1 + k) % 12 + 1).sort((a, b) => a - b) : [due]
     const names = months.map(m => monthItems.value[m - 1]!.label)
     return t(`form.repeats.${state.interval}`, { months: new Intl.ListFormat(locale.value).format(names) })
 })
@@ -69,22 +72,32 @@ async function onSubmit(event: FormSubmitEvent<CreateRecurringCost | CreatePurch
         toast.add({ title: t('form.error'), color: 'error'})
     }
 }
+async function onError(event: FormErrorEvent) {
+    const id = event.errors[0]?.id
+    if (id) setTimeout(() => document.getElementById(id)?.focus())
+}
 </script>
 <template>
-    <UForm :schema="schema" :state="state" class="grid grid-cols-[auto_auto_1fr] gap-x-3 gap-y-[18px] [&>[data-slot=root]]:col-span-full" @submit="onSubmit">
-        <UFormField :label="t('form.amount')" :ui="{ labelWrapper: 'justify-center' }" name="amount">
+    <UForm ref="form" novalidate :validate-on="['input', 'change']" :schema="schema" :state="state" class="grid grid-cols-[auto_auto_1fr] gap-x-3 gap-y-[18px] [&>[data-slot=root]]:col-span-full" @submit="onSubmit" @error="onError">
+        <UFormField required :label="t('form.amount')" :ui="{ labelWrapper: 'justify-center', error: 'mt-1.5 flex items-center justify-center gap-1.5 text-[13px] font-bold' }" name="amount">
             <div class="flex items-baseline justify-center gap-1">
                 <span class="text-[28px] font-extrabold text-muted" aria-hidden="true">€</span>
-                <UInputNumber
+                <UInputNumber required
                     v-model="state.amount" :increment="false" :decrement="false" :step="0.01" :locale="locale"
                     :format-options="{ useGrouping: false, minimumFractionDigits: 2, maximumFractionDigits: 2 }"
                     variant="none" class="w-auto max-w-full min-w-0"
-                    :ui="{ base: 'min-w-[2ch] field-sizing-content p-0 text-center text-[52px] md:text-[52px] leading-tight font-extrabold tabular-nums tracking-[-0.04em]' }"
+                    :ui="{ base: 'min-w-[2ch] field-sizing-content p-0 text-center text-[52px] md:text-[52px] leading-tight font-extrabold tabular-nums tracking-[-0.04em] aria-invalid:ring-0 aria-invalid:rounded-none aria-invalid:shadow-[0_3px_0_var(--ui-error)]' }"
                 />
             </div>
+            <template #error="{ error }">
+                <template v-if="error">
+                    <UIcon name="i-lucide-circle-alert" class="size-4 shrink-0" />
+                    {{ t('form.amountError') }}
+                </template>
+            </template>
         </UFormField>
-        <UFormField>
-            <URadioGroup :disabled="!!cost" v-model="kind" :items="kindItems" :legend="t('form.kind')"
+        <UFormField required>
+            <URadioGroup required :disabled="!!cost" v-model="kind" :items="kindItems" :legend="t('form.kind')"
                 variant="card" indicator="hidden" orientation="horizontal"
                 :ui="{
                     legend: 'sr-only',
@@ -96,11 +109,18 @@ async function onSubmit(event: FormSubmitEvent<CreateRecurringCost | CreatePurch
                 }"
             />
         </UFormField>
-        <UFormField :label="t('form.name')" name="name">
-            <UInput class="w-full" :ui="{ base: 'min-h-12 rounded-[1rem] font-semibold bg-muted ring-transparent dark:bg-accented dark:ring-accented' }" v-model="state.name" />
+        <UFormField required :label="t('form.name')" name="name" :ui="{ error: 'mt-1.5 flex items-center gap-1.5 text-[13px] font-bold' }">
+            <UInput required class="w-full" :ui="{ base: 'min-h-12 rounded-[1rem] font-semibold bg-muted ring-transparent dark:bg-accented dark:ring-accented aria-invalid:ring-2 aria-invalid:ring-error' }" v-model="state.name" />
+            <template #error="{ error }">
+                <template v-if="error">
+                    <UIcon name="i-lucide-circle-alert" class="size-4 shrink-0" />
+                    {{ t('form.nameError') }}
+                </template>
+            </template>
         </UFormField>
-        <UFormField name="category">
+        <UFormField name="category" :ui="{ error: 'mt-1.5 flex items-center gap-1.5 text-[13px] font-bold' }">
             <URadioGroup
+                required
                 v-model="state.category"
                 :items="categoryItems"
                 :legend="t('form.category')"
@@ -120,13 +140,25 @@ async function onSubmit(event: FormSubmitEvent<CreateRecurringCost | CreatePurch
                     </span>
                 </template>
             </URadioGroup>
+            <template #error="{ error }">
+                <template v-if="error">
+                    <UIcon name="i-lucide-circle-alert" class="size-4 shrink-0" />
+                    {{ t('form.categoryError') }}
+                </template>
+            </template>
         </UFormField>
-        <UFormField v-if="kind === 'purchase'" :label="t('form.date')" name="date" :hint="month ? t('form.dateHint', { month: monthYear(month.year, month.month) }) : undefined">
-            <UInput class="w-full" :ui="{ base: 'min-h-12 rounded-[1rem] font-semibold bg-muted ring-transparent dark:bg-accented dark:ring-accented' }" v-model="state.date" type="date" :min="range?.first" :max="range?.last" />
+        <UFormField required v-if="kind === 'purchase'" :label="t('form.date')" name="date" :ui="{ error: 'mt-1.5 flex items-center gap-1.5 text-[13px] font-bold' }" :hint="month ? t('form.dateHint', { month: monthYear(month.year, month.month) }) : undefined">
+            <UInput required class="w-full" :ui="{ base: 'min-h-12 rounded-[1rem] font-semibold bg-muted ring-transparent dark:bg-accented dark:ring-accented aria-invalid:ring-2 aria-invalid:ring-error' }" v-model="state.date" type="date" :min="range?.first" :max="range?.last" />
+            <template #error="{ error }">
+                <template v-if="error">
+                    <UIcon name="i-lucide-circle-alert" class="size-4 shrink-0" />
+                    {{ t('form.dateError') }}
+                </template>
+            </template>
         </UFormField>
         <div v-if="kind === 'recurring'" :class="['col-span-full grid gap-[18px]']" >
-            <UFormField name="interval" :label="t('form.interval')">
-                <URadioGroup :disabled="!!cost" v-model="state.interval" :items="intervalItems"
+            <UFormField required name="interval" :label="t('form.interval')">
+                <URadioGroup required :disabled="!!cost" v-model="state.interval" :items="intervalItems"
                     variant="card" indicator="hidden" orientation="horizontal"
                     :ui="{
                         legend: 'sr-only',
@@ -137,8 +169,12 @@ async function onSubmit(event: FormSubmitEvent<CreateRecurringCost | CreatePurch
                     }"
                 />
             </UFormField>
-            <UFormField v-if="state.interval !== 'monthly'" :label="t('form.dueMonth')" name="dueMonth" :help="repeatText">
-                <USelect class="w-full" :ui="{ base: 'min-h-12 rounded-[1rem] font-semibold bg-muted ring-transparent dark:bg-accented dark:ring-accented' }" v-model="state.dueMonth" :items="monthItems" />
+            <UFormField required v-if="state.interval !== 'monthly'" :label="t('form.dueMonth')" name="dueMonth" :help="repeatText" :ui="{ error: 'mt-1.5 flex items-center gap-1.5 text-[13px] font-bold' }">
+                <USelect required class="w-full" :ui="{ base: 'min-h-12 rounded-[1rem] font-semibold bg-muted ring-transparent dark:bg-accented dark:ring-accented aria-invalid:ring-2 aria-invalid:ring-error' }" v-model="state.dueMonth" :items="monthItems" />
+                <template v-if="dueMonthInvalid" #error>
+                    <UIcon name="i-lucide-circle-alert" class="size-4 shrink-0" />
+                    {{ t('form.dueMonthError') }}
+                </template>
             </UFormField>
         </div>
         <UFormField name="business">

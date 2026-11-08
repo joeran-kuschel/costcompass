@@ -305,6 +305,17 @@ describe('CostForm controls', () => {
     await radio(wrapper, 'yearly').trigger('click')
     await vi.waitFor(() => expect(state(wrapper).dueMonth).toBe(useYear().currentMonth.value))
   })
+  it('names the repeat months under the due month and links them to the select', async () => {
+    const wrapper = await mountSuspended(CostForm, { props: { month: { year: 2026, month: 11 } } })
+    await radio(wrapper, 'recurring').trigger('click')
+    await vi.waitFor(() => expect(radio(wrapper, 'quarterly').exists()).toBe(true))
+    await radio(wrapper, 'quarterly').trigger('click')
+    const helpId = () => wrapper.find('[role="combobox"]').attributes('aria-describedby')?.split(' ').find(id => id.endsWith('-help'))
+    const hint = () => wrapper.find(`[id="${helpId()}"]`)
+    await vi.waitFor(() => expect(hint().text()).toBe('Repeats in February, May, August, and November.'))
+    await radio(wrapper, 'yearly').trigger('click')
+    await vi.waitFor(() => expect(hint().text()).toBe('Repeats every year in November.'))
+  })
   it('reads the amount as a number and shows it with two decimals', async () => {
     const wrapper = await mountSuspended(CostForm)
     await setAmount(wrapper, '25.5')
@@ -347,5 +358,80 @@ describe('CostForm controls', () => {
     } finally {
       await useNuxtApp().$i18n.setLocale('en')
     }
+  })
+})
+
+describe('CostForm error messages', () => {
+  // The message a field points to with aria-describedby; the amount has no name and the category is a fieldset.
+  const fields: Record<string, (wrapper: Wrapper) => ReturnType<Wrapper['find']>> = {
+    amount: amountInput,
+    name: wrapper => wrapper.find('input[name="name"]'),
+    category: wrapper => wrapper.find('fieldset:has([role="radio"][value="housing"])'),
+    date: wrapper => wrapper.find('input[name="date"]'),
+    dueMonth: wrapper => wrapper.find('[role="combobox"]'),
+  }
+  // aria-describedby can also name the help text (due month), so only the id ending in -error counts.
+  const errorText = (wrapper: Wrapper, field: string) => {
+    const id = fields[field]!(wrapper).attributes('aria-describedby')?.split(' ').find(id => id.endsWith('-error'))
+    return id ? wrapper.find(`[id="${id}"]`).text() : ''
+  }
+  // A recurring yearly cost without a due month; the form fills one in by default, so the test clears it.
+  async function yearlyWithoutDueMonth(wrapper: Wrapper) {
+    await radio(wrapper, 'recurring').trigger('click')
+    await vi.waitFor(() => expect(radio(wrapper, 'yearly').exists()).toBe(true))
+    await radio(wrapper, 'yearly').trigger('click')
+    await vi.waitFor(() => expect(wrapper.find('[role="combobox"]').exists()).toBe(true))
+    ;(wrapper.vm as unknown as { state: { dueMonth?: number } }).state.dueMonth = undefined
+    await submit(wrapper)
+  }
+
+  it('shows no error message when the form opens', async () => {
+    const wrapper = await mountSuspended(CostForm)
+    expect(wrapper.findAll('[data-slot="error"]').map(error => error.text()).join('')).toBe('')
+    expect(wrapper.find('[aria-invalid="true"]').exists()).toBe(false)
+  })
+  it('shows a short message per field after an empty submit', async () => {
+    const wrapper = await mountSuspended(CostForm)
+    await submit(wrapper)
+    await vi.waitFor(() => expect(errorText(wrapper, 'name')).toBe('Enter a name, for example "Rent".'))
+    expect(errorText(wrapper, 'amount')).toBe('Enter an amount greater than €0.')
+    expect(errorText(wrapper, 'category')).toBe('Pick a category for the cost.')
+    expect(errorText(wrapper, 'date')).toBe('Enter the date of purchase.')
+  })
+  it('shows the messages in German', async () => {
+    await useNuxtApp().$i18n.setLocale('de')
+    try {
+      const wrapper = await mountSuspended(CostForm)
+      await submit(wrapper)
+      await vi.waitFor(() => expect(errorText(wrapper, 'name')).toBe('Gib einen Namen ein, zum Beispiel "Miete".'))
+      expect(errorText(wrapper, 'amount')).toBe('Gib einen Betrag größer als €0 ein.')
+      expect(errorText(wrapper, 'category')).toBe('Wähle eine Kategorie für die Kosten.')
+      expect(errorText(wrapper, 'date')).toBe('Gib das Kaufdatum ein.')
+    } finally {
+      await useNuxtApp().$i18n.setLocale('en')
+    }
+  })
+  it('shows the due month message', async () => {
+    const wrapper = await mountSuspended(CostForm)
+    await yearlyWithoutDueMonth(wrapper)
+    await vi.waitFor(() => expect(errorText(wrapper, 'dueMonth')).toBe('Pick the month the cost is due.'))
+  })
+  it('shows the due month message in German', async () => {
+    await useNuxtApp().$i18n.setLocale('de')
+    try {
+      const wrapper = await mountSuspended(CostForm)
+      await yearlyWithoutDueMonth(wrapper)
+      await vi.waitFor(() => expect(errorText(wrapper, 'dueMonth')).toBe('Wähle den Monat, in dem die Kosten fällig sind.'))
+    } finally {
+      await useNuxtApp().$i18n.setLocale('en')
+    }
+  })
+  it('removes the message once the field is valid', async () => {
+    const wrapper = await mountSuspended(CostForm)
+    await submit(wrapper)
+    await vi.waitFor(() => expect(errorText(wrapper, 'name')).not.toBe(''))
+    await wrapper.find('input[name="name"]').setValue('Lamp')
+    await wrapper.find('input[name="name"]').trigger('blur')
+    await vi.waitFor(() => expect(errorText(wrapper, 'name')).toBe(''))
   })
 })

@@ -9,9 +9,10 @@ import { CATEGORIES, INTERVALS } from '~~/shared/types/calculation'
 
 const monthSchema = z.number().int().min(1).max(12)
 const notEmpty = (o: object) => Object.keys(o).length > 0
+// In the order of the cost form: its first error is the first invalid field on screen, which gets the focus.
 const baseFields = {
-  name: z.string().trim().min(1).max(200),
   amount: z.number().positive(),
+  name: z.string().trim().min(1).max(200),
   category: z.enum(CATEGORIES),
   business: z.boolean(),
 }
