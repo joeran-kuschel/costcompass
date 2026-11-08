@@ -202,6 +202,14 @@ Details: [Costs page](app-structure.md#costs-page).
 
 A modal (`UModal`) with one `CostForm` for both kinds of cost, rendered once by the layout. A modal works better on mobile than a slide-over. Details: [Add and edit dialog](app-structure.md#add-and-edit-dialog).
 
+### Segmented controls as radio groups (#88, #89)
+
+- **Radio semantics, not toggle buttons.** The author's decision: Type and Interval are a `URadioGroup` styled as a segmented control, not two or three buttons with `aria-pressed` as in the mock. Exactly one value is always selected, which is what a radio group means: arrow keys move the selection and the group is one Tab stop. The group is disabled when editing, so the kind stays visible but cannot change.
+- **No shared component.** Both use the same `ui` object, copied. A wrapper component would save no lines and would need a generic and a cast for `v-model`.
+- **Icons on Type only,** as in the mock: `useKind()`'s `kindIcon` (repeat, shopping bag), 18 px, coloured like the label.
+
+Details: [Cost form](app-structure.md#cost-form).
+
 ### Initial focus in the cost dialog (#87)
 
 - **Default focus, no `onOpenAutoFocus`.** The author's decision: the add/edit dialog does not move the focus itself. Reka's dialog focuses the first focusable element, which is the close button in the header, so the amount is one Tab away. Focusing the amount (as the mock's order suggests) or the name would open the phone keyboard at once. To be revisited if an accessibility review flags it; the delete confirmation on `/costs` shows how to set it (`onOpenAutoFocus`).

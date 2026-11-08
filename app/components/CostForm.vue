@@ -13,6 +13,7 @@ const { t, locale } = useI18n()
 const { monthYear } = useMonth()
 const { currentMonth } = useYear()
 const toast = useToast()
+const { kindIcon } = useKind()
 const kind = ref<'recurring' | 'purchase'>('purchase')
 const state = reactive({
     name: '',
@@ -24,8 +25,8 @@ const state = reactive({
     date: ''
 })
 const kindItems = computed(() => [
-    { label: t('kind.recurring'), value: 'recurring' },
-    { label: t('kind.purchase'), value: 'purchase' },
+    { label: t('kind.recurring'), value: 'recurring', icon: kindIcon('recurring') },
+    { label: t('kind.purchase'), value: 'purchase', icon: kindIcon('purchase') },
 ])
 const schema = computed(() => kind.value === 'recurring' ? createRecurringCostSchema : createPurchaseSchema)
 const categoryItems = computed(() => CATEGORIES.map(c => ({label: t(`category.${c}`), value: c})))
@@ -83,7 +84,8 @@ async function onSubmit(event: FormSubmitEvent<CreateRecurringCost | CreatePurch
                     fieldset: 'flex-nowrap gap-1 rounded-full bg-muted p-1',
                     item: 'group flex-1 items-center justify-center min-h-10 py-0 rounded-full border-0 hover:bg-transparent has-data-[state=checked]:bg-inverted has-focus-visible:ring-2 has-focus-visible:ring-primary',
                     wrapper: 'flex-row gap-1.5',
-                    label: 'text-sm font-bold text-muted group-has-data-[state=checked]:text-inverted dark:group-has-data-[state=checked]:text-(--ui-bg-elevated)'
+                    label: 'text-sm font-bold text-muted group-has-data-[state=checked]:text-inverted dark:group-has-data-[state=checked]:text-(--ui-bg-elevated)',
+                    icon: 'size-[18px] text-muted group-has-data-[state=checked]:text-inverted dark:group-has-data-[state=checked]:text-(--ui-bg-elevated)'
                 }"
             />
         </UFormField>
