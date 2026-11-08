@@ -202,9 +202,22 @@ Details: [Costs page](app-structure.md#costs-page).
 
 A modal (`UModal`) with one `CostForm` for both kinds of cost, rendered once by the layout. A modal works better on mobile than a slide-over. Details: [Add and edit dialog](app-structure.md#add-and-edit-dialog).
 
+### Form errors (#94)
+
+- **Not on blur.** `UForm` validates on `input`, `blur` and `change` by default, so tabbing through or clicking Cancel showed errors. Without `blur`, a field that was only passed stays quiet; a field edited and left invalid shows its error (`change`), and once left it is checked again while typing (`input`).
+- **Native `required` with `novalidate`.** `required` on `UFormField` only draws the asterisk, so each control carries the native attribute too, for screen readers. `novalidate` on the form keeps the browser's own bubbles away, so only the translated messages show.
+- **Focus on the first invalid field.** `@error` focuses `errors[0]`. The focus is set in a `setTimeout`: `UForm` (`loadingAuto`) disables the form while it validates and emits `error` before it enables it again, and a disabled input cannot take the focus. `loadingAuto` stays on, because it also blocks a double submit while saving.
+- **Schema order = form order.** `errors[0]` follows the Zod schema, so `baseFields` in `shared/utils/validation.ts` lists the amount before the name.
+- **Error slot only when invalid on the due month.** `UFormField` shows its help text only when no error slot exists, so the due month's slot is rendered only while it has an error (`getErrors('dueMonth')` through a template ref). The other fields have no help text and keep a plain slot with `v-if="error"` inside.
+
+### Repeat hint under the due month (#93)
+
+- **Inline, not a core function.** The months are computed in `CostForm` (a quarterly cost every three months from the due month, sorted), not in `shared/utils/`. The hint is tested through the form in both languages.
+- **Intl for the names,** as everywhere in the app: `monthItems` gives the names, `Intl.ListFormat` joins them (in English with a comma before "and"). The author would rather have had month names in the locale files from the start; switching is its own refactor.
+
 ### Segmented controls as radio groups (#88, #89)
 
-- **Radio semantics, not toggle buttons.** The author's decision: Type and Interval are a `URadioGroup` styled as a segmented control, not two or three buttons with `aria-pressed` as in the mock. Exactly one value is always selected, which is what a radio group means: arrow keys move the selection and the group is one Tab stop. The group is disabled when editing, so the kind stays visible but cannot change.
+- **Radio semantics, not toggle buttons.** The author's decision: Type and Interval are a `URadioGroup` styled as a segmented control, not two or three buttons with `aria-pressed` as in the mock. Exactly one value is always selected, which is what a radio group means: arrow keys move the selection and the group is one Tab stop. Type is disabled when editing, so the kind stays visible but cannot change; Interval stays free.
 - **No shared component.** Both use the same `ui` object, copied. A wrapper component would save no lines and would need a generic and a cast for `v-model`.
 - **Icons on Type only,** as in the mock: `useKind()`'s `kindIcon` (repeat, shopping bag), 18 px, coloured like the label.
 
