@@ -261,6 +261,15 @@ describe('CostForm controls', () => {
     expect(wrapper.text()).toContain('Housing')
     expect(wrapper.text()).toContain('Mobility')
   })
+  it('marks the category group invalid and links its error after an empty submit', async () => {
+    const wrapper = await mountSuspended(CostForm)
+    await submit(wrapper)
+    const group = () => wrapper.find('fieldset:has([role="radio"][value="housing"])')
+    await vi.waitFor(() => expect(group().attributes('aria-invalid')).toBe('true'))
+    const errorId = group().attributes('aria-describedby')
+    expect(errorId).toBeTruthy()
+    expect(wrapper.find(`[id="${errorId}"]`).text()).not.toBe('')
+  })
   it('picks a category with a click', async () => {
     const wrapper = await mountSuspended(CostForm)
     await radio(wrapper, 'food').trigger('click')

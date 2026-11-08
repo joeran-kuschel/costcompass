@@ -71,7 +71,7 @@ async function onSubmit(event: FormSubmitEvent<CreateRecurringCost | CreatePurch
                 <UInputNumber
                     v-model="state.amount" :increment="false" :decrement="false" :step="0.01" :locale="locale"
                     :format-options="{ useGrouping: false, minimumFractionDigits: 2, maximumFractionDigits: 2 }"
-                    variant="none" class="w-auto"
+                    variant="none" class="w-auto max-w-full min-w-0"
                     :ui="{ base: 'min-w-[2ch] field-sizing-content p-0 text-center text-[52px] md:text-[52px] leading-tight font-extrabold tabular-nums tracking-[-0.04em]' }"
                 />
             </div>
@@ -83,7 +83,7 @@ async function onSubmit(event: FormSubmitEvent<CreateRecurringCost | CreatePurch
                     legend: 'sr-only',
                     fieldset: 'flex-nowrap gap-1 rounded-full bg-muted p-1',
                     item: 'group flex-1 items-center justify-center min-h-10 py-0 rounded-full border-0 hover:bg-transparent has-data-[state=checked]:bg-inverted has-focus-visible:ring-2 has-focus-visible:ring-primary',
-                    wrapper: 'flex-row gap-1.5',
+                    wrapper: 'flex-row gap-1.5 justify-center',
                     label: 'text-sm font-bold text-muted group-has-data-[state=checked]:text-inverted dark:group-has-data-[state=checked]:text-(--ui-bg-elevated)',
                     icon: 'size-[18px] text-muted group-has-data-[state=checked]:text-inverted dark:group-has-data-[state=checked]:text-(--ui-bg-elevated)'
                 }"
@@ -117,10 +117,7 @@ async function onSubmit(event: FormSubmitEvent<CreateRecurringCost | CreatePurch
         <UFormField v-if="kind === 'purchase'" :label="t('form.date')" name="date" :hint="month ? t('form.dateHint', { month: monthYear(month.year, month.month) }) : undefined">
             <UInput class="w-full" :ui="{ base: 'min-h-12 rounded-[1rem] font-semibold bg-muted ring-transparent dark:bg-accented dark:ring-accented' }" v-model="state.date" type="date" :min="range?.first" :max="range?.last" />
         </UFormField>
-        <div
-            v-if="kind === 'recurring'"
-            :class="['col-span-full grid items-end gap-3', state.interval !== 'monthly' && 'sm:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]']"
-        >
+        <div v-if="kind === 'recurring'" :class="['col-span-full grid']" >
             <UFormField name="interval" :label="t('form.interval')">
                 <URadioGroup :disabled="!!cost" v-model="state.interval" :items="intervalItems"
                     variant="card" indicator="hidden" orientation="horizontal"
@@ -128,7 +125,7 @@ async function onSubmit(event: FormSubmitEvent<CreateRecurringCost | CreatePurch
                         legend: 'sr-only',
                         fieldset: 'flex-nowrap gap-1 rounded-full bg-muted p-1',
                         item: 'group flex-1 items-center justify-center min-h-10 py-0 rounded-full border-0 hover:bg-transparent has-data-[state=checked]:bg-inverted has-focus-visible:ring-2 has-focus-visible:ring-primary',
-                        wrapper: 'flex-row gap-1.5',
+                        wrapper: 'flex-row justify-center gap-1.5',
                         label: 'text-sm font-bold text-muted group-has-data-[state=checked]:text-inverted dark:group-has-data-[state=checked]:text-(--ui-bg-elevated)'
                     }"
                 />
