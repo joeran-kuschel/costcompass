@@ -37,6 +37,13 @@ const monthItems = computed(() => MONTHS.map(m => ({
     value: m,
 })))
 const range = computed(() => props.month ? monthDateRange(props.month) : null)
+const repeatText = computed(() => {
+    if (state.interval === 'monthly' || !state.dueMonth) return undefined
+    const due = state.dueMonth
+    const months = state.interval === 'quarterly' ? [0, 3, 6, 9].map(k => (due - 1 + k) % 12 + 1) : [due]
+    const names = months.map(m => monthItems.value[m - 1]!.label)
+    return t(`form.repeats.${state.interval}`, { months: new Intl.ListFormat(locale.value).format(names) })
+})
 
 watch(() => state.interval, (interval) => {
     if (interval !== 'monthly' && state.dueMonth === undefined) state.dueMonth = currentMonth.value
@@ -117,7 +124,7 @@ async function onSubmit(event: FormSubmitEvent<CreateRecurringCost | CreatePurch
         <UFormField v-if="kind === 'purchase'" :label="t('form.date')" name="date" :hint="month ? t('form.dateHint', { month: monthYear(month.year, month.month) }) : undefined">
             <UInput class="w-full" :ui="{ base: 'min-h-12 rounded-[1rem] font-semibold bg-muted ring-transparent dark:bg-accented dark:ring-accented' }" v-model="state.date" type="date" :min="range?.first" :max="range?.last" />
         </UFormField>
-        <div v-if="kind === 'recurring'" :class="['col-span-full grid']" >
+        <div v-if="kind === 'recurring'" :class="['col-span-full grid gap-[18px]']" >
             <UFormField name="interval" :label="t('form.interval')">
                 <URadioGroup :disabled="!!cost" v-model="state.interval" :items="intervalItems"
                     variant="card" indicator="hidden" orientation="horizontal"
@@ -130,7 +137,7 @@ async function onSubmit(event: FormSubmitEvent<CreateRecurringCost | CreatePurch
                     }"
                 />
             </UFormField>
-            <UFormField v-if="state.interval !== 'monthly'" :label="t('form.dueMonth')" name="dueMonth">
+            <UFormField v-if="state.interval !== 'monthly'" :label="t('form.dueMonth')" name="dueMonth" :help="repeatText">
                 <USelect class="w-full" :ui="{ base: 'min-h-12 rounded-[1rem] font-semibold bg-muted ring-transparent dark:bg-accented dark:ring-accented' }" v-model="state.dueMonth" :items="monthItems" />
             </UFormField>
         </div>

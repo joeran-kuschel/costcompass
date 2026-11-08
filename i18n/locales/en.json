@@ -98,6 +98,10 @@
     "businessHint": "Counted apart from household costs",
     "interval": "Interval",
     "dueMonth": "Due month",
+    "repeats": {
+      "quarterly": "Repeats in {months}.",
+      "yearly": "Repeats every year in {months}."
+    },
     "date": "Date",
     "submit": "Add cost",
     "error": "Could not save the cost. Please try again.",
