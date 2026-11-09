@@ -202,6 +202,13 @@ Details: [Costs page](app-structure.md#costs-page).
 
 A modal (`UModal`) with one `CostForm` for both kinds of cost, rendered once by the layout. A modal works better on mobile than a slide-over. Details: [Add and edit dialog](app-structure.md#add-and-edit-dialog).
 
+### Failed save as a banner (#95)
+
+- **Banner instead of toast.** A failed save shows a `role="alert"` banner at the top of the form (mock `BStateFormErrors`), not a toast. The banner stays next to the input it refers to and does not vanish on a timer; a toast as well would announce the same failure twice. The delete on the costs page keeps its toast, because its dialog closes.
+- **Our text, not the API's.** The banner always shows the translated `form.notSaved` texts, never the error message of the request.
+- **Cleared on the next submit.** `saveFailed` is reset when the next submit starts, not when a field changes, so the banner stays visible while the user corrects the input.
+- **Title and description on two lines.** The bold first sentence and the rest sit on two lines; the mock runs them on in one line. `UAlert` renders the title and the description as separate block elements, and making them inline would join them without a space ("cost.Please").
+
 ### Form errors (#94)
 
 - **Not on blur.** `UForm` validates on `input`, `blur` and `change` by default, so tabbing through or clicking Cancel showed errors. Without `blur`, a field that was only passed stays quiet; a field edited and left invalid shows its error (`change`), and once left it is checked again while typing (`input`).
