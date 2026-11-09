@@ -432,8 +432,9 @@ nav [data-slot="link"]:not([aria-current="page"]):hover::before {
   width: 1.75rem;
   height: 1.75rem;
 }
-/* The compact language button of the phone layout: a white pill with the language code, at least 44 px high (mocks: BPhoneDashboard, BDarkPhoneDashboard). */
-.language-compact {
+/* The compact language button and the search button of the phone layout: white pills at least 44 px high (mocks: BPhoneDashboard, BDarkPhoneDashboard, BPhoneCosts). */
+.language-compact,
+.search-compact {
   min-height: 2.75rem;
   padding-inline: 0.875rem;
   border-radius: 9999px;
@@ -443,17 +444,24 @@ nav [data-slot="link"]:not([aria-current="page"]):hover::before {
   font-weight: 800;
   box-shadow: 0 1px 2px rgba(20, 22, 43, 0.08);
 }
-.language-compact:hover {
+.language-compact:hover,
+.search-compact:hover {
   background-color: var(--ui-bg-accented);
   color: #14162b;
 }
-.dark .language-compact {
+.dark .language-compact,
+.dark .search-compact {
   background-color: #15172a;
   color: #ecedf7;
 }
-.dark .language-compact:hover {
+.dark .language-compact:hover,
+.dark .search-compact:hover {
   background-color: var(--ui-bg-accented);
   color: #ecedf7;
+}
+/* The search button is a 44 px circle with only the icon. */
+.search-compact {
+  padding-inline: 0;
 }
 
 /* A round disc with a white icon, one per category. The colour comes from the `bg-[var(--category-*)]` class, the size from `--category-size`. */

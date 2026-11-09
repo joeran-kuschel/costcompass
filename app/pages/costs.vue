@@ -17,11 +17,13 @@ const cents = useMoney({ cents: true })
 const { formatDate } = useMonth()
 const cancelButton = useTemplateRef<{ $el: HTMLElement }>('cancel')
 const allChip = useTemplateRef<{ $el: HTMLElement }>('allChip')
+const searchField = useTemplateRef<{ inputRef: HTMLInputElement | null }>('searchField')
 
 const UButton = resolveComponent('UButton')
 const search = ref('')
 const toDelete = ref<Stored<Cost> | null>(null)
 const categoryFilter = ref<Category | null>(null)
+const searchOpen = ref(false)
 const dialogContent = { role: 'alertdialog', onOpenAutoFocus: focusCancel }
 const costs = computed<Stored<Cost>[]>(() => [
     ...(recurring.value ?? []),
@@ -76,6 +78,16 @@ async function clearFilters() {
     await nextTick()
     allChip.value?.$el.focus()
 }
+async function toggleSearch() {
+    searchOpen.value = !searchOpen.value
+    if (!searchOpen.value) {
+        search.value = ''
+        return
+    }
+    await nextTick()
+    searchField.value?.inputRef?.focus()
+
+}
 function focusCancel(event: Event) {
     event.preventDefault()
     cancelButton.value?.$el.focus()
@@ -113,7 +125,20 @@ function normalize(text: string): string {
 </script>
 <template>
     <header>
-        <h1>{{ t('costs.title') }}</h1>
+        <div class="flex items-center justify-between gap-2">
+            <h1>{{ t('costs.title') }}</h1>
+            <UButton
+                class="sm:hidden search-compact me-14 -mt-4 size-11 shrink-0 self-start justify-center"
+                :ui="{ leadingIcon: 'size-5' }"
+                color="neutral"
+                variant="ghost"
+                icon="i-lucide-search"
+                :aria-label="t('costs.search.label')"
+                :aria-expanded="searchOpen"
+                aria-controls="cost-search"
+                @click="toggleSearch"
+            />
+        </div>
         <i18n-t v-if="!loading" keypath="costs.summary.line" tag="p" class="mt-1 text-muted" scope="global">
             <template #recurring>{{ t('costs.summary.recurring', yearSummary.recurringCount) }}</template>
             <template #purchases>{{ t('costs.summary.purchases', yearSummary.purchasesCount) }}</template>
@@ -121,8 +146,10 @@ function normalize(text: string): string {
             <template #year>{{ yearSummary.year }}</template>
         </i18n-t>
     </header>
-    <section class="w-full self-end sm:w-80">
+    <section :class="searchOpen ? 'block' : 'hidden sm:block'" class="w-full self-end sm:w-80">
         <UInput
+            ref="searchField"
+            id="cost-search"
             type="search"
             class="w-full"
             v-model="search"
