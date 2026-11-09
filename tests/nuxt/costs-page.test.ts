@@ -117,8 +117,9 @@ describe('costs page summary line', () => {
   })
   it('sits in the page header, below the heading', async () => {
     await showYear(2026)
-    expect(wrapper.find('header h1').text()).toBe('Costs')
-    expect(wrapper.find('header h1 + p').exists()).toBe(true)
+    // The heading shares a row with the phone search button; the summary line follows that row.
+    expect(wrapper.find('header > div > h1').text()).toBe('Costs')
+    expect(wrapper.find('header > div + p').exists()).toBe(true)
   })
   it('counts all costs, but adds up only the purchases of the year it names', async () => {
     // 2025 is no year with data here, so it falls back to the current year, like the dashboard.
@@ -410,8 +411,8 @@ describe('costs page no match', () => {
 
   it('shows a card instead of the table when the filters match nothing', async () => {
     await noMatch()
-    expect(card().find('h2').text()).toBe('No costs match these filters')
-    expect(card().text()).toContain('Choose another kind or category.')
+    expect(card().find('h2').text()).toBe('No matching costs')
+    expect(card().text()).toContain('Try another search or show all costs.')
     expect(tableHidden()).toBe(true)
     expect(wrapper.find('p[role="status"]').text()).toBe('0 costs shown')
   })
@@ -433,9 +434,9 @@ describe('costs page no match', () => {
     await nextTick()
     expect(card().exists()).toBe(false)
   })
-  it('clears both filters with "Clear filters"', async () => {
+  it('clears both filters with "Show all costs"', async () => {
     await noMatch()
-    await button('Clear filters')!.trigger('click')
+    await button('Show all costs')!.trigger('click')
     await nextTick()
     expect(card().exists()).toBe(false)
     expect(names()).toEqual(['Laptop', 'Liability insurance', 'Rent'])
@@ -445,16 +446,160 @@ describe('costs page no match', () => {
     wrapper.unmount()
     wrapper = await mountSuspended(CostsPage, { attachTo: document.body })
     await noMatch()
-    await button('Clear filters')!.trigger('click')
+    await button('Show all costs')!.trigger('click')
     await vi.waitFor(() => expect(document.activeElement?.textContent?.trim()).toBe('All 3'))
   })
   it('has German texts', async () => {
     await noMatch()
     await useNuxtApp().$i18n.setLocale('de')
     try {
-      await vi.waitFor(() => expect(card().find('h2').text()).toBe('Keine Posten passen zu diesen Filtern'))
-      expect(card().text()).toContain('Wähle eine andere Art oder Kategorie.')
-      expect(card().find('button').text()).toBe('Filter zurücksetzen')
+      await vi.waitFor(() => expect(card().find('h2').text()).toBe('Keine passenden Kosten'))
+      expect(card().text()).toContain('Versuche eine andere Suche oder zeige alle Kosten an.')
+      expect(card().find('button').text()).toBe('Alle Kosten anzeigen')
+    } finally {
+      await useNuxtApp().$i18n.setLocale('en')
+    }
+  })
+})
+
+describe('costs page search', () => {
+  // Rent is housing, Liability insurance is insurance, the laptop is appliances ("Geräte" in German).
+  const field = () => wrapper.find<HTMLInputElement>('#cost-search')
+  const names = () => wrapper.findAll('tbody tr').map(row => row.find('td p').element.firstChild!.textContent!.trim())
+  const card = () => wrapper.find('.card.text-center')
+  const button = (label: string) => wrapper.findAll('button').find(b => b.text() === label)
+  async function loaded() {
+    await vi.waitFor(() => expect(wrapper.findAll('tbody tr')).toHaveLength(3))
+  }
+  async function searchFor(text: string) {
+    await field().setValue(text)
+    await nextTick()
+  }
+
+  it('is a search input named "Search costs" with a magnifier icon', async () => {
+    await loaded()
+    expect(field().attributes('type')).toBe('search')
+    expect(field().attributes('aria-label')).toBe('Search costs')
+    expect(field().element.parentElement!.querySelector('.iconify, [class*="i-lucide-search"]')).not.toBeNull()
+  })
+  it('shows every cost while the search is empty', async () => {
+    await loaded()
+    expect(names()).toEqual(['Laptop', 'Liability insurance', 'Rent'])
+  })
+  it('matches the name, ignoring case', async () => {
+    await loaded()
+    await searchFor('rENt')
+    expect(names()).toEqual(['Rent'])
+  })
+  it('matches the translated category name', async () => {
+    await loaded()
+    await searchFor('appliances')
+    expect(names()).toEqual(['Laptop'])
+  })
+  it('ignores spaces around the search text', async () => {
+    await loaded()
+    await searchFor('  laptop  ')
+    expect(names()).toEqual(['Laptop'])
+  })
+  it('announces the number of costs found in the live region', async () => {
+    await loaded()
+    await searchFor('rent')
+    expect(wrapper.find('p[role="status"]').text()).toBe('1 cost shown')
+  })
+  it('works together with the kind and category chips', async () => {
+    await loaded()
+    // "a" is in Laptop and Liability insurance, not in "Rent Housing".
+    await searchFor('a')
+    expect(names()).toEqual(['Laptop', 'Liability insurance'])
+    await button('Recurring 2')!.trigger('click')
+    expect(names()).toEqual(['Liability insurance'])
+    await button('Housing')!.trigger('click')
+    expect(card().exists()).toBe(true)
+  })
+  it('keeps the sort of the table', async () => {
+    await loaded()
+    await wrapper.findAll('thead button').find(b => b.text().startsWith('Name'))!.trigger('click')
+    await wrapper.findAll('thead button').find(b => b.text().startsWith('Name'))!.trigger('click')
+    expect(names()).toEqual(['Rent', 'Liability insurance', 'Laptop'])
+    await searchFor('l')
+    expect(names()).toEqual(['Liability insurance', 'Laptop'])
+  })
+  it('shows the no-match card when nothing matches, and "Show all costs" clears the search', async () => {
+    await loaded()
+    await searchFor('nothing like this')
+    expect(card().find('h2').text()).toBe('No matching costs')
+    expect(wrapper.find('p[role="status"]').text()).toBe('0 costs shown')
+    await button('Show all costs')!.trigger('click')
+    await nextTick()
+    expect(field().element.value).toBe('')
+    expect(card().exists()).toBe(false)
+    expect(names()).toEqual(['Laptop', 'Liability insurance', 'Rent'])
+  })
+  it('matches German category names and ignores umlauts', async () => {
+    await loaded()
+    await useNuxtApp().$i18n.setLocale('de')
+    try {
+      await vi.waitFor(() => expect(field().attributes('aria-label')).toBe('Kosten durchsuchen'))
+      await searchFor('gerate')
+      expect(names()).toEqual(['Laptop'])
+      await searchFor('GERÄTE')
+      expect(names()).toEqual(['Laptop'])
+      await searchFor('versicherung')
+      expect(names()).toEqual(['Liability insurance'])
+    } finally {
+      await useNuxtApp().$i18n.setLocale('en')
+    }
+  })
+})
+
+// Below sm the field is hidden behind a round search button; jsdom has no layout, so the breakpoint is checked through the classes.
+describe('costs page search on phones', () => {
+  const field = () => wrapper.find<HTMLInputElement>('#cost-search')
+  const toggle = () => wrapper.find('button[aria-controls="cost-search"]')
+  const fieldSection = () => field().element.closest('section')!
+  const names = () => wrapper.findAll('tbody tr').map(row => row.find('td p').element.firstChild!.textContent!.trim())
+  async function loaded() {
+    await vi.waitFor(() => expect(wrapper.findAll('tbody tr')).toHaveLength(3))
+  }
+
+  it('has a search button named "Search costs" that only phones see', async () => {
+    await loaded()
+    expect(toggle().attributes('aria-label')).toBe('Search costs')
+    expect(toggle().classes()).toContain('sm:hidden')
+    expect(toggle().attributes('aria-expanded')).toBe('false')
+  })
+  it('hides the field on phones until the button is pressed, and always shows it from sm', async () => {
+    await loaded()
+    expect(fieldSection().classList).toContain('hidden')
+    expect(fieldSection().classList).toContain('sm:block')
+    await toggle().trigger('click')
+    expect(toggle().attributes('aria-expanded')).toBe('true')
+    expect(fieldSection().classList).not.toContain('hidden')
+  })
+  it('moves the focus into the field when it opens', async () => {
+    wrapper.unmount()
+    wrapper = await mountSuspended(CostsPage, { attachTo: document.body })
+    await loaded()
+    await toggle().trigger('click')
+    await vi.waitFor(() => expect(document.activeElement?.id).toBe('cost-search'))
+  })
+  it('closes the field with the same button and clears the search', async () => {
+    await loaded()
+    await toggle().trigger('click')
+    await field().setValue('rent')
+    await nextTick()
+    expect(names()).toEqual(['Rent'])
+    await toggle().trigger('click')
+    expect(toggle().attributes('aria-expanded')).toBe('false')
+    expect(fieldSection().classList).toContain('hidden')
+    expect(field().element.value).toBe('')
+    expect(names()).toEqual(['Laptop', 'Liability insurance', 'Rent'])
+  })
+  it('has a German name', async () => {
+    await loaded()
+    await useNuxtApp().$i18n.setLocale('de')
+    try {
+      await vi.waitFor(() => expect(toggle().attributes('aria-label')).toBe('Kosten durchsuchen'))
     } finally {
       await useNuxtApp().$i18n.setLocale('en')
     }
