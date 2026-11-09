@@ -412,6 +412,26 @@ describe('month page empty state', () => {
     expect(wrapper.text()).toContain('Keine Kosten im Oktober')
     expect(wrapper.text()).toContain('Füge Kosten hinzu, die in diesen Monat fallen, um sie hier zu sehen.')
   })
+  // A no-break space keeps the day with the month ("1. März" never splits at 320 px).
+  it('names the month on the button and says where a new purchase starts (#79)', async () => {
+    await mountEmpty()
+    const button = wrapper.findAll('button').find(b => b.text().startsWith('Add cost'))
+    expect(button!.text()).toBe('Add cost to October')
+    expect(button!.element.nextElementSibling!.textContent).toBe('A new purchase starts on 1\u00a0October 2026.')
+  })
+  it('takes the year of the hint from the address', async () => {
+    api.recurring.rows = []
+    api.purchases.rows = [{ ...bike, date: '2025-06-01' }]
+    await mountPage('/months/2025/02')
+    await vi.waitFor(() => expect(wrapper.text()).toContain('A new purchase starts on 1\u00a0February 2025.'))
+    expect(wrapper.text()).toContain('Add cost to February')
+  })
+  it('has a German button and hint, with the German date form', async () => {
+    await setLanguage('de')
+    await mountEmpty()
+    expect(wrapper.findAll('button').some(b => b.text() === 'Kosten für Oktober hinzufügen')).toBe(true)
+    expect(wrapper.text()).toContain('Eine neue Anschaffung beginnt am 1.\u00a0Oktober 2026.')
+  })
 })
 
 describe('month page add cost', () => {
@@ -420,8 +440,8 @@ describe('month page add cost', () => {
     const { open, cost, month } = useCostDialog()
     return { open: open.value, cost: cost.value, month: month.value }
   }
-  // The only "Add cost" button of the page is the one of the empty month; otherwise the sidebar and the phone button of the layout have it.
-  const addButtons = (text = 'Add cost') => wrapper.findAll('button').filter(button => button.text() === text)
+  // The only "Add cost …" button of the page is the one of the empty month ("Add cost to October"); otherwise the sidebar and the phone button of the layout have it.
+  const addButtons = (text = 'Add cost') => wrapper.findAll('button').filter(button => button.text().startsWith(text))
   const total = () => textOf(totalCard())
 
   it('has no "Add cost" button next to the heading: the sidebar and the phone button of the layout have it', async () => {
@@ -431,14 +451,14 @@ describe('month page add cost', () => {
   it('has no button while the lists load or after a failure', async () => {
     api.purchases.delay = 300
     await mountPage()
-    expect(wrapper.findAll('button').some(button => button.text() === 'Add cost')).toBe(false)
+    expect(addButtons()).toHaveLength(0)
     wrapper.unmount()
     api.purchases.delay = 0
     api.purchases.fail = true
     clearNuxtData()
     await mountPage()
     await vi.waitFor(() => expect(alert().exists()).toBe(true))
-    expect(wrapper.findAll('button').some(button => button.text() === 'Add cost')).toBe(false)
+    expect(addButtons()).toHaveLength(0)
   })
   it('does not ask for the dialog until the button is pressed', async () => {
     await mountOctober()
@@ -485,7 +505,7 @@ describe('month page add cost', () => {
     api.recurring.rows = []
     api.purchases.rows = [{ ...bike }]
     await mountPage('/months/2026/10')
-    await vi.waitFor(() => expect(addButtons('Kosten hinzufügen')).toHaveLength(1))
+    await vi.waitFor(() => expect(addButtons('Kosten für Oktober hinzufügen')).toHaveLength(1))
   })
 })
 

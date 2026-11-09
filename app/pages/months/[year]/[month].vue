@@ -109,7 +109,8 @@ async function onRetry() {
                         <UIcon name="i-lucide-calendar-x" class="size-8" aria-hidden="true" />
                         <h2>{{ t('month.emptyTitle', { month: monthName(month) }) }}</h2>
                         <p>{{ t('month.emptyText') }}</p>
-                        <UButton :label="t('costs.add')" class="pill mt-4" @click="openAdd(monthRef)" />
+                        <UButton :label="t('month.emptyAdd', { month: monthName(month) })" class="pill mt-4" @click="openAdd(monthRef)" />
+                        <p class="mt-1 text-[13px] text-muted">{{ t('month.emptyHint', { month: monthYear(year, month) }) }}</p>
                     </UCard>
                     <section v-for="section in sections" :key="section.id" :aria-labelledby="`${section.id}-title`" class="card px-6 py-5">
                         <div class="flex items-baseline justify-between gap-4">
