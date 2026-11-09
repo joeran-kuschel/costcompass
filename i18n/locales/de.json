@@ -104,7 +104,10 @@
     },
     "date": "Datum",
     "submit": "Kosten hinzufügen",
-    "error": "Die Kosten konnten nicht gespeichert werden. Bitte versuche es erneut.",
+    "notSaved": {
+      "title": "Die Kosten konnten nicht gespeichert werden.",
+      "description": "Bitte versuche es erneut. Deine Eingaben sind noch da."
+    },
     "amountError": "Gib einen Betrag größer als €0 ein.",
     "nameError": "Gib einen Namen ein, zum Beispiel \"Miete\".",
     "categoryError": "Wähle eine Kategorie für die Kosten.",

@@ -115,12 +115,45 @@ describe('CostForm in edit mode', () => {
 })
 
 describe('CostForm errors and cancel', () => {
-  it('shows an error toast and does not emit saved when the request fails', async () => {
+  it('shows no save banner when the form opens', async () => {
+    const wrapper = await mountSuspended(CostForm, { props: { cost: purchase } })
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+  })
+  it('shows a save banner, keeps the input and does not emit saved when the request fails', async () => {
     fetchMock.mockRejectedValueOnce(new Error('boom'))
     const wrapper = await mountSuspended(CostForm, { props: { cost: purchase } })
     await submit(wrapper)
-    await vi.waitFor(() => expect(addToast).toHaveBeenCalledWith(expect.objectContaining({ color: 'error' })))
+    await vi.waitFor(() => expect(wrapper.find('[role="alert"]').exists()).toBe(true))
+    const banner = wrapper.find('[role="alert"]')
+    expect(banner.text()).toContain('Could not save the cost.')
+    expect(banner.text()).toContain('Please try again. What you entered is still here.')
+    expect(banner.text()).not.toContain('boom')
+    expect((wrapper.find('input[name="name"]').element as HTMLInputElement).value).toBe('Laptop')
     expect(wrapper.emitted('saved')).toBeUndefined()
+    expect(addToast).not.toHaveBeenCalled()
+  })
+  it('hides the save banner when the next submit succeeds', async () => {
+    fetchMock.mockRejectedValueOnce(new Error('boom')).mockResolvedValueOnce({})
+    const wrapper = await mountSuspended(CostForm, { props: { cost: purchase } })
+    await submit(wrapper)
+    await vi.waitFor(() => expect(wrapper.find('[role="alert"]').exists()).toBe(true))
+    await submit(wrapper)
+    await vi.waitFor(() => expect(wrapper.emitted('saved')).toHaveLength(1))
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+  })
+  it('shows the save banner in German', async () => {
+    await useNuxtApp().$i18n.setLocale('de')
+    try {
+      fetchMock.mockRejectedValueOnce(new Error('boom'))
+      const wrapper = await mountSuspended(CostForm, { props: { cost: purchase } })
+      await submit(wrapper)
+      await vi.waitFor(() => expect(wrapper.find('[role="alert"]').exists()).toBe(true))
+      const banner = wrapper.find('[role="alert"]')
+      expect(banner.text()).toContain('Die Kosten konnten nicht gespeichert werden.')
+      expect(banner.text()).toContain('Bitte versuche es erneut. Deine Eingaben sind noch da.')
+    } finally {
+      await useNuxtApp().$i18n.setLocale('en')
+    }
   })
   it('emits cancel and sends nothing when Cancel is clicked', async () => {
     const wrapper = await mountSuspended(CostForm, { props: { cost: purchase } })

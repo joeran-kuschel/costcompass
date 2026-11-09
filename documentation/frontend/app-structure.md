@@ -597,7 +597,7 @@ State lives in `useState`, not in provide/inject, so any component can open the 
 `components/CostForm.vue` is one form for adding and editing both kinds of cost. It is built with `UForm` and the Zod schemas; the schema switches with the kind switch. All fields are labelled.
 
 - **Add:** on submit it POSTs `event.data` (already stripped by Zod) to the matching route and emits `saved`. The layout refreshes both lists (`retry` of `useCostLists()`) and closes the dialog.
-- **Failure:** if the request fails, a toast (`useToast`, text from `form.error`) is shown and the modal stays open with the entered values.
+- **Failure (#95):** if the request fails, a banner (`UAlert`, `role="alert"`, with the alert icon) appears at the top of the form, above the amount: the bold title `form.notSaved.title` ("Could not save the cost.") and the description `form.notSaved.description` ("Please try again. What you entered is still here."). The modal stays open with the entered values. The API's own message is never shown. A `saveFailed` ref drives it: set in the `catch` of `onSubmit`, reset at the start of the next submit, so the banner disappears as soon as the cost is sent again. There is no toast any more. See [Failed save as a banner](decisions.md#failed-save-as-a-banner-95). Styling per mock `BStateFormErrors` / `BDarkStateFormErrors`, set through the `ui` prop of `UAlert`: background `#FEF3F2` (dark `#3A1717`), text `#7A271A` (dark `#FECACA`), icon `text-error` (`#B42318` light, `#FCA5A5` dark through the `.dark .text-error` rule in `main.css`), radius 18 px, padding 12 px 14 px, 14 px text, title extra bold. Checked in headless Chromium in light, dark and German at 320 px: the computed colours match the mock.
 - **Fresh start:** a closed modal unmounts its content, so the form starts empty each time. A Cancel button emits `cancel`; the layout closes the dialog, which clears the state, so the next "Add cost" starts empty.
 - **Edit:** with the optional `cost` prop (`Stored<Cost>`) the form is pre-filled once, the kind radio group is disabled (a cost cannot change its kind), the submit button says "Save" and submit sends a `PATCH` to `/api/<resource>/<id>` instead of a `POST`. The interval stays free to change; the API merges the patch and drops the due month of a cost that becomes monthly.
 - **Month prop:** the optional `month` prop (`{ year, month }`, set when a month page or the phone's add button calls `openAdd(monthRef)`) starts a purchase on the first day of that month, limits the date field to that month with `min` and `max` and names the month in a hint ("Pre-filled with October 2026. Pick the day."). A yearly or quarterly cost starts with that month as `dueMonth`, which stays free to change. The first and last day come from `monthDateRange` in `shared/utils/dates.ts` (UTC, leap years included).
@@ -620,12 +620,15 @@ State lives in `useState`, not in provide/inject, so any component can open the 
 
 ### Tests
 
-- `tests/nuxt/CostForm.test.ts`: add and edit (POST, PATCH, failure toast), the month prop, the controls (kind, category chips with arrow keys and one tab stop, interval, due month default and repeat hint in en and de, amount parsing and formatting in en and de, business hint) and the error messages (none on open, each message in en and de, `aria-describedby`, cleared once valid).
+- `tests/nuxt/CostForm.test.ts`: add and edit (POST, PATCH), the failed-save banner (none on open, text in en and de without the API message, input kept, gone after the next successful submit, no toast), the month prop, the controls (kind, category chips with arrow keys and one tab stop, interval, due month default and repeat hint in en and de, amount parsing and formatting in en and de, business hint) and the error messages (none on open, each message in en and de, `aria-describedby`, cleared once valid).
 - `tests/nuxt/CostDialog.test.ts` (mounted on the layout): opens empty (also from the sidebar button), pre-filled for an edit and for a month (date on the first day, `min` and `max`, hint); Cancel and the close button clear the state; no leftover cost or month in the next dialog; focus returns to the element that had it before the dialog opened; both lists are loaded again and the dialog closes after a save; German.
 - `dashboard-states.test.ts`, `dashboard-month-cards.test.ts`, `costs-page.test.ts` and `month-page.test.ts` only check that the page asks for the dialog with the right state (`open`, `cost`, `month` of `useCostDialog()`), and that the page shows new numbers after `refreshNuxtData()`.
 - Every file that touches the dialog closes its state after each test, because `useState` outlives a test.
 
-Known limit: on a window lower than about 790 px the dialog scrolls, and the error messages make it taller still (#136).
+Known limits:
+
+- On a window lower than about 790 px the dialog scrolls, and the error messages make it taller still (#136).
+- When the dialog body is scrolled, the failed-save banner at the top of the form is out of view after a failed save. This happens on phones (at 320×900 the body was scrolled 136 px after pressing the submit button) and on the desktop whenever the dialog scrolls (#136). Screen readers still announce the banner (`role="alert"`); sighted users see nothing change. Possible fix: scroll the banner into view after a failed save. Tracked on #136.
 
 Checked by hand in the browser: the dashboard and month page buttons open the dialog, and the costs table updates after a save. The sidebar button opens the dialog (test in `CostDialog.test.ts`). Not checked: the dialog on a phone *(to verify)*.
 
@@ -633,7 +636,7 @@ Checked by hand in the browser: the dashboard and month page buttons open the di
 
 | Component | Purpose |
 | --- | --- |
-| `CostForm.vue` | Add and edit form for both kinds. It sits in the layout's one dialog, see [Add and edit dialog](#add-and-edit-dialog). Props: optional `cost` (`Stored<Cost>`; set means edit, the kind is locked and submit sends `PATCH`) and optional `month` (`{ year, month }`; starts a purchase on the first day of that month and limits the date field to it). Emits `saved` and `cancel`. Failed saves show a toast. |
+| `CostForm.vue` | Add and edit form for both kinds. It sits in the layout's one dialog, see [Add and edit dialog](#add-and-edit-dialog). Props: optional `cost` (`Stored<Cost>`; set means edit, the kind is locked and submit sends `PATCH`) and optional `month` (`{ year, month }`; starts a purchase on the first day of that month and limits the date field to it). Emits `saved` and `cancel`. A failed save shows a banner at the top of the form (#95). |
 | `YearSelect.vue` | `v-model` year select with a visible label to its left (horizontal field, pill-shaped select); takes a `years` list |
 | `BusinessBadge.vue` | The "Business" badge with a briefcase icon, no props. See [Business badge](colour-scheme.md#business-badge) |
 | `CategoryBadge.vue` | Round disc with a white category icon; props `category` and `size` (28, 32, 36, 40, 44, 56). Decoration only (`aria-hidden`), the name is text in the parent. See [Category badge](colour-scheme.md#category-badge) |

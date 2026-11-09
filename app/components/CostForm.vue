@@ -12,7 +12,6 @@ const emit = defineEmits<{ saved: [], cancel: [] }>()
 const { t, locale } = useI18n()
 const { monthYear } = useMonth()
 const { currentMonth } = useYear()
-const toast = useToast()
 const { kindIcon } = useKind()
 const form = useTemplateRef<Form<typeof createPurchaseSchema>>('form')
 const kind = ref<'recurring' | 'purchase'>('purchase')
@@ -25,6 +24,8 @@ const state = reactive({
     dueMonth: undefined as Month | undefined,
     date: ''
 })
+const saveFailed = ref(false)
+
 const kindItems = computed(() => [
     { label: t('kind.recurring'), value: 'recurring', icon: kindIcon('recurring') },
     { label: t('kind.purchase'), value: 'purchase', icon: kindIcon('purchase') },
@@ -61,6 +62,7 @@ if (props.cost) {
 
 async function onSubmit(event: FormSubmitEvent<CreateRecurringCost | CreatePurchase>) {
     const base = kind.value === 'recurring' ? '/api/recurring-costs' : '/api/purchases'
+    saveFailed.value = false
     try {
         if (props.cost) {
             await $fetch(`${base}/${props.cost.id}`, { method: 'PATCH', body: event.data })
@@ -69,7 +71,7 @@ async function onSubmit(event: FormSubmitEvent<CreateRecurringCost | CreatePurch
         }
         emit('saved')
     } catch {
-        toast.add({ title: t('form.error'), color: 'error'})
+        saveFailed.value = true
     }
 }
 async function onError(event: FormErrorEvent) {
@@ -79,6 +81,20 @@ async function onError(event: FormErrorEvent) {
 </script>
 <template>
     <UForm ref="form" novalidate :validate-on="['input', 'change']" :schema="schema" :state="state" class="grid grid-cols-[auto_auto_1fr] gap-x-3 gap-y-[18px] [&>[data-slot=root]]:col-span-full" @submit="onSubmit" @error="onError">
+        <UAlert v-if="saveFailed === true"
+            color="error"
+            variant="soft"
+            role="alert"
+            :title="t('form.notSaved.title')"
+            :description="t('form.notSaved.description')"
+            icon="i-lucide-circle-alert"
+            :ui="{
+                root: 'items-start gap-2.5 rounded-[18px] px-3.5 py-3 bg-[#FEF3F2] text-[#7A271A] dark:bg-[#3A1717] dark:text-[#FECACA]',
+                icon: 'mt-px text-error',
+                title: 'text-sm font-extrabold',
+                description: 'text-sm opacity-100'
+            }"
+        />
         <UFormField required :label="t('form.amount')" :ui="{ labelWrapper: 'justify-center', error: 'mt-1.5 flex items-center justify-center gap-1.5 text-[13px] font-bold' }" name="amount">
             <div class="flex items-baseline justify-center gap-1">
                 <span class="text-[28px] font-extrabold text-muted" aria-hidden="true">€</span>
