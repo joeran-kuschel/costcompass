@@ -7,7 +7,7 @@ type SortableColumn = {
 }
 
 const { t, n, locale } = useI18n()
-const { openAdd, openEdit } = useCostDialog()
+const { openEdit } = useCostDialog()
 const { recurring, purchases, failed, loading, retry } = useCostLists()
 const toast = useToast()
 const { kindIcon } = useKind()

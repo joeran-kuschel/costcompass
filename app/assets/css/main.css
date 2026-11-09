@@ -301,7 +301,7 @@ main > div:has(#this-month-title) > section[aria-labelledby="split-title"] {
   pointer-events: none;
 }
 
-/* Costs page: the header (heading and summary line) and the table card each take the full width; the row gap puts 16 px between them. */
+/* Costs page: the header (heading and summary line) takes the room it needs, so the search field can sit beside it from sm; the chip rows and the table card take the full width. The row gap puts 16 px between them. */
 main > div:has(table) {
   display: flex;
   flex-wrap: wrap;
