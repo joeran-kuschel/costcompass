@@ -163,9 +163,13 @@ Decision: [Month heading row on phones](decisions.md#month-heading-row-on-phones
 
 Tests: `describe('month page navigation')` in `tests/nuxt/month-page.test.ts`, see [Testing](testing.md#pages). jsdom has no layout, so the tests for #118 check the markup only: the grid classes, the middle column with one arrow hidden, the source order and the `tabindex`. Checked by the author in the browser: 320 and 390 px in English and German, the first and the last month with data (one arrow hidden, the title stays centred), the row from `sm` unchanged, light and dark mode. Not checked: a real phone, a screen reader.
 
-#### Empty month (#28) and adding a cost (#31)
+#### Empty month (#28, #79) and adding a cost (#31)
 
-A month without costs (the `empty` flag of `useMonthSummary()`) keeps the total card (with a zero in the money format, without the comparison pill and the counts line) and shows a `UCard` instead of the groups: "No costs in <month>" (`h2`), a hint and a decorative icon. It is in the loaded branch, so it never shows while loading or after an error. Its "Add cost" button calls `openAdd(monthRef)`, so the layout's dialog opens with `CostForm` pre-filled for that month (see [Add and edit dialog](#add-and-edit-dialog)). The button next to the heading was removed with #59; the other entry points are the layout's sidebar button and the phone's round add button, which already passes the month. After `saved` the layout refreshes both lists with `retry` (the old data stays on screen meanwhile, so there is no flicker into the skeletons) and closes the dialog.
+A month without costs (the `empty` flag of `useMonthSummary()`) keeps the total card (with a zero in the money format, without the comparison pill and the counts line) and shows a `UCard` instead of the groups: "No costs in <month>" (`h2`), a hint and a decorative icon. It is in the loaded branch, so it never shows while loading or after an error. Its button names the month, "Add cost to March" (`month.emptyAdd` with `monthName`; German "Kosten für März hinzufügen"), and calls `openAdd(monthRef)`, so the layout's dialog opens with `CostForm` pre-filled for that month (see [Add and edit dialog](#add-and-edit-dialog)). The button next to the heading was removed with #59; the other entry points are the layout's sidebar button and the phone's round add button, which already passes the month. After `saved` the layout refreshes both lists with `retry` (the old data stays on screen meanwhile, so there is no flicker into the skeletons) and closes the dialog.
+
+- **Purchase hint (#79):** below the button a `p` (`mt-1 text-[13px] text-muted`) says where a new purchase starts: "A new purchase starts on 1 March 2026." (`month.emptyHint` with `monthYear(year, month)`; German "Eine neue Anschaffung beginnt am 1. März 2026."). The year comes from the address. The "1" and the date form are part of the locale text, so each language keeps its own order ("1 March" / "1. März"); a no-break space (`\u00a0`) after the day keeps "1. März" together at 320 px. Mocks: `BStateMonthEmpty`, `BDarkStateMonthEmpty`.
+- **Checked (#79):** in headless Chromium at 320 px (light, German), 390 px (dark, English) and 1280 px (light, English): no sideways scrolling, the hint in 13 px muted text (`#4A4E69` on white, 8.12:1; `#A3A7C2` on `#15172A`, 7.46:1).
+- **Not like the mock:** the card keeps its existing look (plain icon, button only as wide as its text); the mock has an icon disc and a full-width button with a plus icon. #79 only covers the button text and the hint.
 
 Tests: `tests/nuxt/month-page.test.ts`, see [Testing](testing.md).
 
@@ -589,7 +593,7 @@ Who calls what:
 | Sidebar: "Add cost" button | `openAdd()` |
 | Phone: round add button next to the tab bar | `openAdd(monthRef)`, `monthRef` is `null` outside month pages |
 | `/costs`: pencil button of a row | `openEdit(row.original)` |
-| Month page: "Add cost" in the empty month card (no button next to the heading since #59) | `openAdd(monthRef)` |
+| Month page: "Add cost to <month>" in the empty month card (no button next to the heading since #59) | `openAdd(monthRef)` |
 
 The delete confirmation is not part of this. It stays a modal of the costs page (see [Costs page](#costs-page)).
 

@@ -178,6 +178,8 @@
     "next": "Next month, {month}",
     "emptyTitle": "No costs in {month}",
     "emptyText": "Add a cost that falls in this month to see it here.",
+    "emptyAdd": "Add cost to {month}",
+    "emptyHint": "A new purchase starts on 1\u00a0{month}.",
     "costCount": "{n} cost | {n} costs",
     "businessCount": "{n} business",
     "changeShort": {
