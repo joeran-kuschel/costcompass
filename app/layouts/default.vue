@@ -37,7 +37,13 @@
     </div>
     <MobileBar />
     <UModal
-        :ui="{ content: 'rounded-[2rem] bg-elevated' }"
+        :ui="{
+            content: 'rounded-[2rem] bg-elevated divide-y-0 ring-0 shadow-[0_24px_48px_-12px_rgba(20,22,43,0.3)]',
+            header: 'min-h-0 h-15 pt-4 pb-0 ps-5 pe-3 sm:h-17 sm:pt-6 sm:pb-0 sm:ps-8 sm:pe-5',
+            title: 'text-xl font-extrabold tracking-[-0.02em] sm:text-[22px]',
+            close: 'top-4 end-3 size-11 justify-center rounded-full bg-muted text-default hover:bg-accented dark:bg-accented sm:top-6 sm:end-5',
+            body: 'px-5 pt-2 pb-7 sm:px-8 sm:pt-2 sm:pb-7'
+        }"
         :open="open"
         :title="cost ? t('costs.edit', { name: cost.name }) : t('costs.add')"
         @update:open="(isOpen: boolean) => { if (!isOpen) close() }"

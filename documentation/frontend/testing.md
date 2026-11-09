@@ -46,7 +46,7 @@ The page test does not go through Nuxt's error handling. Whether a real unknown 
 
 | File | Checks |
 | --- | --- |
-| `CostForm.test.ts` | The form, including its `month` prop |
+| `CostForm.test.ts` | The form: add and edit, the failed-save banner (#95: found by `[role="alert"]`; `$fetch` rejects once, then resolves for the "gone after the next submit" test; `useToast` stays mocked so the test can check that no toast appears), the `month` prop, the controls (kind, category chips and their arrow keys, interval, due month and its repeat hint, amount in English and German, business hint) and the error messages in both languages. Radios are found by `[role="radio"][value=…]`; the amount is the `input[inputmode="decimal"]` (no `name`) and is parsed on blur; the arrow-key test mounts with `attachTo: document.body` and focuses the chip first. An error is read through the field's `aria-describedby` (the id ending in `-error`) |
 | `CostDialog.test.ts` | The central dialog, mounted on the layout: opens empty, pre-filled for an edit and for a month, Cancel and the close button clear the state, nothing leaks into the next dialog, focus returns to the element focused before, both lists are loaded again and the dialog closes after a save, German. Each test file that touches the dialog closes the state after every test, because `useState` outlives a test |
 | `LanguageSwitcher.test.ts` | The language switcher |
 | `YearSelect.test.ts` | The year select. The list is teleported to the body and an item is chosen with a `pointerup` event, not a click |
