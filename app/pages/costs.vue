@@ -72,6 +72,7 @@ async function confirmDelete() {
 async function clearFilters() {
     kindFilter.value = 'all'
     categoryFilter.value = null
+    search.value = ''
     await nextTick()
     allChip.value?.$el.focus()
 }
