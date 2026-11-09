@@ -67,13 +67,24 @@ Next to the kind buttons, one button per category filters the table: **Housing**
 
 The selected category is filled and has a tick. On a phone the category buttons sit in one row that you can swipe sideways.
 
+### Search for a cost
+
+The field "Search costs" at the top of the page, next to the heading, finds costs while you type. A screen reader announces how many costs are shown.
+
+1. Type part of a name or a category, for example "rent" or "insurance". The table shows only the costs that match.
+2. Clear the field to see every cost again.
+
+Upper and lower case do not matter, and neither do accents or umlauts: in German, "gerate" finds "Geräte". The category is searched in the language you use.
+
+On a phone the field is hidden at first. Tap the round search button next to the heading "Costs" to open it; the cursor is placed in the field. Tap the same button again to close the field. Closing it also clears your search, so the table shows every cost again.
+
 ### Combine the filters
 
-The kind and the category work together. Select **Purchases** and **Appliances** to see only the appliances you bought. The numbers on the kind buttons still count all your costs.
+The kind, the category and the search work together. Select **Purchases** and **Appliances** to see only the appliances you bought, then type "laptop" to find one of them. The numbers on the kind buttons still count all your costs.
 
 ### When no cost matches
 
-If no cost matches the kind and category you selected, the table is replaced by a card: "No costs match these filters" and "Choose another kind or category." Select **Clear filters** to see every cost again. Both filters go back to the start: **All** is selected and no category. A screen reader announces "0 costs shown".
+If no cost matches your filters or your search, the table is replaced by a card: "No matching costs" and "Try another search or show all costs." Select **Show all costs** to see every cost again. All filters go back to the start: **All** is selected, no category, and the search field is empty. A screen reader announces "0 costs shown".
 
 ## Read the dashboard
 

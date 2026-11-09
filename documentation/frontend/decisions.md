@@ -174,7 +174,7 @@ Details: [Costs page](app-structure.md#costs-page).
 
 ### Kind filter chips (#82)
 
-- **Counts of all costs.** The author's choice: the numbers on the chips always count every cost. They do not change with the selected chip, and are planned not to change with search (#81) or the category chips (#83) either. The live region says how many rows are shown.
+- **Counts of all costs.** The author's choice: the numbers on the chips always count every cost. They do not change with the selected chip, the category chips (#83) or the search (#81). The live region says how many rows are shown.
 - **On all widths until #86.** The phone mock BPhoneCosts has no kind chips, because its list is grouped by kind. The chips stay on phones until #86 brings that list and hides them there; until then the 320 px layout check fails.
 - **Primary focus outline.** Nuxt UI's default focus outline (`outline-inverted/25`) is about 1.7:1 (light) and 2.1:1 (dark) against the pill, below the 3:1 a focus indicator needs. The chips use `outline-primary` instead (about 6.75:1 light, 3.3:1 dark).
 - **White selected chip in dark mode.** The dark mock has `#ECEDF7` with `#15172A` text; the author chose pure white for the background. The override sits in `main.css` because Nuxt UI's solid neutral put white text on the light background.
@@ -185,16 +185,29 @@ Details: [Costs page](app-structure.md#costs-page).
 
 - **Single selection, toggle to clear.** The author's choice: one category at a time. Clicking the selected chip again clears the filter, so no extra control is needed to reset it.
 - **No "All" category chip on desktop,** as in the BDesktopCosts mock. The phone mock's "All" chip comes with #86, on phones only: there the selected chip can be scrolled out of view, and "All" gives a visible reset and shows that no filter is on. #86 also hides the kind chips on phones (decided in #82).
-- **One `filter`, one condition per filter.** `shownCosts` combines the kind and the category with `&&`, so search (#81) becomes a third line instead of a nested branch.
+- **One `filter`, one condition per filter.** `shownCosts` combines the kind and the category with `&&`, so the search (#81) became a third line instead of a nested branch.
 
 Details: [Costs page](app-structure.md#costs-page).
 
 ### No-match card on the costs page (#83)
 
 - **No mock, the empty-month pattern.** No mock covers filters that match nothing. The card reuses the month page's empty card (icon, `h2`, text, one button), so the app has one look for "nothing here".
-- **Focus to "All" after "Clear filters".** The button disappears with the card, so without a move the focus would be lost. "All" is the first chip of the filter row and the control that was just reset.
+- **Generic texts since #81.** The card first said "No costs match these filters" with a "Clear filters" button. With the search it can come from the kind, the category, the search or any mix, so it now says "No matching costs", "Try another search or show all costs." and "Show all costs". The button resets all three. The locale key `costs.clearFilters` kept its name.
+- **Focus to "All" after "Show all costs".** The button disappears with the card, so without a move the focus would be lost. "All" is the first chip of the filter row and one of the controls that were just reset.
 - **Table hidden, not removed.** The costs page layout in `main.css` (`main > div:has(table)`) finds the page container by its table. Removing the table with `v-if` would drop that layout, so a wrapping `div` hides it with `v-show` (`UTable` does not take `v-show` itself).
 - **Only when costs exist.** With no costs at all the card would wrongly blame the filters, so it is not shown. A "No costs yet" state for the costs page is still open.
+
+Details: [Costs page](app-structure.md#costs-page).
+
+### Search field (#81)
+
+- **`aria-label` instead of a hidden `<label>`.** The issue asked for a visually hidden label "Search costs". The author's choice: an `aria-label` with the same text (`costs.search.label`), which is also the placeholder. The field gets the same accessible name without an extra element.
+- **Name and translated category, forgiving.** The search looks at the cost's name and its category name in the active language, so "Versicherung" finds an insurance in German. The text is trimmed; case and diacritics are ignored (NFD, then `\p{Diacritic}` removed, then `toLocaleLowerCase` with the active locale), so "gerate" finds "Geräte". Amounts and dates are not searched.
+- **A filter like the chips.** The search is one more condition in `shownCosts`, so it combines with the kind and category chips and keeps the table sort. The counts on the kind chips stay at all costs (see [Kind filter chips](#kind-filter-chips-82)).
+- **Existing live region, existing words.** The result count goes through the "N costs shown" status the chips already use. The issue's example "3 costs found" was not adopted, so every filter is announced the same way.
+- **A button on phones, not an always-visible field.** As in the BPhoneCosts mock, below `sm` the field is hidden behind a round search button next to the heading. Opening moves the focus into the field. From `sm` the field is always shown and the button hidden.
+- **The same button closes and clears; no Escape.** Phones have no Escape key, so the toggle is the way to close. Closing also empties the search, so a hidden search can never keep filtering the table. The issue's criterion was changed to match.
+- **One pill style with the language button.** `.search-compact` shares the `.language-compact` rules in `main.css` and only drops the side padding, so the two buttons at the top of the phone layout look alike in light and dark mode. The gap between them is 11 px instead of the mock's 8 px (`me-14` against the language button's fixed position).
 
 Details: [Costs page](app-structure.md#costs-page).
 

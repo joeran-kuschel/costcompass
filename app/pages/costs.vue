@@ -7,7 +7,7 @@ type SortableColumn = {
 }
 
 const { t, n, locale } = useI18n()
-const { openAdd, openEdit } = useCostDialog()
+const { openEdit } = useCostDialog()
 const { recurring, purchases, failed, loading, retry } = useCostLists()
 const toast = useToast()
 const { kindIcon } = useKind()
@@ -17,10 +17,13 @@ const cents = useMoney({ cents: true })
 const { formatDate } = useMonth()
 const cancelButton = useTemplateRef<{ $el: HTMLElement }>('cancel')
 const allChip = useTemplateRef<{ $el: HTMLElement }>('allChip')
+const searchField = useTemplateRef<{ inputRef: HTMLInputElement | null }>('searchField')
 
 const UButton = resolveComponent('UButton')
+const search = ref('')
 const toDelete = ref<Stored<Cost> | null>(null)
 const categoryFilter = ref<Category | null>(null)
+const searchOpen = ref(false)
 const dialogContent = { role: 'alertdialog', onOpenAutoFocus: focusCancel }
 const costs = computed<Stored<Cost>[]>(() => [
     ...(recurring.value ?? []),
@@ -42,12 +45,14 @@ const confirmText = computed(() => {
         : t('costs.confirmPurchase', { name: cost.name, amount, date: formatDate(cost.date, 'long') })
 })
 const kindFilter = ref<'all' | Cost['kind']>('all')
-const shownCosts = computed(() =>
-    costs.value.filter(cost =>
+const shownCosts = computed(() => {
+    const term = normalize(search.value.trim())
+    return costs.value.filter(cost =>
         (kindFilter.value === 'all' || cost.kind === kindFilter.value)
         && (categoryFilter.value === null || cost.category === categoryFilter.value)
+        && (term === '' || normalize(`${cost.name} ${t(`category.${cost.category}`)}`).includes(term))
     )
-)
+})
 useHead({ title: () => t('costs.title') })
 
 async function onDelete (cost: Stored<Cost>) {
@@ -69,8 +74,19 @@ async function confirmDelete() {
 async function clearFilters() {
     kindFilter.value = 'all'
     categoryFilter.value = null
+    search.value = ''
     await nextTick()
     allChip.value?.$el.focus()
+}
+async function toggleSearch() {
+    searchOpen.value = !searchOpen.value
+    if (!searchOpen.value) {
+        search.value = ''
+        return
+    }
+    await nextTick()
+    searchField.value?.inputRef?.focus()
+
 }
 function focusCancel(event: Event) {
     event.preventDefault()
@@ -103,11 +119,26 @@ function sortableHeader(label: string) {
         })
     }
 }
-
+function normalize(text: string): string {
+    return text.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLocaleLowerCase(locale.value)
+}
 </script>
 <template>
     <header>
-        <h1>{{ t('costs.title') }}</h1>
+        <div class="flex items-center justify-between gap-2">
+            <h1>{{ t('costs.title') }}</h1>
+            <UButton
+                class="sm:hidden search-compact me-14 -mt-4 size-11 shrink-0 self-start justify-center"
+                :ui="{ leadingIcon: 'size-5' }"
+                color="neutral"
+                variant="ghost"
+                icon="i-lucide-search"
+                :aria-label="t('costs.search.label')"
+                :aria-expanded="searchOpen"
+                aria-controls="cost-search"
+                @click="toggleSearch"
+            />
+        </div>
         <i18n-t v-if="!loading" keypath="costs.summary.line" tag="p" class="mt-1 text-muted" scope="global">
             <template #recurring>{{ t('costs.summary.recurring', yearSummary.recurringCount) }}</template>
             <template #purchases>{{ t('costs.summary.purchases', yearSummary.purchasesCount) }}</template>
@@ -115,6 +146,19 @@ function sortableHeader(label: string) {
             <template #year>{{ yearSummary.year }}</template>
         </i18n-t>
     </header>
+    <section :class="searchOpen ? 'block' : 'hidden sm:block'" class="w-full self-end sm:w-80">
+        <UInput
+            ref="searchField"
+            id="cost-search"
+            type="search"
+            class="w-full"
+            v-model="search"
+            icon="i-lucide-search"
+            :placeholder="t('costs.search.label')"
+            :aria-label="t('costs.search.label')"
+            :ui="{ base: 'min-h-11 rounded-full bg-elevated font-semibold shadow-xs ring-transparent' }"
+        />
+    </section>
     <section class="flex w-full flex-wrap items-center gap-2">
         <div role="group" :aria-label="t('costs.filterLabel')" class="inline-flex gap-1 rounded-full bg-elevated p-1 shadow-xs">
             <UButton

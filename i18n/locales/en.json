@@ -24,9 +24,9 @@
     "recurring": "Recurring {n}",
     "filterLabel": "Show",
     "filterByCategoryLabel": "Filter by category",
-    "noMatchTitle": "No costs match these filters",
-    "noMatchText": "Choose another kind or category.",
-    "clearFilters": "Clear filters",
+    "noMatchTitle": "No matching costs",
+    "noMatchText": "Try another search or show all costs.",
+    "clearFilters": "Show all costs",
     "shown": "{n} cost shown | {n} costs shown",
     "edit": "Edit {name}",
     "delete": "Delete {name}",
@@ -45,6 +45,9 @@
       "none": "Sort by {column}",
       "asc": "{column}, sorted ascending",
       "desc": "{column}, sorted descending"
+    },
+    "search": {
+      "label": "Search costs"
     },
     "summary": {
       "recurring": "{n} recurring cost | {n} recurring costs",
