@@ -449,6 +449,17 @@ describe('costs page no match', () => {
     await button('Show all costs')!.trigger('click')
     await vi.waitFor(() => expect(document.activeElement?.textContent?.trim()).toBe('All 3'))
   })
+  it('moves the focus to the first category chip instead when the kind chips are hidden (phones)', async () => {
+    wrapper.unmount()
+    wrapper = await mountSuspended(CostsPage, { attachTo: document.body })
+    await noMatch()
+    // The test environment has no CSS, so the hidden "All" chip is reported as hidden by hand.
+    const all = wrapper.findAll('button').find(b => b.text() === 'All 3')!.element
+    all.checkVisibility = () => false
+    await button('Show all costs')!.trigger('click')
+    await vi.waitFor(() => expect(document.activeElement?.closest('[role="group"]')?.getAttribute('aria-label')).toBe('Filter by category'))
+    expect(document.activeElement).toBe(wrapper.find('[role="group"][aria-label="Filter by category"] button').element)
+  })
   it('has German texts', async () => {
     await noMatch()
     await useNuxtApp().$i18n.setLocale('de')
@@ -785,6 +796,11 @@ describe('costs page grouped lists on phones', () => {
     await loaded()
     expect(groups().classes()).toContain('sm:hidden')
     expect(tableWrapper()?.classList).toContain('sm:block')
+  })
+  it('shows the kind chips only from sm, because the lists already split the kinds', async () => {
+    await loaded()
+    const kinds = wrapper.find('[role="group"][aria-label="Show"]')
+    expect(kinds.classes()).toEqual(expect.arrayContaining(['hidden', 'sm:inline-flex']))
   })
   it('lists the same costs as the table, including filters and search', async () => {
     await loaded()

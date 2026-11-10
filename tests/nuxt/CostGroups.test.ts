@@ -28,6 +28,11 @@ type MenuItem = { label: string, onSelect: () => void }
 // The menu content is only rendered once it is open; the items handed to it are what the user can pick.
 const menus = () => wrapper.findAllComponents({ name: 'UDropdownMenu' })
 const items = (index: number) => menus()[index]!.props('items') as MenuItem[]
+// Choosing an item only takes effect once the menu has closed; Reka then sends closeAutoFocus.
+const choose = (index: number, item: number) => {
+  items(index)[item]!.onSelect()
+  ;(menus()[index]!.props('content') as { onCloseAutoFocus: () => void }).onCloseAutoFocus()
+}
 
 describe('CostGroups sections', () => {
   it('shows recurring costs first, then purchases, each heading with its count', async () => {
@@ -69,6 +74,12 @@ describe('CostGroups sections', () => {
     await mount([])
     expect(wrapper.findAll('section')).toHaveLength(0)
   })
+  it('moves the amount under the name below 400 px', async () => {
+    await mount()
+    const amount = wrapper.find('li > p')
+    expect(amount.text()).toBe('€800.00')
+    expect(amount.classes()).toEqual(expect.arrayContaining(['col-start-2', 'row-start-2', 'min-[400px]:col-start-auto', 'min-[400px]:row-start-auto']))
+  })
   it('marks business costs with the badge', async () => {
     await mount()
     const laptop = wrapper.findAll('li').find(li => li.text().includes('Laptop'))!
@@ -90,15 +101,30 @@ describe('CostGroups actions', () => {
   })
   it('emits edit with the cost of the row', async () => {
     await mount()
-    items(2)[0]!.onSelect()
+    choose(2, 0)
     expect(wrapper.emitted('edit')).toEqual([[COSTS[1]]])
     expect(wrapper.emitted('delete')).toBeUndefined()
   })
   it('emits delete with the cost of the row', async () => {
     await mount()
-    items(1)[1]!.onSelect()
+    choose(1, 1)
     expect(wrapper.emitted('delete')).toEqual([[COSTS[2]]])
     expect(wrapper.emitted('edit')).toBeUndefined()
+  })
+  it('waits with the action until the menu has closed', async () => {
+    await mount()
+    items(0)[0]!.onSelect()
+    expect(wrapper.emitted('edit')).toBeUndefined()
+  })
+  it('puts the focus back on the row button before the dialog opens', async () => {
+    wrapper = await mountSuspended(CostGroups, { props: { costs: COSTS, year: YEAR }, attachTo: document.body })
+    choose(2, 1)
+    expect(document.activeElement?.getAttribute('aria-label')).toBe('Actions for Laptop')
+    expect(wrapper.emitted('delete')).toEqual([[COSTS[1]]])
+  })
+  it('shows a primary focus ring on the row button', async () => {
+    await mount()
+    expect(wrapper.find('li button').classes()).toEqual(expect.arrayContaining(['focus-visible:outline-2', 'focus-visible:outline-primary']))
   })
   it('translates the actions', async () => {
     await mount()

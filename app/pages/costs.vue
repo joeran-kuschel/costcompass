@@ -17,6 +17,7 @@ const cents = useMoney({ cents: true })
 const { formatDate } = useMonth()
 const cancelButton = useTemplateRef<{ $el: HTMLElement }>('cancel')
 const allChip = useTemplateRef<{ $el: HTMLElement }>('allChip')
+const categoryGroup = useTemplateRef<HTMLElement>('categoryGroup')
 const searchField = useTemplateRef<{ inputRef: HTMLInputElement | null }>('searchField')
 
 const UButton = resolveComponent('UButton')
@@ -70,13 +71,16 @@ async function confirmDelete() {
     await onDelete(toDelete.value)
     toDelete.value = null
 }
-// The button disappears with the card, so the focus moves to the "All" chip instead of getting lost.
+// The button disappears with the card, so the focus moves to the "All" chip instead of getting lost;
+// below sm the kind chips are hidden (#86), so it moves to the first category chip there.
 async function clearFilters() {
     kindFilter.value = 'all'
     categoryFilter.value = null
     search.value = ''
     await nextTick()
-    allChip.value?.$el.focus()
+    const all = allChip.value?.$el
+    const target = all?.checkVisibility?.() === false ? categoryGroup.value?.querySelector('button') : all
+    target?.focus()
 }
 async function toggleSearch() {
     searchOpen.value = !searchOpen.value
@@ -160,7 +164,8 @@ function normalize(text: string): string {
         />
     </section>
     <section class="flex w-full flex-wrap items-center gap-2">
-        <div role="group" :aria-label="t('costs.filterLabel')" class="inline-flex gap-1 rounded-full bg-elevated p-1 shadow-xs">
+        <!-- Phones see the kinds as the grouped lists (#86), so the kind chips start at sm. -->
+        <div role="group" :aria-label="t('costs.filterLabel')" class="hidden sm:inline-flex gap-1 rounded-full bg-elevated p-1 shadow-xs">
             <UButton
                 ref="allChip"
                 color="neutral"
@@ -191,7 +196,7 @@ function normalize(text: string): string {
             />
         </div>
         <span aria-hidden="true" class="mx-1 hidden h-7 w-px bg-accented sm:block" />
-        <div role="group" :aria-label="t('costs.filterByCategoryLabel')" class="-my-1 flex w-full gap-2 overflow-x-auto py-1 [scrollbar-width:none] sm:my-0 sm:w-auto sm:flex-wrap sm:overflow-visible sm:py-0">
+        <div ref="categoryGroup" role="group" :aria-label="t('costs.filterByCategoryLabel')" class="-my-1 flex w-full gap-2 overflow-x-auto py-1 [scrollbar-width:none] sm:my-0 sm:w-auto sm:flex-wrap sm:overflow-visible sm:py-0">
             <UButton
                 v-for="category in CATEGORIES"
                 :key="category"
