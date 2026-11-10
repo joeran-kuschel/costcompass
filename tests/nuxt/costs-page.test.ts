@@ -771,3 +771,41 @@ describe('costs page delete confirmation', () => {
     }
   })
 })
+
+// The lists themselves are covered in CostGroups.test.ts; here only how the page wires them up.
+describe('costs page grouped lists on phones', () => {
+  const groups = () => wrapper.findComponent({ name: 'CostGroups' })
+  const tableWrapper = () => wrapper.find('table').element.closest('div.hidden')
+  const shownNames = () => (groups().props('costs') as Stored<Cost>[]).map(cost => cost.name).sort()
+  async function loaded() {
+    await vi.waitFor(() => expect(wrapper.findAll('tbody tr')).toHaveLength(3))
+  }
+
+  it('shows the lists below sm and the table from sm', async () => {
+    await loaded()
+    expect(groups().classes()).toContain('sm:hidden')
+    expect(tableWrapper()?.classList).toContain('sm:block')
+  })
+  it('lists the same costs as the table, including filters and search', async () => {
+    await loaded()
+    expect(shownNames()).toEqual(['Laptop', 'Liability insurance', 'Rent'])
+    await wrapper.find('#cost-search').setValue('rent')
+    await nextTick()
+    expect(shownNames()).toEqual(['Rent'])
+  })
+  it('asks for the edit dialog with the cost a list row emits', async () => {
+    await loaded()
+    const laptop = (groups().props('costs') as Stored<Cost>[]).find(cost => cost.name === 'Laptop')!
+    groups().vm.$emit('edit', laptop)
+    await nextTick()
+    expect(useCostDialog().open.value).toBe(true)
+    expect(useCostDialog().cost.value).toMatchObject({ id: 2, name: 'Laptop' })
+  })
+  it('asks for confirmation with the cost a list row emits for delete', async () => {
+    await loaded()
+    const rent = (groups().props('costs') as Stored<Cost>[]).find(cost => cost.name === 'Rent')!
+    groups().vm.$emit('delete', rent)
+    await vi.waitFor(() => expect(body().textContent).toContain('Delete cost?'))
+    expect(deleteCalls).toEqual([])
+  })
+})

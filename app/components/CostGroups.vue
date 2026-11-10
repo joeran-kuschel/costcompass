@@ -19,6 +19,13 @@ const sections = computed(() => [
     { id: 'recurring', title: `${t('month.recurring')} · ${recurringRows.value.length}`, total: recurringTotal.value, rows: recurringRows.value, kind: 'recurring' as const },
     { id: 'purchases', title: `${t('month.purchases')} · ${purchaseRows.value.length}`, total: purchasesTotal.value, rows: purchaseRows.value, kind: 'purchase' as const },
 ].filter(section => section.rows.length > 0))
+
+function actions(cost: Stored<Cost>) {
+  return [
+    { label: t('costs.actions.edit'), icon: 'i-lucide-pencil', onSelect: () => emit('edit', cost) },
+    { label: t('costs.actions.delete'), icon: 'i-lucide-trash-2', color: 'error' as const, onSelect: () => emit('delete', cost) },
+  ]
+}
 </script>
 <template>
     <div>
@@ -41,6 +48,10 @@ const sections = computed(() => [
                         <p class="text-sm text-muted">{{ row.subline }}</p>
                     </div>
                     <p class="shrink-0 text-right font-extrabold tabular-nums">{{ row.amount }}</p>
+                    <UDropdownMenu :items="actions(row.cost)" :content="{ align: 'end' }">
+                        <UButton icon="i-lucide-ellipsis-vertical" color="neutral" variant="ghost" class="size-11 shrink-0 justify-center"
+                            :aria-label="t('costs.actions.label', { name: row.name })" />
+                    </UDropdownMenu>
                 </li>
             </ul>
         </section>

@@ -30,6 +30,11 @@
     "shown": "{n} Posten angezeigt | {n} Posten angezeigt",
     "edit": "{name} editieren",
     "delete": "{name} löschen",
+    "actions": {
+      "label": "Aktionen für {name}",
+      "edit": "Editieren",
+      "delete": "Löschen"
+    },
     "deleteError": "Die Kosten konnten nicht gelöscht werden. Bitte versuche es erneut.",
     "confirmTitle": "Kosten löschen?",
     "confirmRecurring": "{name} ({amount}, {interval}) wird endgültig gelöscht.",
