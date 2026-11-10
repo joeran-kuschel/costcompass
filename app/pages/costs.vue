@@ -17,6 +17,7 @@ const cents = useMoney({ cents: true })
 const { formatDate } = useMonth()
 const cancelButton = useTemplateRef<{ $el: HTMLElement }>('cancel')
 const allChip = useTemplateRef<{ $el: HTMLElement }>('allChip')
+const categoryGroup = useTemplateRef<HTMLElement>('categoryGroup')
 const searchField = useTemplateRef<{ inputRef: HTMLInputElement | null }>('searchField')
 
 const UButton = resolveComponent('UButton')
@@ -70,13 +71,16 @@ async function confirmDelete() {
     await onDelete(toDelete.value)
     toDelete.value = null
 }
-// The button disappears with the card, so the focus moves to the "All" chip instead of getting lost.
+// The button disappears with the card, so the focus moves to the "All" chip instead of getting lost;
+// below sm the kind chips are hidden (#86), so it moves to the first category chip there.
 async function clearFilters() {
     kindFilter.value = 'all'
     categoryFilter.value = null
     search.value = ''
     await nextTick()
-    allChip.value?.$el.focus()
+    const all = allChip.value?.$el
+    const target = all?.checkVisibility?.() === false ? categoryGroup.value?.querySelector('button') : all
+    target?.focus()
 }
 async function toggleSearch() {
     searchOpen.value = !searchOpen.value
@@ -160,7 +164,8 @@ function normalize(text: string): string {
         />
     </section>
     <section class="flex w-full flex-wrap items-center gap-2">
-        <div role="group" :aria-label="t('costs.filterLabel')" class="inline-flex gap-1 rounded-full bg-elevated p-1 shadow-xs">
+        <!-- Phones see the kinds as the grouped lists (#86), so the kind chips start at sm. -->
+        <div role="group" :aria-label="t('costs.filterLabel')" class="hidden sm:inline-flex gap-1 rounded-full bg-elevated p-1 shadow-xs">
             <UButton
                 ref="allChip"
                 color="neutral"
@@ -191,7 +196,7 @@ function normalize(text: string): string {
             />
         </div>
         <span aria-hidden="true" class="mx-1 hidden h-7 w-px bg-accented sm:block" />
-        <div role="group" :aria-label="t('costs.filterByCategoryLabel')" class="-my-1 flex w-full gap-2 overflow-x-auto py-1 [scrollbar-width:none] sm:my-0 sm:w-auto sm:flex-wrap sm:overflow-visible sm:py-0">
+        <div ref="categoryGroup" role="group" :aria-label="t('costs.filterByCategoryLabel')" class="-my-1 flex w-full gap-2 overflow-x-auto py-1 [scrollbar-width:none] sm:my-0 sm:w-auto sm:flex-wrap sm:overflow-visible sm:py-0">
             <UButton
                 v-for="category in CATEGORIES"
                 :key="category"
@@ -216,34 +221,35 @@ function normalize(text: string): string {
         <UButton :label="t('costs.clearFilters')" class="pill mt-4" @click="clearFilters" />
     </UCard>
     <!-- Hidden, not removed: the page layout in main.css finds this container by its table. UTable does not take v-show itself. -->
-    <div v-show="costs.length === 0 || shownCosts.length > 0">
-    <UTable :data="shownCosts" :columns="columns" class="card" :ui="{ root: 'overflow-x-auto px-5 pb-2 pt-1', th: 'px-2 pb-2.5 pt-3.5 text-[13px] font-extrabold uppercase tracking-wide text-muted', td: 'px-2 py-2.5 text-sm text-default' }">
-        <template #name-cell="{ row }">
-            <div class="flex min-w-48 items-center gap-3 whitespace-normal">
-                <CategoryBadge :category="row.original.category" :size="40" />
-                <div class="min-w-0">
-                    <p class="flex flex-wrap items-center gap-x-2 gap-y-1 break-words font-bold">
-                        {{ row.original.name }}
-                        <BusinessBadge v-if="row.original.business" />
-                    </p>
-                    <p class="text-sm text-muted">{{ t(`category.${row.original.category}`) }}</p>
+    <div v-show="costs.length === 0 || shownCosts.length > 0" class="hidden sm:block">
+        <UTable :data="shownCosts" :columns="columns" class="card" :ui="{ root: 'overflow-x-auto px-5 pb-2 pt-1', th: 'px-2 pb-2.5 pt-3.5 text-[13px] font-extrabold uppercase tracking-wide text-muted', td: 'px-2 py-2.5 text-sm text-default' }">
+            <template #name-cell="{ row }">
+                <div class="flex min-w-48 items-center gap-3 whitespace-normal">
+                    <CategoryBadge :category="row.original.category" :size="40" />
+                    <div class="min-w-0">
+                        <p class="flex flex-wrap items-center gap-x-2 gap-y-1 break-words font-bold">
+                            {{ row.original.name }}
+                            <BusinessBadge v-if="row.original.business" />
+                        </p>
+                        <p class="text-sm text-muted">{{ t(`category.${row.original.category}`) }}</p>
+                    </div>
                 </div>
-            </div>
-        </template>
-        <template #kind-cell="{ row }">
-            <span class="flex items-center gap-2">
-                <UIcon :name="kindIcon(row.original.kind)" class="size-4 shrink-0 text-muted" aria-hidden="true" />
-                {{ t(`kind.${row.original.kind}`) }}
-            </span>
-        </template>
-        <template #amount-cell="{ row }">{{ n(row.original.amount, { style: 'currency', currency: 'EUR' }) }}</template>
-        <template #when-cell="{ row }"><span class="whitespace-normal">{{ whenLabel(row.original) }}</span></template>
-        <template #actions-cell="{ row }">
-            <UButton icon="i-lucide-pencil" color="neutral" variant="ghost" class="pill-icon" @click="openEdit(row.original)" :aria-label="t('costs.edit', { name: row.original.name })"/>
-            <UButton icon="i-lucide-trash-2" color="neutral" variant="ghost" class="pill-icon" @click="toDelete = row.original" :aria-label="t('costs.delete', { name: row.original.name })"/>
-        </template>
-    </UTable>
+            </template>
+            <template #kind-cell="{ row }">
+                <span class="flex items-center gap-2">
+                    <UIcon :name="kindIcon(row.original.kind)" class="size-4 shrink-0 text-muted" aria-hidden="true" />
+                    {{ t(`kind.${row.original.kind}`) }}
+                </span>
+            </template>
+            <template #amount-cell="{ row }">{{ n(row.original.amount, { style: 'currency', currency: 'EUR' }) }}</template>
+            <template #when-cell="{ row }"><span class="whitespace-normal">{{ whenLabel(row.original) }}</span></template>
+            <template #actions-cell="{ row }">
+                <UButton icon="i-lucide-pencil" color="neutral" variant="ghost" class="pill-icon" @click="openEdit(row.original)" :aria-label="t('costs.edit', { name: row.original.name })"/>
+                <UButton icon="i-lucide-trash-2" color="neutral" variant="ghost" class="pill-icon" @click="toDelete = row.original" :aria-label="t('costs.delete', { name: row.original.name })"/>
+            </template>
+        </UTable>
     </div>
+    <CostGroups class="sm:hidden" :costs="shownCosts" :year="yearSummary.year" @edit="openEdit" @delete="toDelete = $event" />
     <UModal
         :open="toDelete !== null"
         :title="t('costs.confirmTitle')"

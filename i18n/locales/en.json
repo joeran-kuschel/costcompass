@@ -30,6 +30,11 @@
     "shown": "{n} cost shown | {n} costs shown",
     "edit": "Edit {name}",
     "delete": "Delete {name}",
+    "actions": {
+      "label": "Actions for {name}",
+      "edit": "Edit",
+      "delete": "Delete"
+    },
     "deleteError": "Could not delete the cost. Please try again.",
     "confirmTitle": "Delete cost?",
     "confirmRecurring": "{name} ({amount}, {interval}) will be permanently deleted.",

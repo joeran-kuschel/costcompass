@@ -449,6 +449,17 @@ describe('costs page no match', () => {
     await button('Show all costs')!.trigger('click')
     await vi.waitFor(() => expect(document.activeElement?.textContent?.trim()).toBe('All 3'))
   })
+  it('moves the focus to the first category chip instead when the kind chips are hidden (phones)', async () => {
+    wrapper.unmount()
+    wrapper = await mountSuspended(CostsPage, { attachTo: document.body })
+    await noMatch()
+    // The test environment has no CSS, so the hidden "All" chip is reported as hidden by hand.
+    const all = wrapper.findAll('button').find(b => b.text() === 'All 3')!.element
+    all.checkVisibility = () => false
+    await button('Show all costs')!.trigger('click')
+    await vi.waitFor(() => expect(document.activeElement?.closest('[role="group"]')?.getAttribute('aria-label')).toBe('Filter by category'))
+    expect(document.activeElement).toBe(wrapper.find('[role="group"][aria-label="Filter by category"] button').element)
+  })
   it('has German texts', async () => {
     await noMatch()
     await useNuxtApp().$i18n.setLocale('de')
@@ -769,5 +780,48 @@ describe('costs page delete confirmation', () => {
     } finally {
       await useNuxtApp().$i18n.setLocale('en')
     }
+  })
+})
+
+// The lists themselves are covered in CostGroups.test.ts; here only how the page wires them up.
+describe('costs page grouped lists on phones', () => {
+  const groups = () => wrapper.findComponent({ name: 'CostGroups' })
+  const tableWrapper = () => wrapper.find('table').element.closest('div.hidden')
+  const shownNames = () => (groups().props('costs') as Stored<Cost>[]).map(cost => cost.name).sort()
+  async function loaded() {
+    await vi.waitFor(() => expect(wrapper.findAll('tbody tr')).toHaveLength(3))
+  }
+
+  it('shows the lists below sm and the table from sm', async () => {
+    await loaded()
+    expect(groups().classes()).toContain('sm:hidden')
+    expect(tableWrapper()?.classList).toContain('sm:block')
+  })
+  it('shows the kind chips only from sm, because the lists already split the kinds', async () => {
+    await loaded()
+    const kinds = wrapper.find('[role="group"][aria-label="Show"]')
+    expect(kinds.classes()).toEqual(expect.arrayContaining(['hidden', 'sm:inline-flex']))
+  })
+  it('lists the same costs as the table, including filters and search', async () => {
+    await loaded()
+    expect(shownNames()).toEqual(['Laptop', 'Liability insurance', 'Rent'])
+    await wrapper.find('#cost-search').setValue('rent')
+    await nextTick()
+    expect(shownNames()).toEqual(['Rent'])
+  })
+  it('asks for the edit dialog with the cost a list row emits', async () => {
+    await loaded()
+    const laptop = (groups().props('costs') as Stored<Cost>[]).find(cost => cost.name === 'Laptop')!
+    groups().vm.$emit('edit', laptop)
+    await nextTick()
+    expect(useCostDialog().open.value).toBe(true)
+    expect(useCostDialog().cost.value).toMatchObject({ id: 2, name: 'Laptop' })
+  })
+  it('asks for confirmation with the cost a list row emits for delete', async () => {
+    await loaded()
+    const rent = (groups().props('costs') as Stored<Cost>[]).find(cost => cost.name === 'Rent')!
+    groups().vm.$emit('delete', rent)
+    await vi.waitFor(() => expect(body().textContent).toContain('Delete cost?'))
+    expect(deleteCalls).toEqual([])
   })
 })
