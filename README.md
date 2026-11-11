@@ -1,81 +1,54 @@
 # Costcompass
 
-A web app to track household and business costs. Documentation:
+Track your household and business costs in one place and see what they add up to.
 
-- [User guide](documentation/frontend/user-guide.md)
-- [Frontend documentation](documentation/frontend/index.md)
-- [Backend and developer documentation](documentation/backend/index.md), start with [getting started](documentation/backend/getting-started.md)
+Costcompass records recurring costs (rent, insurance) and one-off costs (appliances), sorted by category and optionally marked as business. It then shows the totals per year, month and category, and the split between household and business.
 
-Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+## Features
 
-## Setup
+- Recurring costs (monthly, quarterly, yearly) and one-off costs
+- Categories and a household/business split
+- Dashboard for the year, a costs table with search and filters, and a page for every month
+- English and German UI, light and dark mode
+- Keyboard and screen reader support
 
-Make sure to install dependencies:
+## Tech stack
+
+Nuxt 4, Nuxt UI, `@nuxtjs/i18n`, Drizzle ORM, PostgreSQL, Vitest.
+
+## Quick start
+
+You need Node.js, [pnpm](https://pnpm.io) and a running PostgreSQL.
 
 ```bash
-# npm
-npm install
-
-# pnpm
 pnpm install
-
-# yarn
-yarn install
-
-# bun
-bun install
 ```
 
-## Development Server
-
-Start the development server on `http://localhost:3000`:
+Create a `.env` file in the project root with the database URL:
 
 ```bash
-# npm
-npm run dev
+NUXT_DATABASE_URL=postgres://user:password@localhost:5432/costcompass
+```
 
-# pnpm
+```bash
+pnpm drizzle-kit migrate
 pnpm dev
-
-# yarn
-yarn dev
-
-# bun
-bun run dev
 ```
 
-## Production
+Open `http://localhost:3000`. Run the tests with `pnpm vitest run` (no database needed).
 
-Build the application for production:
+Details, including a PostgreSQL container example: [Get started](documentation/backend/getting-started.md).
 
-```bash
-# npm
-npm run build
+## Documentation
 
-# pnpm
-pnpm build
+- [User guide](documentation/frontend/user-guide.md): how to use the app
+- [Frontend](documentation/frontend/index.md): pages, components, design
+- [Backend and development](documentation/backend/index.md): architecture, API, database, tests
 
-# yarn
-yarn build
+## Status
 
-# bun
-bun run build
-```
+In development. Cost tracking and its UI work. A Docker image and Kubernetes manifests are planned.
 
-Locally preview production build:
+## License
 
-```bash
-# npm
-npm run preview
-
-# pnpm
-pnpm preview
-
-# yarn
-yarn preview
-
-# bun
-bun run preview
-```
-
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+[MIT](LICENSE)
