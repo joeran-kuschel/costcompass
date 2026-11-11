@@ -238,13 +238,13 @@ describe('month page content', () => {
   it('lists recurring costs and purchases in separate groups, each with a heading and a subtotal', async () => {
     await mountOctober()
     expect(section('recurring').find('h2').text()).toBe('Recurring')
-    expect(section('purchases').find('h2').text()).toBe('Purchases')
+    expect(section('purchases').find('h2').text()).toBe('One-off')
     expect(subtotalOf('recurring')).toBe('€950.75')
     expect(subtotalOf('purchases')).toBe('€912.49')
   })
   it('puts a decorative kind icon in each group heading, so the heading text stays the same', async () => {
     await mountOctober()
-    for (const [id, icon, text] of [['recurring', 'repeat', 'Recurring'], ['purchases', 'shopping-bag', 'Purchases']] as const) {
+    for (const [id, icon, text] of [['recurring', 'repeat', 'Recurring'], ['purchases', 'shopping-bag', 'One-off']] as const) {
       const heading = section(id).find('h2')
       const iconElement = heading.find(`[class*="i-lucide:${icon}"], [class*="i-lucide-${icon}"]`)
       expect(iconElement.exists(), id).toBe(true)
@@ -341,7 +341,7 @@ describe('month page content', () => {
     expect(wrapper.findAll('ul')).toHaveLength(4)
     expect(section('recurring').find('ul').exists()).toBe(true)
     expect(section('purchases').find('ul').exists()).toBe(true)
-    expect(wrapper.findAll('h2').map(heading => heading.text())).toEqual(['Total for October', 'Recurring', 'Purchases', 'By category'])
+    expect(wrapper.findAll('h2').map(heading => heading.text())).toEqual(['Total for October', 'Recurring', 'One-off', 'By category'])
   })
 })
 
@@ -417,20 +417,20 @@ describe('month page empty state', () => {
     await mountEmpty()
     const button = wrapper.findAll('button').find(b => b.text().startsWith('Add cost'))
     expect(button!.text()).toBe('Add cost to October')
-    expect(button!.element.nextElementSibling!.textContent).toBe('A new purchase starts on 1\u00a0October 2026.')
+    expect(button!.element.nextElementSibling!.textContent).toBe('A new one-off cost starts on 1\u00a0October 2026.')
   })
   it('takes the year of the hint from the address', async () => {
     api.recurring.rows = []
     api.purchases.rows = [{ ...bike, date: '2025-06-01' }]
     await mountPage('/months/2025/02')
-    await vi.waitFor(() => expect(wrapper.text()).toContain('A new purchase starts on 1\u00a0February 2025.'))
+    await vi.waitFor(() => expect(wrapper.text()).toContain('A new one-off cost starts on 1\u00a0February 2025.'))
     expect(wrapper.text()).toContain('Add cost to February')
   })
   it('has a German button and hint, with the German date form', async () => {
     await setLanguage('de')
     await mountEmpty()
     expect(wrapper.findAll('button').some(b => b.text() === 'Kosten für Oktober hinzufügen')).toBe(true)
-    expect(wrapper.text()).toContain('Eine neue Anschaffung beginnt am 1.\u00a0Oktober 2026.')
+    expect(wrapper.text()).toContain('Ein neuer einmaliger Posten beginnt am 1.\u00a0Oktober 2026.')
   })
 })
 
@@ -537,7 +537,7 @@ describe('month page content in German', () => {
     expect(wrapper.find('h1').text()).toBe('Oktober 2026')
     expect(totalCard().find('h2').text()).toBe('Summe für Oktober')
     expect(section('recurring').find('h2').text()).toBe('Wiederkehrend')
-    expect(section('purchases').find('h2').text()).toBe('Anschaffungen')
+    expect(section('purchases').find('h2').text()).toBe('Einmalig')
     expect(subtotalOf('recurring')).toBe('950,75 €')
     const rentRow = textOf(rowsOf('recurring').find(row => row.text().includes('Rent'))!)
     expect(rentRow).toContain('Wohnen · Monatlich')

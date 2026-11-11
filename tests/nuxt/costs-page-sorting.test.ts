@@ -73,9 +73,9 @@ describe('costs table sort buttons', () => {
   it('sorts kinds by the text shown', async () => {
     await mountTable()
     await clickHeader(KIND)
-    await vi.waitFor(() => expect(column(KIND)).toEqual(['Purchase', 'Purchase', 'Recurring', 'Recurring']))
+    await vi.waitFor(() => expect(column(KIND)).toEqual(['One-off', 'One-off', 'Recurring', 'Recurring']))
     await clickHeader(KIND)
-    await vi.waitFor(() => expect(column(KIND)).toEqual(['Recurring', 'Recurring', 'Purchase', 'Purchase']))
+    await vi.waitFor(() => expect(column(KIND)).toEqual(['Recurring', 'Recurring', 'One-off', 'One-off']))
   })
   it('sorts names with umlauts in German as well', async () => {
     await setLanguage('de')
