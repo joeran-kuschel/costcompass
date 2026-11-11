@@ -7,33 +7,44 @@ mockNuxtImport('useToast', () => () => ({ add: addToast }))
 
 // The page talks to the real $fetch; the endpoints below stand in for the API and record what arrives.
 const deleteCalls: string[] = []
+// The URLs of successful DELETEs; the list endpoints leave those rows out, as the real API does.
+const deleted: string[] = []
 let failDelete = false
 // When set, a DELETE waits for this promise, so a test can act while the request is in flight.
 let holdDelete: Promise<void> | null = null
-for (const url of ['/api/recurring-costs/1', '/api/purchases/2']) {
+for (const url of ['/api/recurring-costs/1', '/api/recurring-costs/4', '/api/purchases/2']) {
   registerEndpoint(url, {
     method: 'DELETE',
     handler: async () => {
       deleteCalls.push(url)
       if (holdDelete) await holdDelete
       if (failDelete) throw new Error('boom')
+      deleted.push(url)
       return ''
     },
   })
 }
 
-registerEndpoint('/api/recurring-costs', () => [
+const RECURRING = [
   { id: 1, kind: 'recurring', name: 'Rent', amount: 800, category: 'housing', business: false, interval: 'monthly' },
   { id: 4, kind: 'recurring', name: 'Liability insurance', amount: 90, category: 'insurance', business: true, interval: 'yearly', dueMonth: 3 },
-])
-registerEndpoint('/api/purchases', () => [
+]
+const PURCHASES = [
   { id: 2, kind: 'purchase', name: 'Laptop', amount: 1200.5, category: 'appliances', business: true, date: '2026-03-14' },
-])
+]
+// A test can narrow the lists and mount the page again.
+let recurringRows = RECURRING
+let purchaseRows = PURCHASES
+registerEndpoint('/api/recurring-costs', () => recurringRows.filter(row => !deleted.includes(`/api/recurring-costs/${row.id}`)))
+registerEndpoint('/api/purchases', () => purchaseRows.filter(row => !deleted.includes(`/api/purchases/${row.id}`)))
 
 let wrapper: Awaited<ReturnType<typeof mountSuspended>>
 
 beforeEach(async () => {
   deleteCalls.length = 0
+  deleted.length = 0
+  recurringRows = RECURRING
+  purchaseRows = PURCHASES
   failDelete = false
   holdDelete = null
   addToast.mockReset()
@@ -823,5 +834,116 @@ describe('costs page grouped lists on phones', () => {
     groups().vm.$emit('delete', rent)
     await vi.waitFor(() => expect(body().textContent).toContain('Delete cost?'))
     expect(deleteCalls).toEqual([])
+  })
+})
+
+// The table (from sm) and the phone lists (below sm) are both in the page. The test environment has
+// no CSS, so checkVisibility is stubbed to hide one of them by its classes, as the browser does.
+describe('costs page focus after delete', () => {
+  const groups = () => wrapper.findComponent({ name: 'CostGroups' })
+  const focused = () => document.activeElement?.getAttribute('aria-label') ?? document.activeElement?.tagName
+  function showOnly(view: 'table' | 'lists') {
+    const hidden = view === 'table' ? '.sm\\:hidden' : '.hidden.sm\\:block'
+    vi.spyOn(Element.prototype, 'checkVisibility').mockImplementation(function (this: Element) {
+      return !this.closest(hidden)
+    })
+  }
+  async function mount(view: 'table' | 'lists') {
+    wrapper.unmount()
+    clearNuxtData()
+    showOnly(view)
+    wrapper = await mountSuspended(CostsPage, { attachTo: document.body })
+    // The lists load lazily, and while loading the table shows one empty row, so wait for the delete buttons.
+    await vi.waitFor(() => expect(wrapper.findAll('button[aria-label^="Delete "]')).toHaveLength(recurringRows.length + purchaseRows.length))
+  }
+  // Opens the confirmation from a row button the way a keyboard user does: the button has the focus.
+  // A list row opens it through CostGroups' delete event; the menu itself is tested in CostGroups.test.ts.
+  async function open(label: string) {
+    const opener = wrapper.find<HTMLElement>(`button[aria-label="${label}"]`).element
+    opener.focus()
+    if (label.startsWith('Actions for ')) {
+      const name = label.slice('Actions for '.length)
+      groups().vm.$emit('delete', (groups().props('costs') as Stored<Cost>[]).find(cost => cost.name === name))
+    } else {
+      opener.click()
+    }
+    await vi.waitFor(() => expect(button('Delete')).toBeTruthy())
+  }
+  async function answer(text: 'Delete' | 'Cancel') {
+    await click(button(text))
+    await vi.waitFor(() => expect(body().querySelector('[role="alertdialog"]')).toBeNull())
+  }
+  afterEach(() => vi.restoreAllMocks())
+
+  describe('in the table', () => {
+    // Rows by name: Laptop, Liability insurance, Rent.
+    it('moves to the row that takes the place of the deleted one', async () => {
+      await mount('table')
+      await open('Delete Liability insurance')
+      await answer('Delete')
+      await vi.waitFor(() => expect(focused()).toBe('Delete Rent'))
+    })
+    it('moves to the row above when the last row was deleted', async () => {
+      await mount('table')
+      await open('Delete Rent')
+      await answer('Delete')
+      await vi.waitFor(() => expect(focused()).toBe('Delete Liability insurance'))
+    })
+    it('moves to the heading when no cost is left', async () => {
+      recurringRows = []
+      await mount('table')
+      await open('Delete Laptop')
+      await answer('Delete')
+      await vi.waitFor(() => expect(document.activeElement).toBe(wrapper.find('h1').element))
+    })
+    it('returns to the opener after Cancel', async () => {
+      await mount('table')
+      await open('Delete Liability insurance')
+      await answer('Cancel')
+      await vi.waitFor(() => expect(focused()).toBe('Delete Liability insurance'))
+    })
+    it('returns to the opener after a failed delete', async () => {
+      failDelete = true
+      await mount('table')
+      await open('Delete Liability insurance')
+      await answer('Delete')
+      await vi.waitFor(() => expect(focused()).toBe('Delete Liability insurance'))
+    })
+  })
+
+  describe('in the phone lists', () => {
+    // Rows: Recurring (Liability insurance, Rent), then One-off (Laptop).
+    it('moves to the row that takes the place of the deleted one, across the sections', async () => {
+      await mount('lists')
+      await open('Actions for Rent')
+      await answer('Delete')
+      await vi.waitFor(() => expect(focused()).toBe('Actions for Laptop'))
+    })
+    it('moves to the row above when the last row was deleted', async () => {
+      await mount('lists')
+      await open('Actions for Laptop')
+      await answer('Delete')
+      await vi.waitFor(() => expect(focused()).toBe('Actions for Rent'))
+    })
+    it('moves to the heading when no cost is left', async () => {
+      recurringRows = []
+      await mount('lists')
+      await open('Actions for Laptop')
+      await answer('Delete')
+      await vi.waitFor(() => expect(document.activeElement).toBe(wrapper.find('h1').element))
+    })
+    it('returns to the opener after Cancel', async () => {
+      await mount('lists')
+      await open('Actions for Rent')
+      await answer('Cancel')
+      await vi.waitFor(() => expect(focused()).toBe('Actions for Rent'))
+    })
+    it('returns to the opener after a failed delete', async () => {
+      failDelete = true
+      await mount('lists')
+      await open('Actions for Rent')
+      await answer('Delete')
+      await vi.waitFor(() => expect(focused()).toBe('Actions for Rent'))
+    })
   })
 })

@@ -186,6 +186,17 @@ Details: [Costs page](app-structure.md#costs-page).
 
 Details: [Costs page](app-structure.md#costs-page).
 
+### Focus after a delete (#6)
+
+- **Keep the row position.** After a successful delete the focus goes to the row button (trash in the table, "Actions for <name>" in the phone lists) that now sits where the deleted row was; for the last row to the button above it; with no cost left to the `h1` "Costs". This is what keyboard users already got by accident in the middle of the table, and it keeps their place in a long list.
+- **Rejected: the table heading** (the user loses the place in a long list) and **"Add cost"** (on phones it is only the round button in the tab bar, not a stable target).
+- **Why position, not `UTable`'s row reuse.** The old behaviour came from `UTable` reusing row elements by position (no `getRowId`), so the focus stayed on the same DOM button, which then showed the next cost. That fails for the last row and in the phone lists. So `confirmDelete` counts the position among the visible `[data-row]` buttons before the delete and focuses the button at that position afterwards.
+- **Only visible buttons count.** The table and the phone lists are both always in the DOM, so a position counted over all buttons would mix the two.
+- **The dialog must not override it.** `onCloseAutoFocus` prevents reka-ui's default focus return only when a target is set. Cancel and a failed delete keep the default, which already returned to the opener.
+- **Out of scope:** announcing the result (#8).
+
+Details: [Costs page](app-structure.md#costs-page).
+
 ### Kind filter chips (#82)
 
 - **Counts of all costs.** The author's choice: the numbers on the chips always count every cost. They do not change with the selected chip, the category chips (#83) or the search (#81). The live region says how many rows are shown.

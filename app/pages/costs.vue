@@ -19,13 +19,15 @@ const cancelButton = useTemplateRef<{ $el: HTMLElement }>('cancel')
 const allChip = useTemplateRef<{ $el: HTMLElement }>('allChip')
 const categoryGroup = useTemplateRef<HTMLElement>('categoryGroup')
 const searchField = useTemplateRef<{ inputRef: HTMLInputElement | null }>('searchField')
+const heading = useTemplateRef<HTMLElement>('heading')
 
 const UButton = resolveComponent('UButton')
 const search = ref('')
 const toDelete = ref<Stored<Cost> | null>(null)
 const categoryFilter = ref<Category | null>(null)
 const searchOpen = ref(false)
-const dialogContent = { role: 'alertdialog', onOpenAutoFocus: focusCancel }
+let focusAfterClose: HTMLElement | null = null
+const dialogContent = { role: 'alertdialog', onOpenAutoFocus: focusCancel, onCloseAutoFocus: restoreFocus }
 const costs = computed<Stored<Cost>[]>(() => [
     ...(recurring.value ?? []),
     ...(purchases.value ?? []),
@@ -61,14 +63,23 @@ async function onDelete (cost: Stored<Cost>) {
     try {
         await $fetch(`${url}/${cost.id}`, { method: 'DELETE' })
         await retry()
+        return true
     } catch {
         toast.add({ title: t('costs.deleteError'), color: 'error'})
+        return false
     }
 }
 
 async function confirmDelete() {
     if (!toDelete.value) return
-    await onDelete(toDelete.value)
+    const key = `${toDelete.value.kind}-${toDelete.value.id}`
+    const index = visibleRowButtons().findIndex(b => b.dataset.row === key)
+    const deleted = await onDelete(toDelete.value)
+    if (deleted) {
+        await nextTick()
+        const buttons = visibleRowButtons()
+        focusAfterClose = buttons[Math.min(index, buttons.length - 1)] ?? heading.value
+    }
     toDelete.value = null
 }
 // The button disappears with the card, so the focus moves to the "All" chip instead of getting lost;
@@ -126,11 +137,20 @@ function sortableHeader(label: string) {
 function normalize(text: string): string {
     return text.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLocaleLowerCase(locale.value)
 }
+function restoreFocus(event: Event) {
+    if (!focusAfterClose) return   // Cancel and a failed delete: the dialog returns the focus to the opener
+    event.preventDefault()
+    focusAfterClose.focus()
+    focusAfterClose = null
+}
+function visibleRowButtons() {
+    return [...document.querySelectorAll<HTMLElement>('[data-row]')].filter(b => b.checkVisibility())
+}
 </script>
 <template>
     <header>
         <div class="flex items-center justify-between gap-2">
-            <h1>{{ t('costs.title') }}</h1>
+            <h1 ref="heading" tabindex="-1">{{ t('costs.title') }}</h1>
             <UButton
                 class="sm:hidden search-compact me-14 -mt-4 size-11 shrink-0 self-start justify-center"
                 :ui="{ leadingIcon: 'size-5' }"
@@ -245,7 +265,7 @@ function normalize(text: string): string {
             <template #when-cell="{ row }"><span class="whitespace-normal">{{ whenLabel(row.original) }}</span></template>
             <template #actions-cell="{ row }">
                 <UButton icon="i-lucide-pencil" color="neutral" variant="ghost" class="pill-icon" @click="openEdit(row.original)" :aria-label="t('costs.edit', { name: row.original.name })"/>
-                <UButton icon="i-lucide-trash-2" color="neutral" variant="ghost" class="pill-icon" @click="toDelete = row.original" :aria-label="t('costs.delete', { name: row.original.name })"/>
+                <UButton :data-row="`${row.original.kind}-${row.original.id}`" icon="i-lucide-trash-2" color="neutral" variant="ghost" class="pill-icon" @click="toDelete = row.original" :aria-label="t('costs.delete', { name: row.original.name })"/>
             </template>
         </UTable>
     </div>
