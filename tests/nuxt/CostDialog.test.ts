@@ -1,8 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
+import { mockNuxtImport, mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
 import type { VueWrapper } from '@vue/test-utils'
 import DefaultLayout from '~/layouts/default.vue'
 import CostForm from '~/components/CostForm.vue'
+
+const { addToast } = vi.hoisted(() => ({ addToast: vi.fn() }))
+mockNuxtImport('useToast', () => () => ({ add: addToast }))
 
 // The add and edit dialog lives in the layout; pages ask for it through useCostDialog().
 const lists = { recurringCalls: 0, purchaseCalls: 0 }
@@ -24,6 +27,7 @@ beforeEach(async () => {
   lists.recurringCalls = 0
   lists.purchaseCalls = 0
   clearNuxtData()
+  addToast.mockReset()
   // attachTo: the focus tests need real elements in the document.
   wrapper = await mountSuspended(DefaultLayout, { attachTo: document.body })
 })
@@ -139,11 +143,30 @@ describe('cost dialog after a save', () => {
     await vi.waitFor(() => expect(lists.recurringCalls).toBeGreaterThan(0))
     await opened(() => useCostDialog().openAdd())
     const before = { recurring: lists.recurringCalls, purchases: lists.purchaseCalls }
-    wrapper.findComponent(CostForm).vm.$emit('saved')
+    wrapper.findComponent(CostForm).vm.$emit('saved', 'Lamp')
     await vi.waitFor(() => expect(dialog()).toBeNull())
     expect(lists.recurringCalls).toBeGreaterThan(before.recurring)
     expect(lists.purchaseCalls).toBeGreaterThan(before.purchases)
     expect(state()).toEqual({ open: false, cost: null, month: null })
+  })
+  it('announces the saved name with a toast, once the dialog is closed', async () => {
+    await opened(() => useCostDialog().openAdd())
+    expect(addToast).not.toHaveBeenCalled()
+    wrapper.findComponent(CostForm).vm.$emit('saved', 'Lamp')
+    await vi.waitFor(() => expect(addToast).toHaveBeenCalledTimes(1))
+    expect(addToast).toHaveBeenCalledWith({ title: 'Lamp saved' })
+    expect(dialog()).toBeNull()
+  })
+  it('uses the same message for an edit, with the name that was saved', async () => {
+    await opened(() => useCostDialog().openEdit({ ...laptop }))
+    wrapper.findComponent(CostForm).vm.$emit('saved', 'Gaming laptop')
+    await vi.waitFor(() => expect(addToast).toHaveBeenCalledWith({ title: 'Gaming laptop saved' }))
+  })
+  it('shows no toast when the dialog is cancelled', async () => {
+    await opened(() => useCostDialog().openAdd())
+    button('Cancel')!.click()
+    await vi.waitFor(() => expect(dialog()).toBeNull())
+    expect(addToast).not.toHaveBeenCalled()
   })
 })
 
@@ -153,6 +176,12 @@ describe('cost dialog in German', () => {
     await opened(() => useCostDialog().openAdd({ ...october }))
     expect(dialog()!.textContent).toContain('Kosten hinzufügen')
     expect(dialog()!.textContent).toContain('Vorbelegt mit Oktober 2026. Wähle den Tag.')
+  })
+  it('announces a save in German', async () => {
+    await useNuxtApp().$i18n.setLocale('de')
+    await opened(() => useCostDialog().openAdd())
+    wrapper.findComponent(CostForm).vm.$emit('saved', 'Lampe')
+    await vi.waitFor(() => expect(addToast).toHaveBeenCalledWith({ title: 'Lampe gespeichert' }))
   })
   it('has the German title with the name when a cost is edited', async () => {
     await useNuxtApp().$i18n.setLocale('de')

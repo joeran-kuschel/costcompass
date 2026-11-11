@@ -3,9 +3,11 @@
     const { open, cost, month, close, openAdd } = useCostDialog()
     const { retry } = useCostLists()
     const { items } = useNavItems()
-    async function onSaved() {
+    const toast = useToast()
+    async function onSaved(name: string) {
         await retry()
         close()
+        toast.add({ title: t('common.saved', { name }) })
     }
 </script>
 <template>

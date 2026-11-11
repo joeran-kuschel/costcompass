@@ -8,7 +8,7 @@ const props = defineProps<{
     cost?: Stored<Cost> | null,
     month?: MonthRef | null
 }>()
-const emit = defineEmits<{ saved: [], cancel: [] }>()
+const emit = defineEmits<{ saved: [name: string], cancel: [] }>()
 const { t, locale } = useI18n()
 const { monthYear } = useMonth()
 const { currentMonth } = useYear()
@@ -69,7 +69,7 @@ async function onSubmit(event: FormSubmitEvent<CreateRecurringCost | CreatePurch
         } else {
             await $fetch(base, { method: 'POST', body: event.data })
         }
-        emit('saved')
+        emit('saved', event.data.name)
     } catch {
         saveFailed.value = true
     }

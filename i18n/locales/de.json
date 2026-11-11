@@ -36,6 +36,7 @@
       "delete": "Löschen"
     },
     "deleteError": "Die Kosten konnten nicht gelöscht werden. Bitte versuche es erneut.",
+    "deleted": "{name} gelöscht",
     "confirmTitle": "Kosten löschen?",
     "confirmRecurring": "{name} ({amount}, {interval}) wird endgültig gelöscht.",
     "confirmPurchase": "{name} ({amount}, {date}) wird endgültig gelöscht.",
@@ -67,7 +68,8 @@
   "common": {
     "save": "Speichern",
     "cancel": "Abbrechen",
-    "delete": "Löschen"
+    "delete": "Löschen",
+    "saved": "{name} gespeichert"
   },
   "nav": {
     "dashboard": "Dashboard",

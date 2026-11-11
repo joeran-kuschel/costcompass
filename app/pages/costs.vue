@@ -63,6 +63,7 @@ async function onDelete (cost: Stored<Cost>) {
     try {
         await $fetch(`${url}/${cost.id}`, { method: 'DELETE' })
         await retry()
+        toast.add({ title: t('costs.deleted', { name: cost.name }) })
         return true
     } catch {
         toast.add({ title: t('costs.deleteError'), color: 'error'})
