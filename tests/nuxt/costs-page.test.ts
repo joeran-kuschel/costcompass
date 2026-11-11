@@ -108,7 +108,7 @@ describe('costs page summary line', () => {
 
   it('counts the recurring costs and purchases and names the total of the year', async () => {
     await showYear(2026)
-    expect(line().text().replace(/\s+/g, ' ')).toBe('2 recurring costs and 1 purchase · €10,891 in 2026')
+    expect(line().text().replace(/\s+/g, ' ')).toBe('2 recurring costs and 1 one-off cost · €10,891 in 2026')
   })
   it('sets only the amount in bold', async () => {
     await showYear(2026)
@@ -128,28 +128,28 @@ describe('costs page summary line', () => {
     await nextTick()
     const current = new Date().getUTCFullYear()
     expect(line().text()).toContain(`in ${current}`)
-    expect(line().text()).toContain('2 recurring costs and 1 purchase')
+    expect(line().text()).toContain('2 recurring costs and 1 one-off cost')
   })
   it('updates when the lists change', async () => {
     await showYear(2026)
     const { recurring } = useCostLists()
     recurring.value = recurring.value!.filter(cost => cost.name !== 'Rent')
     await nextTick()
-    expect(line().text().replace(/\s+/g, ' ')).toBe('1 recurring cost and 1 purchase · €1,291 in 2026')
+    expect(line().text().replace(/\s+/g, ' ')).toBe('1 recurring cost and 1 one-off cost · €1,291 in 2026')
   })
   it('uses the singular, the plural and the plural for zero', () => {
     const { t } = useNuxtApp().$i18n
     expect([0, 1, 2].map(n => t('costs.summary.recurring', n))).toEqual(['0 recurring costs', '1 recurring cost', '2 recurring costs'])
-    expect([0, 1, 2].map(n => t('costs.summary.purchases', n))).toEqual(['0 purchases', '1 purchase', '2 purchases'])
+    expect([0, 1, 2].map(n => t('costs.summary.purchases', n))).toEqual(['0 one-off costs', '1 one-off cost', '2 one-off costs'])
   })
   it('has German forms with a singular that reads right', async () => {
     const { t, setLocale } = useNuxtApp().$i18n
     await setLocale('de')
     try {
       expect([0, 1, 2].map(n => t('costs.summary.recurring', n))).toEqual(['0 wiederkehrende Posten', '1 wiederkehrender Posten', '2 wiederkehrende Posten'])
-      expect([0, 1, 2].map(n => t('costs.summary.purchases', n))).toEqual(['0 Anschaffungen', '1 Anschaffung', '2 Anschaffungen'])
+      expect([0, 1, 2].map(n => t('costs.summary.purchases', n))).toEqual(['0 einmalige Posten', '1 einmaliger Posten', '2 einmalige Posten'])
       await showYear(2026)
-      expect(line().text().replace(/\s+/g, ' ')).toBe('2 wiederkehrende Posten und 1 Anschaffung · 10.891 € im Jahr 2026')
+      expect(line().text().replace(/\s+/g, ' ')).toBe('2 wiederkehrende Posten und 1 einmaliger Posten · 10.891 € im Jahr 2026')
     } finally {
       await setLocale('en')
     }
@@ -200,7 +200,7 @@ describe('costs page kind column', () => {
     await vi.waitFor(() => expect(wrapper.findAll('tbody tr')).toHaveLength(3))
     expect(iconIn(kindCell(0), 'shopping-bag').attributes('aria-hidden')).toBe('true')
     expect(iconIn(kindCell(2), 'repeat').attributes('aria-hidden')).toBe('true')
-    expect(kindCell(0).text()).toBe('Purchase')
+    expect(kindCell(0).text()).toBe('One-off')
     expect(kindCell(2).text()).toBe('Recurring')
   })
   it('uses the same icons as the month page', async () => {
@@ -214,7 +214,7 @@ describe('costs page kind column', () => {
     await useNuxtApp().$i18n.setLocale('de')
     try {
       // German sorts the same way here: Laptop, Liability insurance, Rent.
-      await vi.waitFor(() => expect(kindCell(0).text()).toBe('Anschaffung'))
+      await vi.waitFor(() => expect(kindCell(0).text()).toBe('Einmalig'))
       expect(kindCell(2).text()).toBe('Wiederkehrend')
       expect(iconIn(kindCell(0), 'shopping-bag').exists()).toBe(true)
     } finally {
@@ -238,7 +238,7 @@ describe('costs page kind filter', () => {
   it('is a group labelled "Show" with three chips and their counts', async () => {
     await loaded()
     expect(group().attributes('aria-label')).toBe('Show')
-    expect(chips().map(c => c.text())).toEqual(['All 3', 'Recurring 2', 'Purchases 1'])
+    expect(chips().map(c => c.text())).toEqual(['All 3', 'Recurring 2', 'One-off 1'])
   })
   it('selects "All" by default and shows every cost', async () => {
     await loaded()
@@ -252,12 +252,12 @@ describe('costs page kind filter', () => {
   })
   it('shows only the purchases', async () => {
     await loaded()
-    await chip('Purchases 1')!.trigger('click')
+    await chip('One-off 1')!.trigger('click')
     expect(names()).toEqual(['Laptop'])
   })
   it('shows every cost again after "All"', async () => {
     await loaded()
-    await chip('Purchases 1')!.trigger('click')
+    await chip('One-off 1')!.trigger('click')
     await chip('All 3')!.trigger('click')
     expect(names()).toEqual(['Laptop', 'Liability insurance', 'Rent'])
   })
@@ -275,13 +275,13 @@ describe('costs page kind filter', () => {
   })
   it('keeps the counts of all costs whatever chip is pressed', async () => {
     await loaded()
-    await chip('Purchases 1')!.trigger('click')
-    expect(chips().map(c => c.text())).toEqual(['All 3', 'Recurring 2', 'Purchases 1'])
+    await chip('One-off 1')!.trigger('click')
+    expect(chips().map(c => c.text())).toEqual(['All 3', 'Recurring 2', 'One-off 1'])
   })
   it('announces how many costs are shown', async () => {
     await loaded()
     expect(status().text()).toBe('3 costs shown')
-    await chip('Purchases 1')!.trigger('click')
+    await chip('One-off 1')!.trigger('click')
     expect(status().text()).toBe('1 cost shown')
   })
   it('keeps the sort of the table when the filter changes', async () => {
@@ -297,7 +297,7 @@ describe('costs page kind filter', () => {
     await useNuxtApp().$i18n.setLocale('de')
     try {
       await vi.waitFor(() => expect(group().attributes('aria-label')).toBe('Anzeigen'))
-      expect(chips().map(c => c.text())).toEqual(['Alle 3', 'Wiederkehrend 2', 'Anschaffung 1'])
+      expect(chips().map(c => c.text())).toEqual(['Alle 3', 'Wiederkehrend 2', 'Einmalig 1'])
       expect(status().text()).toBe('3 Posten angezeigt')
     } finally {
       await useNuxtApp().$i18n.setLocale('en')
@@ -368,7 +368,7 @@ describe('costs page category filter', () => {
   it('leaves the counts on the kind chips at all costs', async () => {
     await loaded()
     await chip('Housing')!.trigger('click')
-    expect(kindGroup().findAll('button').map(c => c.text())).toEqual(['All 3', 'Recurring 2', 'Purchases 1'])
+    expect(kindGroup().findAll('button').map(c => c.text())).toEqual(['All 3', 'Recurring 2', 'One-off 1'])
   })
   it('announces how many costs are shown', async () => {
     await loaded()
@@ -397,10 +397,10 @@ describe('costs page no match', () => {
   const card = () => wrapper.find('.card.text-center')
   const names = () => wrapper.findAll('tbody tr').map(row => row.find('td p').element.firstChild!.textContent!.trim())
   const button = (label: string) => wrapper.findAll('button').find(b => b.text() === label)
-  // Housing has only Rent, a recurring cost, so Purchases + Housing matches nothing.
+  // Housing has only Rent, a recurring cost, so One-off + Housing matches nothing.
   async function noMatch() {
     await vi.waitFor(() => expect(wrapper.findAll('tbody tr')).toHaveLength(3))
-    await button('Purchases 1')!.trigger('click')
+    await button('One-off 1')!.trigger('click')
     await button('Housing')!.trigger('click')
   }
   const tableHidden = () => {

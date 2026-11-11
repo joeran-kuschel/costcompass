@@ -199,7 +199,7 @@ describe('dashboard page this month subtotals', () => {
     api.purchases.rows = [lamp(2, 300.5, dateIn(year, month))]
     await mountPage()
     await vi.waitFor(() => expect(section().exists()).toBe(true))
-    expect(subtotals()).toEqual({ Recurring: '€819.99', Purchases: '€300.50' })
+    expect(subtotals()).toEqual({ Recurring: '€819.99', 'One-off': '€300.50' })
   })
   it('counts only the purchases of the current month', async () => {
     api.recurring.rows = [rent]
@@ -209,34 +209,34 @@ describe('dashboard page this month subtotals', () => {
     ]
     await mountPage()
     await vi.waitFor(() => expect(section().exists()).toBe(true))
-    expect(subtotals()).toEqual({ Recurring: '€800.00', Purchases: '€300.00' })
+    expect(subtotals()).toEqual({ Recurring: '€800.00', 'One-off': '€300.00' })
   })
   it('adds up to the total of the month from monthlyTotals', async () => {
     api.recurring.rows = [rent, insurance]
     api.purchases.rows = [lamp(2, 300.5, dateIn(year, month))]
     await mountPage()
     await vi.waitFor(() => expect(section().exists()).toBe(true))
-    const { Recurring, Purchases } = subtotals()
+    const { Recurring, 'One-off': oneOff } = subtotals()
     const expected = monthlyTotals(api.recurring.rows as never, api.purchases.rows as never, year)[month - 1]!
-    expect(amountOf(Recurring!) + amountOf(Purchases!)).toBeCloseTo(expected, 2)
+    expect(amountOf(Recurring!) + amountOf(oneOff!)).toBeCloseTo(expected, 2)
   })
   it('shows a group without costs as zero, not as nothing', async () => {
     api.recurring.rows = [rent]
     await mountPage()
     await vi.waitFor(() => expect(section().exists()).toBe(true))
-    expect(subtotals()).toEqual({ Recurring: '€800.00', Purchases: '€0.00' })
+    expect(subtotals()).toEqual({ Recurring: '€800.00', 'One-off': '€0.00' })
   })
   it('shows zero for both groups in a month without costs', async () => {
     api.purchases.rows = [lamp(2, 300, dateIn(year - 1, month))]
     await mountPage()
     await vi.waitFor(() => expect(section().exists()).toBe(true))
-    expect(subtotals()).toEqual({ Recurring: '€0.00', Purchases: '€0.00' })
+    expect(subtotals()).toEqual({ Recurring: '€0.00', 'One-off': '€0.00' })
   })
   it('has the labels as real terms of a description list', async () => {
     api.recurring.rows = [rent]
     await mountPage()
     await vi.waitFor(() => expect(section().exists()).toBe(true))
-    expect(section().findAll('dl dt').map(term => term.text())).toEqual(['Recurring', 'Purchases'])
+    expect(section().findAll('dl dt').map(term => term.text())).toEqual(['Recurring', 'One-off'])
     expect(section().findAll('dl dd')).toHaveLength(2)
   })
   it('is German with German labels and amounts when the language is German', async () => {
@@ -245,7 +245,7 @@ describe('dashboard page this month subtotals', () => {
     api.purchases.rows = [lamp(2, 300.5, dateIn(year, month))]
     await mountPage()
     await vi.waitFor(() => expect(section().exists()).toBe(true))
-    expect(subtotals()).toEqual({ Wiederkehrend: '819,99 €', Anschaffungen: '300,50 €' })
+    expect(subtotals()).toEqual({ Wiederkehrend: '819,99 €', Einmalig: '300,50 €' })
   })
   it('shows no subtotals while the lists are loading', async () => {
     api.recurring.rows = [rent]

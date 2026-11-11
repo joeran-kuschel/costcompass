@@ -20,7 +20,7 @@
     "add": "Kosten hinzufügen",
     "addToMonth": "Kosten zu {month} hinzufügen",
     "all": "Alle {n}",
-    "purchases": "Anschaffung {n} | Anschaffungen {n}",
+    "purchases": "Einmalig {n}",
     "recurring": "Wiederkehrend {n}",
     "filterLabel": "Anzeigen",
     "filterByCategoryLabel": "Nach Kategorie filtern",
@@ -56,13 +56,13 @@
     },
     "summary": {
       "recurring": "{n} wiederkehrender Posten | {n} wiederkehrende Posten",
-      "purchases": "{n} Anschaffung | {n} Anschaffungen",
+      "purchases": "{n} einmaliger Posten | {n} einmalige Posten",
       "line": "{recurring} und {purchases} · {total} im Jahr {year}"
     }
   },
   "kind": {
     "recurring": "Wiederkehrend",
-    "purchase": "Anschaffung"
+    "purchase": "Einmalig"
   },
   "common": {
     "save": "Speichern",
@@ -131,7 +131,7 @@
     },
     "retry": "Erneut versuchen",
     "emptyTitle": "Noch keine Kosten",
-    "emptyText": "Füge eine wiederkehrende Ausgabe oder eine Anschaffung hinzu, um hier deine Summen zu sehen.",
+    "emptyText": "Füge eine wiederkehrende oder eine einmalige Ausgabe hinzu, um hier Deine Summen zu sehen.",
     "emptyAdd": "Erste Kosten hinzufügen",
     "emptyTip": "Tipp: Fange mit monatlichen Kosten an, zum Beispiel Deine Miete.",
     "summary": {
@@ -178,13 +178,13 @@
     "thisMonth": "Dieser Monat",
     "total": "Summe für {month}",
     "recurring": "Wiederkehrend",
-    "purchases": "Anschaffungen",
+    "purchases": "Einmalig",
     "previous": "Vorheriger Monat, {month}",
     "next": "Nächster Monat, {month}",
     "emptyTitle": "Keine Kosten im {month}",
     "emptyText": "Füge Kosten hinzu, die in diesen Monat fallen, um sie hier zu sehen.",
     "emptyAdd": "Kosten für {month} hinzufügen",
-    "emptyHint": "Eine neue Anschaffung beginnt am 1.\u00a0{month}.",
+    "emptyHint": "Ein neuer einmaliger Posten beginnt am 1.\u00a0{month}.",
     "costCount": "{n} Kosten",
     "businessCount": "{n} geschäftlich",
     "changeShort": {

@@ -113,7 +113,7 @@ describe('dashboard page empty state', () => {
     await mountPage()
     await vi.waitFor(() => expect(wrapper.text()).toContain('No costs yet'))
     expect(wrapper.find('h2').text()).toBe('No costs yet')
-    expect(wrapper.text()).toContain('Add a recurring cost or a purchase to see your totals here.')
+    expect(wrapper.text()).toContain('Add a recurring or a one-off cost to see your totals here.')
     expect(wrapper.text()).toContain('Tip: start with something monthly, like rent.')
     expect(addButton().exists()).toBe(true)
     expect(status().exists()).toBe(false)

@@ -81,6 +81,20 @@ A chart library is only a candidate for trend charts. It would need to be evalua
 
 The "This month" card links to today's month; the month bars link to the selected year. The card ignores the selected year, so its link does too. The chart scrolls sideways with columns of at least 44 px, so touch targets stay big enough on phones. Details: [Dashboard links to month pages](app-structure.md#dashboard-links-to-month-pages).
 
+## Kind label "One-off" (#2)
+
+The dated, one-time kind of cost is called "One-off" in English and "Einmalig" in German wherever the user reads it. Before, it was "Purchase" / "Purchases" and "Anschaffung" / "Anschaffungen".
+
+- **Why.** German "Anschaffung" means a durable acquisition, such as a washing machine, not a grocery bill or a repair. English "Purchase" fits better but still reads as buying something. "One-off" / "Einmalig" pairs with "Recurring" / "Wiederkehrend" and fits any dated, one-time cost.
+- **Only the texts changed.** The locale keys stay (`kind.purchase`, `costs.purchases`, `costs.summary.purchases`, `month.purchases`), and so do `kind: 'purchase'`, the `Purchase` type, the `/api/purchases` routes and the `purchases` table. Developer documentation keeps "purchase" as the name of the kind in code.
+- **"Posten" in the German summary line.** One one-off cost is "1 einmaliger Posten", several are "einmalige Posten", the same word as the recurring part ("wiederkehrende Posten"). Author's decision on the issue's open question, instead of "Ausgabe".
+- **The group heading stays short.** The month page and the phone lists say "One-off" / "Einmalig", not "One-off costs" / "Einmalige Kosten". Author's decision on the issue's second open question.
+- **No plural in the chip.** `costs.purchases` is "One-off {n}" / "Einmalig {n}" for every number, because the adjective does not change.
+- **The date error stays.** `form.dateError` keeps "Enter the date of purchase." / "Gib das Kaufdatum ein.", deliberately left out of the rename.
+- **Deviation from the mocks.** The Cobalt mocks still say "Purchase" and "Purchases" (chips, summary line, group headings, hero subtotals, the form's type switch, the empty states). The app deliberately says "One-off"; the mocks are not changed.
+
+Details: [Costs page](app-structure.md#costs-page), [Month page](app-structure.md#month-page) and [Cost form](app-structure.md#cost-form).
+
 ## Month pages
 
 Year and month are in the URL (`/months/2026/03`), the month always with two digits. The page can be bookmarked, the back button works, and every month has exactly one address. Details: [app-structure.md](app-structure.md).
@@ -138,7 +152,7 @@ The table sorts by Name, Kind and Amount. Details: [Costs page](app-structure.md
 
 ### Summary line with `<i18n-t>` (#80)
 
-The line under the heading ("2 recurring costs and 1 purchase · €10,891 in 2026") has a bold amount inside a translated sentence.
+The line under the heading ("2 recurring costs and 1 one-off cost · €10,891 in 2026") has a bold amount inside a translated sentence.
 
 - **`<i18n-t>` with slots, not separate keys or `v-html`.** The sentence is one key (`costs.summary.line`) with the slots `recurring`, `purchases`, `total` and `year`, so the translator controls the word order, and only the `total` slot is wrapped in a `b`. Splitting the sentence into pieces would fix the English order; `v-html` would put markup into the locale files.
 - **Counts for all costs, total for one year.** The counts match the table, which shows every cost. The total needs a year, so the line names it, and the year is the dashboard's shown year from `useYearSummary()`.

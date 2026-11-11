@@ -20,7 +20,7 @@
     "add": "Add cost",
     "addToMonth": "Add cost to {month}",
     "all": "All {n}",
-    "purchases": "Purchases {n}",
+    "purchases": "One-off {n}",
     "recurring": "Recurring {n}",
     "filterLabel": "Show",
     "filterByCategoryLabel": "Filter by category",
@@ -56,13 +56,13 @@
     },
     "summary": {
       "recurring": "{n} recurring cost | {n} recurring costs",
-      "purchases": "{n} purchase | {n} purchases",
+      "purchases": "{n} one-off cost | {n} one-off costs",
       "line": "{recurring} and {purchases} · {total} in {year}"
     }
   },
   "kind": {
     "recurring": "Recurring",
-    "purchase": "Purchase"
+    "purchase": "One-off"
   },
   "common": {
     "save": "Save",
@@ -131,7 +131,7 @@
     },
     "retry": "Try again",
     "emptyTitle": "No costs yet",
-    "emptyText": "Add a recurring cost or a purchase to see your totals here.",
+    "emptyText": "Add a recurring or a one-off cost to see your totals here.",
     "emptyAdd": "Add your first cost",
     "emptyTip": "Tip: start with something monthly, like rent.",
     "summary": {
@@ -178,13 +178,13 @@
     "thisMonth": "This month",
     "total": "Total for {month}",
     "recurring": "Recurring",
-    "purchases": "Purchases",
+    "purchases": "One-off",
     "previous": "Previous month, {month}",
     "next": "Next month, {month}",
     "emptyTitle": "No costs in {month}",
     "emptyText": "Add a cost that falls in this month to see it here.",
     "emptyAdd": "Add cost to {month}",
-    "emptyHint": "A new purchase starts on 1\u00a0{month}.",
+    "emptyHint": "A new one-off cost starts on 1\u00a0{month}.",
     "costCount": "{n} cost | {n} costs",
     "businessCount": "{n} business",
     "changeShort": {
