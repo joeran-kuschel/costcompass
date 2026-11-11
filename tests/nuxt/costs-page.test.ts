@@ -679,7 +679,8 @@ describe('costs page delete', () => {
     await vi.waitFor(() => expect(button('Delete')).toBeTruthy())
     await click(button('Delete'))
     await vi.waitFor(() => expect(deleteCalls).toEqual(['/api/recurring-costs/1']))
-    expect(addToast).not.toHaveBeenCalled()
+    // Only the success message, no error toast.
+    await vi.waitFor(() => expect(addToast).toHaveBeenCalledExactlyOnceWith({ title: 'Rent deleted' }))
   })
   it('DELETEs a purchase from /api/purchases/:id after confirmation', async () => {
     await vi.waitFor(() => expect(wrapper.findAll('tbody tr')).toHaveLength(3))
@@ -687,6 +688,27 @@ describe('costs page delete', () => {
     await vi.waitFor(() => expect(button('Delete')).toBeTruthy())
     await click(button('Delete'))
     await vi.waitFor(() => expect(deleteCalls).toEqual(['/api/purchases/2']))
+    await vi.waitFor(() => expect(addToast).toHaveBeenCalledExactlyOnceWith({ title: 'Laptop deleted' }))
+  })
+  it('announces nothing when the confirmation is cancelled', async () => {
+    await vi.waitFor(() => expect(wrapper.findAll('tbody tr')).toHaveLength(3))
+    await click(wrapper.find('button[aria-label="Delete Rent"]').element)
+    await vi.waitFor(() => expect(button('Cancel')).toBeTruthy())
+    await click(button('Cancel'))
+    await vi.waitFor(() => expect(body().textContent).not.toContain('Delete cost?'))
+    expect(addToast).not.toHaveBeenCalled()
+  })
+  it('announces the delete in German', async () => {
+    await useNuxtApp().$i18n.setLocale('de')
+    try {
+      await vi.waitFor(() => expect(wrapper.findAll('tbody tr')).toHaveLength(3))
+      await click(wrapper.find('button[aria-label="Rent löschen"]').element)
+      await vi.waitFor(() => expect(button('Löschen')).toBeTruthy())
+      await click(button('Löschen'))
+      await vi.waitFor(() => expect(addToast).toHaveBeenCalledExactlyOnceWith({ title: 'Rent gelöscht' }))
+    } finally {
+      await useNuxtApp().$i18n.setLocale('en')
+    }
   })
   it('shows an error toast when the delete fails', async () => {
     failDelete = true
@@ -695,6 +717,8 @@ describe('costs page delete', () => {
     await vi.waitFor(() => expect(button('Delete')).toBeTruthy())
     await click(button('Delete'))
     await vi.waitFor(() => expect(addToast).toHaveBeenCalledWith(expect.objectContaining({ color: 'error' })))
+    // The error toast is the only message: no "deleted".
+    expect(addToast).toHaveBeenCalledTimes(1)
   })
 })
 
@@ -725,7 +749,8 @@ describe('costs page delete in flight', () => {
     release()
     await vi.waitFor(() => expect(button('Delete')).toBeUndefined())
     expect(deleteCalls).toEqual(['/api/recurring-costs/1'])
-    expect(addToast).not.toHaveBeenCalled()
+    // One success message and no error toast.
+    expect(addToast).toHaveBeenCalledExactlyOnceWith({ title: 'Rent deleted' })
   })
   it('lets the user try again after a failed delete', async () => {
     failDelete = true

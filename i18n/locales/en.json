@@ -36,6 +36,7 @@
       "delete": "Delete"
     },
     "deleteError": "Could not delete the cost. Please try again.",
+    "deleted": "{name} deleted",
     "confirmTitle": "Delete cost?",
     "confirmRecurring": "{name} ({amount}, {interval}) will be permanently deleted.",
     "confirmPurchase": "{name} ({amount}, {date}) will be permanently deleted.",
@@ -67,7 +68,8 @@
   "common": {
     "save": "Save",
     "cancel": "Cancel",
-    "delete": "Delete"
+    "delete": "Delete",
+    "saved": "{name} saved"
   },
   "nav": {
     "dashboard": "Dashboard",

@@ -64,7 +64,7 @@ describe('CostForm in add mode', () => {
       method: 'POST',
       body: expect.objectContaining({ name: 'Lamp', amount: 25.5, category: 'appliances', date: '2026-04-02' }),
     })
-    await vi.waitFor(() => expect(wrapper.emitted('saved')).toHaveLength(1))
+    await vi.waitFor(() => expect(wrapper.emitted('saved')).toEqual([['Lamp']]))
   })
 })
 
@@ -93,7 +93,8 @@ describe('CostForm in edit mode', () => {
       method: 'PATCH',
       body: expect.objectContaining({ name: 'Gaming laptop', amount: 1200, date: '2026-03-14' }),
     })
-    await vi.waitFor(() => expect(wrapper.emitted('saved')).toHaveLength(1))
+    // The new name, not the one the cost had before the edit.
+    await vi.waitFor(() => expect(wrapper.emitted('saved')).toEqual([['Gaming laptop']]))
   })
   it('PATCHes a recurring cost to /api/recurring-costs/:id', async () => {
     const wrapper = await mountSuspended(CostForm, { props: { cost: monthly } })

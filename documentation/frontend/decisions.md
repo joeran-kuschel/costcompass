@@ -193,9 +193,19 @@ Details: [Costs page](app-structure.md#costs-page).
 - **Why position, not `UTable`'s row reuse.** The old behaviour came from `UTable` reusing row elements by position (no `getRowId`), so the focus stayed on the same DOM button, which then showed the next cost. That fails for the last row and in the phone lists. So `confirmDelete` counts the position among the visible `[data-row]` buttons before the delete and focuses the button at that position afterwards.
 - **Only visible buttons count.** The table and the phone lists are both always in the DOM, so a position counted over all buttons would mix the two.
 - **The dialog must not override it.** `onCloseAutoFocus` prevents reka-ui's default focus return only when a target is set. Cancel and a failed delete keep the default, which already returned to the opener.
-- **Out of scope:** announcing the result (#8).
+- **Announcing the result** is #8: see [Success message after add, edit and delete](#success-message-after-add-edit-and-delete-8).
 
 Details: [Costs page](app-structure.md#costs-page).
+
+### Success message after add, edit and delete (#8)
+
+- **One message for add and edit** (author's decision): `common.saved`, "{name} saved" / "{name} gespeichert". Delete has its own, `costs.deleted`, "{name} deleted" / "{name} gelöscht".
+- **The name is in the message.** A screen reader user has no table change to notice, so the message says what changed. After an edit it names the saved (new) name, which is why `CostForm` emits `saved` with `event.data.name` instead of the stored one.
+- **Add and edit: in the layout's `onSaved`.** The dialog lives in `layouts/default.vue`, which already reloads the lists and closes the dialog. The toast comes last, so it appears on the updated page. The form stays free of toasts, and a failed save shows only the banner (#95).
+- **Delete: in `onDelete`** of `costs.vue`, after the reload and only on success. A failed delete keeps its error toast.
+- **`assertive` left at Nuxt UI's default.** Nuxt UI announces a toast through a hidden `role="alert"` span with `aria-live="assertive"`, which interrupts a speaking screen reader. We did not change it; not tested with a real screen reader.
+
+Details: [Add and edit dialog](app-structure.md#add-and-edit-dialog) and [Costs page](app-structure.md#costs-page).
 
 ### Kind filter chips (#82)
 
