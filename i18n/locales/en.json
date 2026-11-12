@@ -35,6 +35,8 @@
     "sortedDesc": "descending",
     "in": "in {year}",
     "per": "per year",
+    "addDescription": "Enter the details of a new cost.",
+    "editDescription": "Change the details of {name}.",
     "actions": {
       "label": "Actions for {name}",
       "edit": "Edit",
