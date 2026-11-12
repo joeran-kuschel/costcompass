@@ -234,6 +234,67 @@ describe('costs page kind column', () => {
   })
 })
 
+describe('costs page sort announcement', () => {
+  // The sortable headers are Name, Kind and Amount, in that order; the table starts sorted by name without a sort state.
+  const sortButton = (index: number) => wrapper.findAll('th button')[index]!
+  const announcement = () => wrapper.find('div[class*="sm:block"] > p[role="status"]')
+  async function loaded() {
+    await vi.waitFor(() => expect(wrapper.findAll('tbody tr')).toHaveLength(3))
+  }
+
+  it('says nothing before the first sort', async () => {
+    await loaded()
+    expect(announcement().text()).toBe('')
+  })
+  it('announces the first click on Name, although the rows already are in that order', async () => {
+    await loaded()
+    await sortButton(0).trigger('click')
+    expect(announcement().text()).toBe('Sorted by Name, ascending')
+  })
+  it('announces the change of direction on the second click', async () => {
+    await loaded()
+    await sortButton(0).trigger('click')
+    await sortButton(0).trigger('click')
+    expect(announcement().text()).toBe('Sorted by Name, descending')
+  })
+  it('names the column that was clicked', async () => {
+    await loaded()
+    await sortButton(1).trigger('click')
+    expect(announcement().text()).toBe('Sorted by Kind, ascending')
+    await sortButton(2).trigger('click')
+    expect(announcement().text()).toBe('Sorted by Amount, ascending')
+  })
+  it('starts ascending when another column is chosen after a descending sort', async () => {
+    await loaded()
+    await sortButton(0).trigger('click')
+    await sortButton(0).trigger('click')
+    await sortButton(2).trigger('click')
+    expect(announcement().text()).toBe('Sorted by Amount, ascending')
+  })
+  it('keeps the announcement when the filter changes', async () => {
+    await loaded()
+    await sortButton(2).trigger('click')
+    await wrapper.find('input[type="search"]').setValue('rent')
+    expect(announcement().text()).toBe('Sorted by Amount, ascending')
+  })
+  it('is hidden from sight and cannot take focus', async () => {
+    await loaded()
+    expect(announcement().classes()).toContain('sr-only')
+    expect(announcement().attributes('tabindex')).toBeUndefined()
+  })
+  it('follows a change of language', async () => {
+    await loaded()
+    await sortButton(2).trigger('click')
+    await sortButton(2).trigger('click')
+    await useNuxtApp().$i18n.setLocale('de')
+    try {
+      await vi.waitFor(() => expect(announcement().text()).toBe('Absteigend nach Betrag sortiert'))
+    } finally {
+      await useNuxtApp().$i18n.setLocale('en')
+    }
+  })
+})
+
 describe('costs page kind filter', () => {
   // Two recurring costs (Liability insurance, Rent) and one purchase (Laptop); rows are sorted by name.
   const group = () => wrapper.find('[role="group"]')

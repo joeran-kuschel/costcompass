@@ -207,6 +207,16 @@ Details: [Costs page](app-structure.md#costs-page).
 
 Details: [Add and edit dialog](app-structure.md#add-and-edit-dialog) and [Costs page](app-structure.md#costs-page).
 
+### Sort announcement (#9)
+
+- **`v-model:sorting` plus a `watch`.** The table keeps its own sort state; the page binds it to a `sorting` ref and a `watch` copies the first entry into `sortColumn` and `sortOrder`. A live region (`role="status"`, `sr-only`) before the table shows "Sorted by {column}, {order}".
+- **Empty until the first sort.** The table starts name-ascending without a sort state. If the text started as "Sorted by Name, ascending", a first click on Name would change nothing in the text and nothing would be announced.
+- **The key is kept in state, not the translated text.** `sortColumn` holds the column id and `sortOrder` the key `sortedAsc` or `sortedDesc`; the template translates them, so the text follows a language change.
+- **The last announcement stays.** An empty `sorting` array is ignored.
+- **Not checked:** a real screen reader.
+
+Details: [Costs page](app-structure.md#costs-page).
+
 ### Kind filter chips (#82)
 
 - **Counts of all costs.** The author's choice: the numbers on the chips always count every cost. They do not change with the selected chip, the category chips (#83) or the search (#81). The live region says how many rows are shown.
