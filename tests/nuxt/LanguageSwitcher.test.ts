@@ -46,9 +46,10 @@ describe('LanguageSwitcher compact (phones)', () => {
     expect(wrapper.find('button').text()).toBe('EN')
     wrapper.unmount()
   })
-  it('is named "Language: English", the code is not its name', async () => {
+  it('is named "Language: EN", so its visible code is part of its name', async () => {
     const wrapper = await compact()
-    expect(wrapper.find('button').attributes('aria-label')).toBe('Language: English')
+    expect(wrapper.find('button').attributes('aria-label')).toBe('Language: EN')
+    expect(wrapper.find('button').attributes('aria-label')).toContain(wrapper.find('button').text())
     wrapper.unmount()
   })
   it('has the compact look: its class sets the 44 px target', async () => {
@@ -68,7 +69,8 @@ describe('LanguageSwitcher compact (phones)', () => {
     await open(wrapper)
     menuItems()[1]!.click()
     await vi.waitFor(() => expect(wrapper.find('button').text()).toBe('DE'))
-    expect(wrapper.find('button').attributes('aria-label')).toBe('Sprache: Deutsch')
+    expect(wrapper.find('button').attributes('aria-label')).toBe('Sprache: DE')
+    expect(wrapper.find('button').attributes('aria-label')).toContain(wrapper.find('button').text())
     expect(useNuxtApp().$i18n.locale.value).toBe('de')
     wrapper.unmount()
   })
@@ -79,7 +81,7 @@ describe('LanguageSwitcher compact (phones)', () => {
     expect(menuItems().map(item => item.getAttribute('aria-checked'))).toEqual(['false', 'true'])
     menuItems()[0]!.click()
     await vi.waitFor(() => expect(wrapper.find('button').text()).toBe('EN'))
-    expect(wrapper.find('button').attributes('aria-label')).toBe('Language: English')
+    expect(wrapper.find('button').attributes('aria-label')).toBe('Language: EN')
     wrapper.unmount()
   })
 })
