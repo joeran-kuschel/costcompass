@@ -4,10 +4,35 @@
     const { retry } = useCostLists()
     const { items } = useNavItems()
     const toast = useToast()
-    async function onSaved(name: string) {
+
+    async function onSaved(saved: Stored<Cost>) {
+        const previous = cost.value
         await retry()
         close()
-        toast.add({ title: t('common.saved', { name }) })
+        toast.add({
+            title: t('common.saved', { name: saved.name }),
+            actions: [{ label: t('common.undo'), onClick: () => previous ? restore(previous) : remove(saved) }]
+        })
+    }
+    async function remove(cost: Stored<Cost>) {
+        const url = cost.kind === 'recurring' ? '/api/recurring-costs' : '/api/purchases'
+        try {
+            await $fetch(`${url}/${cost.id}`, { method: 'DELETE' })
+            await retry()
+            toast.add({ title: t('costs.deleted', { name: cost.name }) })
+        } catch {
+            toast.add({ title: t('costs.undoError'), color: 'error'})
+        }
+    }
+    async function restore(previous: Stored<Cost>) {
+        const base = previous.kind === 'recurring' ? '/api/recurring-costs' : '/api/purchases'
+        try {
+            await $fetch(`${base}/${previous.id}`, { method: 'PATCH', body: previous })
+            await retry()
+            toast.add({ title: t('costs.undone', { name: previous.name }) })
+        } catch {
+            toast.add({ title: t('costs.undoError'), color: 'error' })
+        }
     }
 </script>
 <template>

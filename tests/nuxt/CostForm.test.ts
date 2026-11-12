@@ -51,7 +51,9 @@ describe('CostForm in add mode', () => {
     expect(fetchMock).not.toHaveBeenCalled()
     expect(wrapper.emitted('saved')).toBeUndefined()
   })
-  it('POSTs a valid purchase to /api/purchases and emits saved', async () => {
+  it('POSTs a valid purchase to /api/purchases and emits saved with the stored cost', async () => {
+    const stored: Stored<Purchase> = { id: 9, kind: 'purchase', name: 'Lamp', amount: 25.5, category: 'appliances', business: false, date: '2026-04-02' }
+    fetchMock.mockResolvedValue(stored)
     const wrapper = await mountSuspended(CostForm)
     await wrapper.find('input[name="name"]').setValue('Lamp')
     await setAmount(wrapper, '25.5')
@@ -64,7 +66,8 @@ describe('CostForm in add mode', () => {
       method: 'POST',
       body: expect.objectContaining({ name: 'Lamp', amount: 25.5, category: 'appliances', date: '2026-04-02' }),
     })
-    await vi.waitFor(() => expect(wrapper.emitted('saved')).toEqual([['Lamp']]))
+    // The row the API returned, with its new id, not the form data.
+    await vi.waitFor(() => expect(wrapper.emitted('saved')).toEqual([[stored]]))
   })
 })
 
@@ -83,7 +86,9 @@ describe('CostForm in edit mode', () => {
     expect(wrapper.find('input[name="date"]').exists()).toBe(false)
     expect(wrapper.text()).toContain('Interval')
   })
-  it('PATCHes a purchase to /api/purchases/:id and emits saved', async () => {
+  it('PATCHes a purchase to /api/purchases/:id and emits saved with the stored cost', async () => {
+    const stored: Stored<Purchase> = { ...purchase, name: 'Gaming laptop' }
+    fetchMock.mockResolvedValue(stored)
     const wrapper = await mountSuspended(CostForm, { props: { cost: purchase } })
     await wrapper.find('input[name="name"]').setValue('Gaming laptop')
     await submit(wrapper)
@@ -93,8 +98,8 @@ describe('CostForm in edit mode', () => {
       method: 'PATCH',
       body: expect.objectContaining({ name: 'Gaming laptop', amount: 1200, date: '2026-03-14' }),
     })
-    // The new name, not the one the cost had before the edit.
-    await vi.waitFor(() => expect(wrapper.emitted('saved')).toEqual([['Gaming laptop']]))
+    // The updated row, with the new name and not the one the cost had before the edit.
+    await vi.waitFor(() => expect(wrapper.emitted('saved')).toEqual([[stored]]))
   })
   it('PATCHes a recurring cost to /api/recurring-costs/:id', async () => {
     const wrapper = await mountSuspended(CostForm, { props: { cost: monthly } })

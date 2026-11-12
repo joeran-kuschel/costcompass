@@ -44,6 +44,8 @@
     },
     "deleteError": "Die Kosten konnten nicht gelöscht werden. Bitte versuche es erneut.",
     "deleted": "{name} gelöscht",
+    "undone": "{name} wiederhergestellt",
+    "undoError": "Die Änderung konnte nicht rückgängig gemacht werden. Bitte versuche es erneut.",
     "confirmTitle": "Kosten löschen?",
     "confirmRecurring": "{name} ({amount}, {interval}) wird endgültig gelöscht.",
     "confirmPurchase": "{name} ({amount}, {date}) wird endgültig gelöscht.",
@@ -76,7 +78,8 @@
     "save": "Speichern",
     "cancel": "Abbrechen",
     "delete": "Löschen",
-    "saved": "{name} gespeichert"
+    "saved": "{name} gespeichert",
+    "undo": "Rückgängig"
   },
   "nav": {
     "dashboard": "Dashboard",

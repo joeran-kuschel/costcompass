@@ -8,7 +8,7 @@ const props = defineProps<{
     cost?: Stored<Cost> | null,
     month?: MonthRef | null
 }>()
-const emit = defineEmits<{ saved: [name: string], cancel: [] }>()
+const emit = defineEmits<{ saved: [cost: Stored<Cost>], cancel: [] }>()
 const { t, locale } = useI18n()
 const { monthYear } = useMonth()
 const { currentMonth } = useYear()
@@ -62,14 +62,15 @@ if (props.cost) {
 
 async function onSubmit(event: FormSubmitEvent<CreateRecurringCost | CreatePurchase>) {
     const base = kind.value === 'recurring' ? '/api/recurring-costs' : '/api/purchases'
+    let saved: Stored<Cost>
     saveFailed.value = false
     try {
         if (props.cost) {
-            await $fetch(`${base}/${props.cost.id}`, { method: 'PATCH', body: event.data })
+            saved = await $fetch<Stored<Cost>>(`${base}/${props.cost.id}`, { method: 'PATCH', body: event.data })
         } else {
-            await $fetch(base, { method: 'POST', body: event.data })
+            saved = await $fetch<Stored<Cost>>(base, { method: 'POST', body: event.data })
         }
-        emit('saved', event.data.name)
+        emit('saved', saved)
     } catch {
         saveFailed.value = true
     }
