@@ -121,6 +121,11 @@ h2 {
 :root {
   --ui-container: 72.5rem;
 }
+@media (width < 64rem) {
+  html {
+    scroll-padding-bottom: 6.5rem;
+  }
+}
 main {
   padding-block: 2rem 4rem;
 }
