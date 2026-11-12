@@ -46,7 +46,7 @@ function runPending() {
                     <UIcon :name="kindIcon(section.kind)" class="text-muted" aria-hidden="true" />
                     {{ section.title }}
                 </h2>
-                <p class="font-extrabold tabular-nums">{{ section.total }}</p>
+                <p class="font-extrabold tabular-nums">{{ section.total }} <span class="sr-only">{{ section.kind === 'recurring' ? t('costs.per') : t('costs.in', { year: props.year }) }}</span></p>
             </div>
             <ul class="mt-3 flex flex-col gap-1.5">
                 <!-- Below 400 px the amount moves under the name (column 2, row 2), so the name keeps its width. -->

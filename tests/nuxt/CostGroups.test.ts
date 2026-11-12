@@ -58,11 +58,28 @@ describe('CostGroups sections', () => {
   it('totals the recurring costs per year and the purchases of the given year', async () => {
     await mount()
     const totals = wrapper.findAll('section').map(s => s.find('div > p').text())
-    expect(totals).toEqual(['€9,690', '€1,201'])
+    expect(totals).toEqual(['€9,690 per year', '€1,201 in 2026'])
   })
   it('counts only purchases of the given year in the purchases total', async () => {
     await mount(COSTS, 2025)
-    expect(wrapper.findAll('section')[1]!.find('div > p').text()).toBe('€0')
+    expect(wrapper.findAll('section')[1]!.find('div > p').text()).toBe('€0 in 2025')
+  })
+  it('adds the period to each total as text for screen readers only', async () => {
+    await mount()
+    const periods = wrapper.findAll('section').map(s => s.find('div > p span'))
+    expect(periods.map(p => p.text())).toEqual(['per year', 'in 2026'])
+    for (const period of periods) expect(period.classes()).toContain('sr-only')
+  })
+  it('translates the period of the totals', async () => {
+    await mount()
+    await useNuxtApp().$i18n.setLocale('de')
+    try {
+      await nextTick()
+      const periods = wrapper.findAll('section').map(s => s.find('div > p span').text())
+      expect(periods).toEqual(['pro Jahr', 'in 2026'])
+    } finally {
+      await useNuxtApp().$i18n.setLocale('en')
+    }
   })
   it('leaves out a section without costs', async () => {
     await mount([purchase()])
