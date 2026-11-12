@@ -30,6 +30,9 @@
     "shown": "{n} Posten angezeigt | {n} Posten angezeigt",
     "edit": "{name} editieren",
     "delete": "{name} löschen",
+    "sortedBy": "{order} nach {column} sortiert",
+    "sortedAsc": "Aufsteigend",
+    "sortedDesc": "Absteigend",
     "actions": {
       "label": "Aktionen für {name}",
       "edit": "Editieren",

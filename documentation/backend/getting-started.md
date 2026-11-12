@@ -71,7 +71,7 @@ pnpm test          # watch mode
 pnpm vitest run    # one run, then exit
 ```
 
-At the time of writing, 30 test files with 833 tests pass. The tests need no database. See [testing.md](testing.md).
+At the time of writing, 30 test files with 841 tests pass. The tests need no database. See [testing.md](testing.md).
 
 ## Other scripts
 
@@ -91,4 +91,4 @@ A `Dockerfile` and Kubernetes manifests (`k8s/`) are planned (roadmap steps 7 an
 
 ## Verification status
 
-Checked: `pnpm vitest run` passes (833 tests), `pnpm nuxt dev` starts and the API answers. Not run: `pnpm drizzle-kit migrate` (the local database was already migrated; the command comes from `drizzle.config.ts` and the `drizzle-kit` CLI help) and the Docker command above.
+Checked: `pnpm vitest run` passes (841 tests), `pnpm nuxt dev` starts and the API answers. Not run: `pnpm drizzle-kit migrate` (the local database was already migrated; the command comes from `drizzle.config.ts` and the `drizzle-kit` CLI help) and the Docker command above.

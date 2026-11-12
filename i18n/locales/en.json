@@ -30,6 +30,9 @@
     "shown": "{n} cost shown | {n} costs shown",
     "edit": "Edit {name}",
     "delete": "Delete {name}",
+    "sortedBy": "Sorted by {column}, {order}",
+    "sortedAsc": "ascending",
+    "sortedDesc": "descending",
     "actions": {
       "label": "Actions for {name}",
       "edit": "Edit",
