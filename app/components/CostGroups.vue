@@ -60,7 +60,11 @@ function runPending() {
                         <p class="text-sm text-muted">{{ row.subline }}</p>
                     </div>
                     <p class="col-start-2 row-start-2 font-extrabold tabular-nums min-[400px]:col-start-auto min-[400px]:row-start-auto min-[400px]:text-right">{{ row.amount }}</p>
-                    <UDropdownMenu :items="actions(row)" :content="{ align: 'end', onCloseAutoFocus: runPending }">
+                    <UDropdownMenu
+                        :items="actions(row)"
+                        :content="{ align: 'end', onCloseAutoFocus: runPending }"
+                        :ui="{ item: 'min-h-11 items-center' }"
+                    >
                         <UButton :data-row="row.key" icon="i-lucide-ellipsis-vertical" color="neutral" variant="ghost" class="size-11 justify-center focus-visible:outline-2 focus-visible:outline-primary"
                             :aria-label="t('costs.actions.label', { name: row.name })" />
                     </UDropdownMenu>
