@@ -4,7 +4,6 @@
 const props = defineProps<{ compact?: boolean }>()
 const { t, locale, locales, setLocale } = useI18n()
 const items = computed(() => locales.value.map(l => ({ label: l.name, value: l.code })))
-const currentName = computed(() => items.value.find(item => item.value === locale.value)?.label ?? '')
 const menuItems = computed(() => items.value.map(item => ({
     label: item.label,
     type: 'checkbox' as const,
@@ -17,7 +16,7 @@ const menuItems = computed(() => items.value.map(item => ({
         <UDropdownMenu :items="menuItems" :content="{ align: 'end' }">
             <UButton
                 :label="locale.toUpperCase()"
-                :aria-label="t('language.current', { language: currentName })"
+                :aria-label="t('language.current', { language: locale.toUpperCase() })"
                 color="neutral"
                 variant="ghost"
                 class="language-compact"
