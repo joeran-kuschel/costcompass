@@ -33,6 +33,8 @@
     "sortedBy": "Sorted by {column}, {order}",
     "sortedAsc": "ascending",
     "sortedDesc": "descending",
+    "in": "in {year}",
+    "per": "per year",
     "actions": {
       "label": "Actions for {name}",
       "edit": "Edit",

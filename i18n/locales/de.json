@@ -33,6 +33,8 @@
     "sortedBy": "{order} nach {column} sortiert",
     "sortedAsc": "Aufsteigend",
     "sortedDesc": "Absteigend",
+    "in": "in {year}",
+    "per": "pro Jahr",
     "actions": {
       "label": "Aktionen für {name}",
       "edit": "Editieren",
