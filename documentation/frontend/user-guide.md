@@ -22,7 +22,7 @@ Every cost has a name, an amount in euros, and a category: Housing, Insurance, A
    For a recurring cost, pick the **Interval**: Monthly, Quarterly or Yearly. A yearly or quarterly cost also needs a **Due month**. A quarterly cost starts in that month and repeats every three months, so February means February, May, August and November.
 5. Select **Add cost**.
 
-The window closes, the cost appears in the table and a short message at the screen edge confirms it, for example "Lamp saved". It disappears after a few seconds. If the cost could not be saved, a message says "Could not save the cost. Please try again." and the window stays open with what you typed.
+The window closes, the cost appears in the table and a short message at the screen edge confirms it, for example "Lamp saved". It disappears after a few seconds. Select **Undo** in the message to take the change back: a new cost is deleted again. If the cost could not be saved, a message says "Could not save the cost. Please try again." and the window stays open with what you typed.
 
 Required fields show a message under the field if you leave them empty or enter a wrong value.
 
@@ -30,7 +30,7 @@ Required fields show a message under the field if you leave them empty or enter 
 
 On the **Costs** page, each row has two buttons.
 
-- **Pencil** ("Edit <name>"): opens the same form with the values filled in. Change what you need and select **Save**. A short message confirms it, for example "Gaming laptop saved" with the new name. You cannot change the type of a cost (recurring or one-off). If you need a different type, delete the cost and add a new one.
+- **Pencil** ("Edit <name>"): opens the same form with the values filled in. Change what you need and select **Save**. A short message confirms it, for example "Gaming laptop saved" with the new name. **Undo** in that message sets the cost back to how it was. You cannot change the type of a cost (recurring or one-off). If you need a different type, delete the cost and add a new one.
 - **Trash** ("Delete <name>"): asks "Delete cost?" and names the cost with its amount and its interval or date, for example "Rent (€800.00, monthly) will be permanently deleted." or "Laptop (€1,200.50, March 14) will be permanently deleted." Select **Delete** to confirm, or **Cancel** or the Escape key to keep it. **Cancel** is selected when the window opens. A short message confirms the delete, for example "Rent deleted". A deleted cost cannot be restored.
 
 ## Read the costs table

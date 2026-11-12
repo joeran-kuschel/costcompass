@@ -18,8 +18,23 @@ registerEndpoint('/api/purchases', () => {
   return []
 })
 
+// What the API stored after an add: the form emits this item with its new id.
+const lamp = { id: 7, kind: 'purchase', name: 'Lamp', amount: 25.5, category: 'appliances', business: false, date: '2026-04-02' } as const
 const laptop = { id: 2, kind: 'purchase', name: 'Laptop', amount: 1200.5, category: 'appliances', business: true, date: '2026-03-14' } as const
 const october = { year: 2026, month: 10 } as const
+
+// Undo talks to the real $fetch; these endpoints stand in for the API and record what arrives.
+const undoCalls: { method: string, url: string, body?: unknown }[] = []
+let failUndo = false
+// The endpoint's event carries the request as a web Request; readBody of h3 does not work with it here.
+const bodyOf = (event: { web?: { request: Request } }) => event.web!.request.json()
+for (const url of ['/api/purchases/2', '/api/purchases/7']) {
+  registerEndpoint(url, async (event) => {
+    undoCalls.push({ method: event.method, url, body: event.method === 'PATCH' ? await bodyOf(event) : undefined })
+    if (failUndo) throw new Error('boom')
+    return ''
+  })
+}
 
 let wrapper: VueWrapper
 
@@ -28,6 +43,8 @@ beforeEach(async () => {
   lists.purchaseCalls = 0
   clearNuxtData()
   addToast.mockReset()
+  undoCalls.length = 0
+  failUndo = false
   // attachTo: the focus tests need real elements in the document.
   wrapper = await mountSuspended(DefaultLayout, { attachTo: document.body })
 })
@@ -174,7 +191,7 @@ describe('cost dialog after a save', () => {
     await vi.waitFor(() => expect(lists.recurringCalls).toBeGreaterThan(0))
     await opened(() => useCostDialog().openAdd())
     const before = { recurring: lists.recurringCalls, purchases: lists.purchaseCalls }
-    wrapper.findComponent(CostForm).vm.$emit('saved', 'Lamp')
+    wrapper.findComponent(CostForm).vm.$emit('saved', lamp)
     await vi.waitFor(() => expect(dialog()).toBeNull())
     expect(lists.recurringCalls).toBeGreaterThan(before.recurring)
     expect(lists.purchaseCalls).toBeGreaterThan(before.purchases)
@@ -183,21 +200,82 @@ describe('cost dialog after a save', () => {
   it('announces the saved name with a toast, once the dialog is closed', async () => {
     await opened(() => useCostDialog().openAdd())
     expect(addToast).not.toHaveBeenCalled()
-    wrapper.findComponent(CostForm).vm.$emit('saved', 'Lamp')
+    wrapper.findComponent(CostForm).vm.$emit('saved', lamp)
     await vi.waitFor(() => expect(addToast).toHaveBeenCalledTimes(1))
-    expect(addToast).toHaveBeenCalledWith({ title: 'Lamp saved' })
+    expect(addToast).toHaveBeenCalledWith({ title: 'Lamp saved', actions: [expect.objectContaining({ label: 'Undo' })] })
     expect(dialog()).toBeNull()
   })
   it('uses the same message for an edit, with the name that was saved', async () => {
     await opened(() => useCostDialog().openEdit({ ...laptop }))
-    wrapper.findComponent(CostForm).vm.$emit('saved', 'Gaming laptop')
-    await vi.waitFor(() => expect(addToast).toHaveBeenCalledWith({ title: 'Gaming laptop saved' }))
+    wrapper.findComponent(CostForm).vm.$emit('saved', { ...laptop, name: 'Gaming laptop' })
+    await vi.waitFor(() => expect(addToast).toHaveBeenCalledWith({ title: 'Gaming laptop saved', actions: [expect.objectContaining({ label: 'Undo' })] }))
   })
   it('shows no toast when the dialog is cancelled', async () => {
     await opened(() => useCostDialog().openAdd())
     button('Cancel')!.click()
     await vi.waitFor(() => expect(dialog()).toBeNull())
     expect(addToast).not.toHaveBeenCalled()
+  })
+})
+
+describe('cost dialog undo', () => {
+  // The Undo button of the "saved" toast: an add is undone by a DELETE, an edit by a PATCH with the cost as it was.
+  const undo = async () => {
+    const [toast] = addToast.mock.calls[0]!
+    await toast.actions[0].onClick()
+  }
+
+  it('deletes the new cost when an add is undone', async () => {
+    await opened(() => useCostDialog().openAdd())
+    wrapper.findComponent(CostForm).vm.$emit('saved', lamp)
+    await vi.waitFor(() => expect(addToast).toHaveBeenCalledTimes(1))
+    await undo()
+    expect(undoCalls).toEqual([{ method: 'DELETE', url: '/api/purchases/7', body: undefined }])
+    expect(addToast).toHaveBeenLastCalledWith({ title: 'Lamp deleted' })
+  })
+  it('loads both lists again after an undo', async () => {
+    await opened(() => useCostDialog().openAdd())
+    wrapper.findComponent(CostForm).vm.$emit('saved', lamp)
+    await vi.waitFor(() => expect(addToast).toHaveBeenCalledTimes(1))
+    const before = { recurring: lists.recurringCalls, purchases: lists.purchaseCalls }
+    await undo()
+    expect(lists.recurringCalls).toBeGreaterThan(before.recurring)
+    expect(lists.purchaseCalls).toBeGreaterThan(before.purchases)
+  })
+  it('sets the cost back to how it was when an edit is undone', async () => {
+    await opened(() => useCostDialog().openEdit({ ...laptop }))
+    wrapper.findComponent(CostForm).vm.$emit('saved', { ...laptop, name: 'Gaming laptop', amount: 1500 })
+    await vi.waitFor(() => expect(addToast).toHaveBeenCalledTimes(1))
+    await undo()
+    // The old values, not the edited ones; nothing is deleted.
+    expect(undoCalls).toEqual([{ method: 'PATCH', url: '/api/purchases/2', body: laptop }])
+    expect(addToast).toHaveBeenLastCalledWith({ title: 'Laptop restored' })
+  })
+  it('shows an error toast when undoing an add fails', async () => {
+    failUndo = true
+    await opened(() => useCostDialog().openAdd())
+    wrapper.findComponent(CostForm).vm.$emit('saved', lamp)
+    await vi.waitFor(() => expect(addToast).toHaveBeenCalledTimes(1))
+    await undo()
+    expect(addToast).toHaveBeenCalledTimes(2)
+    expect(addToast).toHaveBeenLastCalledWith(expect.objectContaining({ color: 'error' }))
+  })
+  it('shows an error toast and no "restored" message when undoing an edit fails', async () => {
+    failUndo = true
+    await opened(() => useCostDialog().openEdit({ ...laptop }))
+    wrapper.findComponent(CostForm).vm.$emit('saved', { ...laptop, name: 'Gaming laptop' })
+    await vi.waitFor(() => expect(addToast).toHaveBeenCalledTimes(1))
+    await undo()
+    expect(addToast).toHaveBeenCalledTimes(2)
+    expect(addToast).toHaveBeenLastCalledWith({ title: 'Could not undo the change. Please try again.', color: 'error' })
+  })
+  it('says "restored" in German after undoing an edit', async () => {
+    await useNuxtApp().$i18n.setLocale('de')
+    await opened(() => useCostDialog().openEdit({ ...laptop }))
+    wrapper.findComponent(CostForm).vm.$emit('saved', { ...laptop, name: 'Gaming laptop' })
+    await vi.waitFor(() => expect(addToast).toHaveBeenCalledTimes(1))
+    await undo()
+    expect(addToast).toHaveBeenLastCalledWith({ title: 'Laptop wiederhergestellt' })
   })
 })
 
@@ -211,8 +289,8 @@ describe('cost dialog in German', () => {
   it('announces a save in German', async () => {
     await useNuxtApp().$i18n.setLocale('de')
     await opened(() => useCostDialog().openAdd())
-    wrapper.findComponent(CostForm).vm.$emit('saved', 'Lampe')
-    await vi.waitFor(() => expect(addToast).toHaveBeenCalledWith({ title: 'Lampe gespeichert' }))
+    wrapper.findComponent(CostForm).vm.$emit('saved', { ...lamp, name: 'Lampe' })
+    await vi.waitFor(() => expect(addToast).toHaveBeenCalledWith({ title: 'Lampe gespeichert', actions: [expect.objectContaining({ label: 'Rückgängig' })] }))
   })
   it('has the German title with the name when a cost is edited', async () => {
     await useNuxtApp().$i18n.setLocale('de')

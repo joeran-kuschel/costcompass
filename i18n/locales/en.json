@@ -44,6 +44,8 @@
     },
     "deleteError": "Could not delete the cost. Please try again.",
     "deleted": "{name} deleted",
+    "undone": "{name} restored",
+    "undoError": "Could not undo the change. Please try again.",
     "confirmTitle": "Delete cost?",
     "confirmRecurring": "{name} ({amount}, {interval}) will be permanently deleted.",
     "confirmPurchase": "{name} ({amount}, {date}) will be permanently deleted.",
@@ -76,7 +78,8 @@
     "save": "Save",
     "cancel": "Cancel",
     "delete": "Delete",
-    "saved": "{name} saved"
+    "saved": "{name} saved",
+    "undo": "Undo"
   },
   "nav": {
     "dashboard": "Dashboard",

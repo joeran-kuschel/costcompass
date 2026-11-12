@@ -200,12 +200,22 @@ Details: [Costs page](app-structure.md#costs-page).
 ### Success message after add, edit and delete (#8)
 
 - **One message for add and edit** (author's decision): `common.saved`, "{name} saved" / "{name} gespeichert". Delete has its own, `costs.deleted`, "{name} deleted" / "{name} gelöscht".
-- **The name is in the message.** A screen reader user has no table change to notice, so the message says what changed. After an edit it names the saved (new) name, which is why `CostForm` emits `saved` with `event.data.name` instead of the stored one.
+- **The name is in the message.** A screen reader user has no table change to notice, so the message says what changed. After an edit it names the saved (new) name, The name comes from the stored cost that `CostForm` emits (since #99; before, the form emitted the name).
 - **Add and edit: in the layout's `onSaved`.** The dialog lives in `layouts/default.vue`, which already reloads the lists and closes the dialog. The toast comes last, so it appears on the updated page. The form stays free of toasts, and a failed save shows only the banner (#95).
 - **Delete: in `onDelete`** of `costs.vue`, after the reload and only on success. A failed delete keeps its error toast.
 - **`assertive` left at Nuxt UI's default.** Nuxt UI announces a toast through a hidden `role="alert"` span with `aria-live="assertive"`, which interrupts a speaking screen reader. We did not change it; not tested with a real screen reader.
 
 Details: [Add and edit dialog](app-structure.md#add-and-edit-dialog) and [Costs page](app-structure.md#costs-page).
+
+### Undo after saving (#99)
+
+- **Undo in the saved toast.** The toast of `onSaved` has an "Undo" action (`common.undo`, German "Rückgängig"). Delete keeps its plain toast.
+- **An add is undone by a delete, an edit by restoring the previous values.** `remove(saved)` sends `DELETE`; `restore(previous)` sends `PATCH` with the old cost. Both reload the lists and show a toast (`costs.deleted` or `costs.undone`, "{name} restored" / "{name} wiederhergestellt"). A failure shows `costs.undoError`.
+- **`CostForm` emits the stored cost.** The layout needs the `id` (and `kind`) of a new cost to delete it, so `saved` carries the `Stored<Cost>` from the `POST`/`PATCH` response instead of the name.
+- **`previous` is read before `close()`.** `close()` clears the dialog's cost, so reading it afterwards would find `null` and an edit would be undone as if it were an add. A test fails when the order is swapped.
+- **Known limits:** the undo itself cannot be undone; the toast closes when the button is clicked (Nuxt UI default); a restore sends the full old cost, not only the changed fields. The button is not reachable by the keyboard in practice (follow-up issue #162): it is last in the tab order (32 to 49 Tab presses) and the toast closes after about 5 seconds; only Reka's F8 hotkey keeps it open, and the app does not announce that (measured in headless Chromium, see [Undo (#99)](app-structure.md#add-and-edit-dialog)).
+
+Details: [Add and edit dialog](app-structure.md#add-and-edit-dialog).
 
 ### Sort announcement (#9)
 
