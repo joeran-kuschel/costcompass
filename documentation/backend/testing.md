@@ -9,7 +9,7 @@ pnpm test          # watch mode
 pnpm vitest run    # single run
 ```
 
-The setup is Vitest with `@nuxt/test-utils`, environment `nuxt` (`vitest.config.ts`), `happy-dom`, and `@vue/test-utils` (a dev dependency that `mountSuspended` needs). Tests are in `tests/nuxt/` (the folder the Nuxt TypeScript config includes) and end in `.test.ts`. At the time of writing: 30 files, 843 tests, all passing, about 10 to 15 seconds. No database is needed.
+The setup is Vitest with `@nuxt/test-utils`, environment `nuxt` (`vitest.config.ts`), `happy-dom`, and `@vue/test-utils` (a dev dependency that `mountSuspended` needs). Tests are in `tests/nuxt/` (the folder the Nuxt TypeScript config includes) and end in `.test.ts`. At the time of writing: 30 files, 844 tests, all passing, about 10 to 15 seconds. No database is needed.
 
 ## Conventions
 

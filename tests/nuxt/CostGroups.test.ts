@@ -143,6 +143,12 @@ describe('CostGroups actions', () => {
     await mount()
     expect(wrapper.find('li button').classes()).toEqual(expect.arrayContaining(['focus-visible:outline-2', 'focus-visible:outline-primary']))
   })
+  it('makes the menu items at least 44 px high and keeps icon and label centred', async () => {
+    // happy-dom has no layout: this checks the classes; the height is measured in the browser.
+    await mount()
+    const classes = (menus()[0]!.props('ui') as { item: string }).item.split(' ')
+    expect(classes).toEqual(expect.arrayContaining(['min-h-11', 'items-center']))
+  })
   it('translates the actions', async () => {
     await mount()
     await useNuxtApp().$i18n.setLocale('de')
