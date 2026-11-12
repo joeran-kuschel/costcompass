@@ -88,6 +88,37 @@ describe('cost dialog in the layout', () => {
   })
 })
 
+describe('cost dialog description', () => {
+  // The dialog points aria-describedby at a hidden description, so the reference never ends in an empty element.
+  const description = () => {
+    const id = dialog()!.getAttribute('aria-describedby')
+    return id ? document.getElementById(id) : null
+  }
+
+  it('describes the add form', async () => {
+    await opened(() => useCostDialog().openAdd())
+    expect(description()!.textContent!.trim()).toBe('Enter the details of a new cost.')
+  })
+  it('describes the edit form with the name of the cost', async () => {
+    await opened(() => useCostDialog().openEdit({ ...laptop }))
+    expect(description()!.textContent!.trim()).toBe('Change the details of Laptop.')
+  })
+  it('hides the description from sight but keeps it for screen readers', async () => {
+    await opened(() => useCostDialog().openAdd())
+    expect(description()!.classList).toContain('sr-only')
+    expect(description()!.getAttribute('aria-hidden')).toBeNull()
+  })
+  it('has German descriptions', async () => {
+    await useNuxtApp().$i18n.setLocale('de')
+    await opened(() => useCostDialog().openAdd())
+    expect(description()!.textContent!.trim()).toBe('Angaben zum neuen Posten eingeben.')
+    useCostDialog().close()
+    await vi.waitFor(() => expect(dialog()).toBeNull())
+    await opened(() => useCostDialog().openEdit({ ...laptop }))
+    expect(description()!.textContent!.trim()).toBe('Angaben zu Laptop ändern.')
+  })
+})
+
 describe('cost dialog closing', () => {
   it('closes on Cancel and forgets the cost and the month', async () => {
     await opened(() => useCostDialog().openEdit({ ...laptop }))

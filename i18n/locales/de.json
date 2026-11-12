@@ -35,6 +35,8 @@
     "sortedDesc": "Absteigend",
     "in": "in {year}",
     "per": "pro Jahr",
+    "addDescription": "Angaben zum neuen Posten eingeben.",
+    "editDescription": "Angaben zu {name} ändern.",
     "actions": {
       "label": "Aktionen für {name}",
       "edit": "Editieren",
