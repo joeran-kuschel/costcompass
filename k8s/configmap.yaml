@@ -1,0 +1,8 @@
+apiVersion: v1
+data:
+  NITRO_PORT: "3000"
+  NODE_ENV: production
+kind: ConfigMap
+metadata:
+  name: costcompass-config
+  namespace: costcompass
