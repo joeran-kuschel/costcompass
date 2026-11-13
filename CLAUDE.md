@@ -63,7 +63,8 @@ costcompass/
 ├── tests/nuxt/               # Vitest tests, run in the Nuxt environment
 ├── public/                   # Static files: favicons, app icons, manifest.webmanifest
 ├── k8s/                      # (planned) Kubernetes manifests
-├── Dockerfile                # (planned)
+├── Dockerfile                # Two-stage image of the app, see documentation/backend/docker.md
+├── .dockerignore             # Keeps node_modules, .env, .git and similar out of the build
 ├── nuxt.config.ts
 ├── vitest.config.ts
 ├── eslint.config.mjs
@@ -154,7 +155,7 @@ Shared structure:
 
 ## Kubernetes setup (Docker Desktop)
 
-- **App image:** multi-stage Dockerfile, Nuxt built with the `node-server` preset, running `.output/server/index.mjs`
+- **App image:** multi-stage Dockerfile, Nuxt built with the `node-server` preset, running `.output/server/index.mjs`; build and run: [`documentation/backend/docker.md`](documentation/backend/docker.md)
 - **App:** Deployment + Service, config via ConfigMap, credentials via Secret, readiness and liveness probes against a health endpoint
 - **PostgreSQL:** StatefulSet with a PersistentVolumeClaim + Service (or an operator / Helm chart, see open decisions)
 - **Migrations:** run as a Kubernetes Job or init container before the app starts, not on every request
