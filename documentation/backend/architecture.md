@@ -57,4 +57,4 @@ There are no other settings. Nuxt reads `.env` in development; in production set
 
 ## Planned
 
-Docker image (`node-server` preset), Kubernetes manifests, migration job, the rate calculator. None of these exist yet.
+Kubernetes manifests, the migration Job (the migration image exists, see [docker.md](docker.md#migrations)), the rate calculator. None of these exist yet.

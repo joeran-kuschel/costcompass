@@ -14,6 +14,7 @@ A short log of what was decided and why. Written for: developers and contributor
 | Purchases | Count fully in the year of purchase | How a household thinks; depreciation is parked |
 | Recurring due month | Yearly and quarterly costs carry `dueMonth` (1 to 12); quarterly repeats every 3 months | Months, not full dates, are enough |
 | Database access | Drizzle with `drizzle-kit` migrations | TypeScript schema, no code generation |
+| Migrations in a container | Second Dockerfile target `migrate` that reuses `drizzle-kit` | The app image holds only `.output`, so a `migrate()` script would lack `drizzle-orm` and `pg`. Cost: a bigger image, used only for the migration run. See [docker.md](docker.md#migrations) |
 | API | REST per resource; `GET`/`POST` on the list, `PATCH`/`DELETE` on `[id]`; thin routes, Zod validation | Logic stays testable in `server/utils` |
 | Status codes | 400 invalid, 404 unknown id, 204 for delete, 200 for `PATCH` | See [api.md](api.md) |
 | PATCH on recurring costs | Merge patch into the stored row, validate the result, write `dueMonth: null` for monthly | No stale month stays behind |

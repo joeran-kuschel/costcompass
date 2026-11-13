@@ -38,7 +38,7 @@ NUXT_DATABASE_URL=postgres://costcompass:costcompass@localhost:5432/costcompass
 One variable serves three readers:
 
 - Nuxt maps `NUXT_DATABASE_URL` onto `runtimeConfig.databaseUrl` (declared in `nuxt.config.ts`), which `server/utils/db.ts` uses.
-- `drizzle.config.ts` reads the same variable for migrations. It calls `process.loadEnvFile()`, so a `.env` file in the project root must exist.
+- `drizzle.config.ts` reads the same variable for migrations. It loads `.env` from the project root if the file exists; in a container the variable comes from the environment ([docker.md](docker.md#migrations)).
 
 If the variable is missing, the app starts but every API call fails when it needs the database.
 

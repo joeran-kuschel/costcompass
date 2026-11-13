@@ -1,6 +1,7 @@
 import { defineConfig } from 'drizzle-kit'
+import { existsSync } from 'node:fs'
 
-process.loadEnvFile()
+if (existsSync('.env')) process.loadEnvFile()
 
 export default defineConfig({
   dialect: 'postgresql',
