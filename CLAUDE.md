@@ -52,7 +52,7 @@ costcompass/
 │   ├── middleware/           # (planned) Client route middleware
 │   └── pages/                # Pages (auto-routing): index.vue (dashboard), costs.vue, months/[year]/[month].vue
 ├── server/                   # Nitro server, the only layer touching the DB
-│   ├── api/                  # API routes: recurring-costs/ and purchases/ (index.get/post, [id].patch/delete)
+│   ├── api/                  # API routes: recurring-costs/ and purchases/ (index.get/post, [id].patch/delete), health.get.ts and ready.get.ts (liveness and readiness)
 │   ├── db/                   # Drizzle schema and migrations
 │   ├── middleware/           # (planned) Server middleware
 │   └── utils/                # Server utilities (db.ts client, costs.ts queries and row mappers)
@@ -156,7 +156,7 @@ Shared structure:
 ## Kubernetes setup (Docker Desktop)
 
 - **App image:** multi-stage Dockerfile, Nuxt built with the `node-server` preset, running `.output/server/index.mjs`; build and run: [`documentation/backend/docker.md`](documentation/backend/docker.md)
-- **App:** Deployment + Service, config via ConfigMap, credentials via Secret, readiness and liveness probes against a health endpoint
+- **App:** Deployment + Service, config via ConfigMap, credentials via Secret, readiness and liveness probes against a health endpoint (`/api/health`, `/api/ready`: [`documentation/backend/health.md`](documentation/backend/health.md))
 - **PostgreSQL:** StatefulSet with a PersistentVolumeClaim + Service (or an operator / Helm chart, see open decisions)
 - **Migrations:** run as a Kubernetes Job or init container before the app starts, not on every request
 - **Access:** port-forward at first, Ingress later if needed
@@ -232,7 +232,7 @@ Design and dashboard decisions (details in [`documentation/frontend/decisions.md
 - Costs table and year: should the table be filtered by the selected year? Only purchases have a year, recurring costs have none
 ## Current status
 
-Roadmap steps 1-5 are done; step 6 (UI) is in progress. 854 Vitest tests in 30 files pass. The cost core in `shared/`, the Drizzle schema and migration and the API (`GET`, `POST`, `PATCH`, `DELETE` for recurring costs and purchases) are done; the API routes and the real SQL are tested by hand against the local Postgres, not by automated tests (that would need a test Postgres). The UI has the layout with sidebar and tab bar, the central add/edit dialog, `/costs` (summary line, search, kind and category filters, sortable table, edit, delete), the dashboard (including its loading, error and empty states) and the month page with its navigation. Details per page: [`documentation/frontend/app-structure.md`](documentation/frontend/app-structure.md); tests: [`documentation/backend/testing.md`](documentation/backend/testing.md).
+Roadmap steps 1-5 are done; step 6 (UI) is in progress. 860 Vitest tests in 31 files pass. The cost core in `shared/`, the Drizzle schema and migration and the API (`GET`, `POST`, `PATCH`, `DELETE` for recurring costs and purchases) are done; the API routes and the real SQL are tested by hand against the local Postgres, not by automated tests (that would need a test Postgres). The UI has the layout with sidebar and tab bar, the central add/edit dialog, `/costs` (summary line, search, kind and category filters, sortable table, edit, delete), the dashboard (including its loading, error and empty states) and the month page with its navigation. Details per page: [`documentation/frontend/app-structure.md`](documentation/frontend/app-structure.md); tests: [`documentation/backend/testing.md`](documentation/backend/testing.md).
 
 Next: the "This month" card overflowed sideways at 320 px before the hero restyle (long names broke into single letters, #38; not looked at again since). Still open: the `RecurringCost` union type in the core (the API already enforces `dueMonth`), and the rate calculator (later).
 

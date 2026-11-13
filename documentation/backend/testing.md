@@ -9,7 +9,7 @@ pnpm test          # watch mode
 pnpm vitest run    # single run
 ```
 
-The setup is Vitest with `@nuxt/test-utils`, environment `nuxt` (`vitest.config.ts`), `happy-dom`, and `@vue/test-utils` (a dev dependency that `mountSuspended` needs). Tests are in `tests/nuxt/` (the folder the Nuxt TypeScript config includes) and end in `.test.ts`. At the time of writing: 30 files, 854 tests, all passing, about 10 to 15 seconds. No database is needed.
+The setup is Vitest with `@nuxt/test-utils`, environment `nuxt` (`vitest.config.ts`), `happy-dom`, and `@vue/test-utils` (a dev dependency that `mountSuspended` needs). Tests are in `tests/nuxt/` (the folder the Nuxt TypeScript config includes) and end in `.test.ts`. At the time of writing: 31 files, 860 tests, all passing, about 10 to 15 seconds. No database is needed.
 
 ## Conventions
 
@@ -29,6 +29,7 @@ The setup is Vitest with `@nuxt/test-utils`, environment `nuxt` (`vitest.config.
 | --- | --- |
 | Calculation core, dates, Zod schemas | `costs.test.ts`, `dates.test.ts`, `validation.test.ts` |
 | Server functions on a mocked `db` (`vi.mock`): the logic between the Drizzle calls, such as the PATCH merge, not the SQL | `server-costs.test.ts` |
+| Health and readiness routes, with `db` stubbed | `health-routes.test.ts` |
 | Pages | `dashboard-states.test.ts`, `dashboard-summary.test.ts`, `dashboard-months.test.ts`, `dashboard-month-cards.test.ts`, `costs-page.test.ts`, `costs-page-sorting.test.ts`, `month-page.test.ts`, `error-page.test.ts` |
 | Components | `CostForm.test.ts`, `LanguageSwitcher.test.ts`, `YearSelect.test.ts` |
 | Composables | `useMoney.test.ts`, `useMonth.test.ts`, `useYear.test.ts`, `useKind.test.ts` |
@@ -40,6 +41,7 @@ The setup is Vitest with `@nuxt/test-utils`, environment `nuxt` (`vitest.config.
 - `dates.test.ts`: `monthDateRange`.
 - `validation.test.ts`: the Zod schemas.
 - `server-costs.test.ts`: `db` is replaced with `vi.mock`, so the tests check the logic between the Drizzle calls, such as the PATCH merge, not the SQL.
+- `health-routes.test.ts`: 6 tests for `GET /api/health` (the body, no database query) and `GET /api/ready` (ok, 503, no error text or connection string in the response, recovery on the next call). The routes use Nitro auto-imports (`defineEventHandler`, `db`) that do not exist in the Nuxt test environment, so the test stubs them with `vi.stubGlobal` and imports the route file. No real database. See [health.md](health.md).
 
 The component, page, composable and app-level tests, and how each is set up, are described in [the frontend testing page](../frontend/testing.md).
 
