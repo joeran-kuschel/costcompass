@@ -6,10 +6,13 @@ RUN pnpm install --frozen-lockfile
 COPY . .
 RUN pnpm build
 
+FROM build AS migrate
+CMD ["pnpm", "drizzle-kit", "migrate"]
+
 FROM node:26-alpine AS runtime
 WORKDIR /app
 COPY --from=build /app/.output ./.output
 USER node
 ENV NODE_ENV=production
 EXPOSE 3000
-CMD [ "node", ".output/server/index.mjs" ]
+CMD ["node", ".output/server/index.mjs"]

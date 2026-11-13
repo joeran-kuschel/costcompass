@@ -2,7 +2,7 @@
 
 How to build and run the Costcompass app as a container image. Written for: developers and operators.
 
-The image contains the built Nuxt server and nothing else. The database is not part of it, and neither are the migrations (see [What is not in the image](#what-is-not-in-the-image)).
+The app image contains the built Nuxt server and nothing else. The database is not part of it, and neither are the migrations. Migrations run from a second image, see [Migrations](#migrations).
 
 ## Build the image
 
@@ -10,11 +10,12 @@ The image contains the built Nuxt server and nothing else. The database is not p
 docker build -t costcompass .
 ```
 
-The `Dockerfile` in the project root has two stages.
+The `Dockerfile` in the project root has three stages. `docker build .` builds the last one, `runtime`; the `migrate` stage is only built on request (see [Migrations](#migrations)).
 
 | Stage | Base | What it does |
 | --- | --- | --- |
 | `build` | `node:26-alpine` | Installs pnpm, installs the dependencies, runs `pnpm build` (the `node-server` preset) |
+| `migrate` | the `build` stage | Runs `pnpm drizzle-kit migrate`, see [Migrations](#migrations) |
 | `runtime` | `node:26-alpine` | Copies only `/app/.output`, runs as the `node` user, starts the server |
 
 Why two stages: the build needs `node_modules`, the sources and the build tools. The running server needs only `.output`, which already contains what it uses. Copying just that folder keeps the image small (192 MB) and leaves the sources out.
@@ -57,8 +58,63 @@ If the variable is missing or wrong, the server still starts, but every API call
 
 - No secrets: no `.env` file and no credentials. `docker history costcompass` shows only `NODE_ENV` and `NODE_VERSION` as environment values.
 - No source code and no `node_modules`: only `/app/.output`.
-- No migrations and no way to run them. Applying them in a container is a separate step (#42). Until then, run `pnpm drizzle-kit migrate` from the project, as in [getting-started.md](getting-started.md#4-apply-the-migrations).
+- No migrations and no `drizzle-kit`. Apply them with the separate migration image, see [Migrations](#migrations).
 - No database. Start Postgres yourself.
+
+## Migrations
+
+Apply the database migrations from a container, without a Node setup on your machine. Written for: developers and operators.
+
+The `migrate` stage starts from the `build` stage and runs `pnpm drizzle-kit migrate`. The app image has no `drizzle-kit` and no migration files, so migrations get their own image.
+
+Build it with a target:
+
+```bash
+docker build --target migrate -t costcompass-migrate .
+```
+
+Run it against your database. Only `NUXT_DATABASE_URL` is needed:
+
+```bash
+docker run --rm \
+  -e NUXT_DATABASE_URL="postgresql://USER:PASSWORD@host.docker.internal:PORT/DB" \
+  costcompass-migrate
+```
+
+Replace `USER`, `PASSWORD`, `PORT` and `DB`. `host.docker.internal` reaches a Postgres on your Mac, as explained under [Run the container](#run-the-container).
+
+`drizzle.config.ts` loads `.env` only if the file exists, so the container needs none. The local `pnpm drizzle-kit migrate` with a `.env` file works as before.
+
+### Exit codes
+
+| Code | Case |
+| --- | --- |
+| 0 | Migrations were applied |
+| 0 | Nothing was pending |
+| 1 | Host unreachable, wrong password, or `NUXT_DATABASE_URL` missing |
+
+### Run it more than once
+
+A second run changes nothing and exits with 0. Drizzle records applied migrations in the table `__drizzle_migrations`.
+
+### What is in the migration image
+
+It reuses the `build` stage, so it holds the sources, all dependencies including `drizzle-kit`, and `server/db/migrations`. It is much larger than the app image and runs as root, because the `build` stage sets no `USER`. Use it only for the migration run and do not deploy it as the app.
+
+### Why a second target
+
+The alternative was a script calling `migrate()` from `drizzle-orm` inside the app image. The runtime image contains only `.output`, so such a script would find no `drizzle-orm` or `pg` and would need its own bundling step. Reusing `drizzle-kit` costs a bigger image that is used only once per migration run. See [decisions.md](decisions.md).
+
+### Checked and not checked
+
+Checked by building and running, against a throwaway `postgres:17` container:
+
+- On an empty database, the first run creates `purchases`, `recurring_costs` and `__drizzle_migrations` (exit 0). The second run changes nothing (exit 0).
+- On a copy of the development data (5 recurring costs, 9 purchases), the row counts were identical after the migration (exit 0).
+- The app image then started against the migrated empty database: `/api/ready` returns ok, `/api/purchases` returns `[]`, and creating a recurring cost works.
+- Exit code 1 for an unreachable host, a wrong password and a missing `NUXT_DATABASE_URL`.
+
+Not checked: running it as a Kubernetes Job (#47), a migration with broken SQL that fails midway, two runs at the same time, other CPU architectures. The image size was not measured. Rollback (down migrations) is out of scope.
 
 ## Verification status
 

@@ -65,4 +65,4 @@ If you add a category, edit `CATEGORIES`, generate a migration for the enum, and
 
 ## Migrations in production
 
-Planned: a Kubernetes Job or init container runs migrations before the app starts, never on a request. Not built yet.
+A Kubernetes Job or init container will run migrations before the app starts, never on a request *(planned, #47)*. The image for it exists: see [Migrations in docker.md](docker.md#migrations).
