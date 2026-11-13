@@ -17,7 +17,7 @@ Data flows one way: the browser calls `/api/...`, the route validates with a Zod
 
 ```
 app/            pages, components, composables, layouts, error.vue, app.vue
-server/api/     recurring-costs/ and purchases/ (index.get/post, [id].patch/delete)
+server/api/     recurring-costs/ and purchases/ (index.get/post, [id].patch/delete), health.get.ts, ready.get.ts
 server/db/      schema.ts and migrations/
 server/utils/   db.ts (client), costs.ts (queries and row mappers)
 shared/types/   calculation.ts (types and the CATEGORIES, MONTHS, INTERVALS lists)
@@ -57,4 +57,4 @@ There are no other settings. Nuxt reads `.env` in development; in production set
 
 ## Planned
 
-Docker image (`node-server` preset), Kubernetes manifests, migration job, a health endpoint, the rate calculator. None of these exist yet.
+Docker image (`node-server` preset), Kubernetes manifests, migration job, the rate calculator. None of these exist yet.

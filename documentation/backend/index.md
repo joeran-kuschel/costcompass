@@ -10,6 +10,7 @@ For developers and contributors. It covers the server, the database, the shared 
 | [database.md](database.md) | Reference and how-to | Drizzle schema, migrations workflow |
 | [calculation-core.md](calculation-core.md) | Reference | Every function in `shared/utils/costs.ts` and `dates.ts` |
 | [docker.md](docker.md) | How-to and reference | Build and run the app image, configuration, what is and is not in it |
+| [health.md](health.md) | Reference and explanation | The liveness route `/api/health` and the readiness route `/api/ready`, the timeout decision, what was checked |
 | [testing.md](testing.md) | Explanation and how-to | How tests are organised, conventions, commands, the core and server tests (frontend tests: [frontend/testing.md](../frontend/testing.md)) |
 | [decisions.md](decisions.md) | Explanation | Decision log, the details of the architecture and data decisions, and open decisions (design decisions: [frontend/decisions.md](../frontend/decisions.md)) |
 
