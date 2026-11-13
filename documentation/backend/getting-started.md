@@ -87,7 +87,7 @@ ESLint currently crashes because `typescript-eslint` does not support TypeScript
 
 ## Planned
 
-The app image is described in [docker.md](docker.md). Kubernetes manifests (`k8s/`) are planned (roadmap step 8) and do not exist yet.
+The app image is described in [docker.md](docker.md). The Kubernetes manifests in `k8s/` (namespace, ConfigMap, Secret template) are described in [kubernetes.md](kubernetes.md); Postgres, app and migrations Job manifests are not there yet.
 
 ## Verification status
 
