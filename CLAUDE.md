@@ -157,10 +157,11 @@ Shared structure:
 
 - **App image:** multi-stage Dockerfile, Nuxt built with the `node-server` preset, running `.output/server/index.mjs`; build and run: [`documentation/backend/docker.md`](documentation/backend/docker.md)
 - **App:** Deployment + Service, config via ConfigMap, credentials via Secret, readiness and liveness probes against a health endpoint (`/api/health`, `/api/ready`: [`documentation/backend/health.md`](documentation/backend/health.md))
-- **PostgreSQL:** StatefulSet with a PersistentVolumeClaim + Service (or an operator / Helm chart, see open decisions)
+- **PostgreSQL:** own StatefulSet manifests with a PersistentVolumeClaim + Service (no Helm chart, no operator; see the Kubernetes decision below)
 - **Migrations:** run as a Kubernetes Job or init container before the app starts, not on every request; the image is the `migrate` target of the Dockerfile, see [`documentation/backend/docker.md`](documentation/backend/docker.md#migrations)
 - **Access:** port-forward at first, Ingress later if needed
 - **Local development:** `nuxt dev` against Postgres in the cluster (via port-forward) or a separate local container
+- **Manifests (#43):** plain YAML files in `k8s/`, applied with `kubectl apply -f` in the order given in the docs (namespace, ConfigMap and Secret, Postgres, migrations Job, app). Kustomize only when a second environment appears.
 
 ## Roadmap
 
@@ -205,6 +206,7 @@ Architecture and data decisions, in short. The details and reasons are in [`docu
 - Status codes: invalid input 400 (Zod issues in the body), unknown id 404, successful `DELETE` 204 without a body, `PATCH` returns the updated item with 200
 - PATCH: the body is a partial of the create fields, an empty patch is rejected. For recurring costs `updateRecurringCost` merges the patch into the stored row, validates the result (400 if invalid) and writes `dueMonth: null` when the result is monthly
 - Row ids in the UI: the core types have no `id`; data from the API is typed with `Stored<T> = T & { id: number }` (implemented in `shared/types/calculation.ts`)
+- Kubernetes (#43): PostgreSQL as our own StatefulSet manifests (no Helm chart, no operator), manifests as plain YAML in `k8s/` applied with `kubectl apply -f` (no Kustomize or Helm for now). More to learn and fully visible; backups and upgrades are ours. Revisit Kustomize when a second environment appears. Details in [`documentation/backend/decisions.md`](documentation/backend/decisions.md)
 
 Design and dashboard decisions (details in [`documentation/frontend/decisions.md`](documentation/frontend/decisions.md)):
 
@@ -227,8 +229,6 @@ Design and dashboard decisions (details in [`documentation/frontend/decisions.md
 - Time handling: how dates and periods (month, year) are represented and queried (months are 1-12 in the API, array index 0 = January in `monthlyTotals`)
 - Currency: euro only, or configurable
 - State handling: plain composables or Pinia
-- Postgres in k8s: own StatefulSet manifests, Helm chart, or an operator like CloudNativePG
-- Manifest management: plain YAML, Kustomize or Helm
 - Costs table and year: should the table be filtered by the selected year? Only purchases have a year, recurring costs have none
 ## Current status
 
