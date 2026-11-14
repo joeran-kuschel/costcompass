@@ -40,7 +40,7 @@ Replace `USER` and `PASSWORD` with your database credentials. Open `http://local
 curl http://localhost:3000/api/purchases
 ```
 
-Inside a container, `localhost` is the container itself. A Postgres that runs on your Mac and publishes a port (the local dev container `costcompass-db` publishes 5434) is reached through `host.docker.internal`. In Kubernetes the host will be the name of the Postgres Service *(planned, #46)*.
+Inside a container, `localhost` is the container itself. A Postgres that runs on your Mac and publishes a port (the local dev container `costcompass-db` publishes 5434) is reached through `host.docker.internal`. In Kubernetes the host will be the name of the Postgres Service (`postgres`, see [kubernetes.md](kubernetes.md#app)).
 
 ## Configuration
 

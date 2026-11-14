@@ -62,7 +62,7 @@ costcompass/
 ├── i18n/locales/             # en.json and de.json locale files
 ├── tests/nuxt/               # Vitest tests, run in the Nuxt environment
 ├── public/                   # Static files: favicons, app icons, manifest.webmanifest
-├── k8s/                      # Plain YAML manifests: namespace, ConfigMap, Secret example (the real secret.yaml is git-ignored), postgres.yaml (Service and StatefulSet); app manifests are planned
+├── k8s/                      # Plain YAML manifests: namespace, ConfigMap, Secret example (the real secret.yaml is git-ignored), postgres.yaml (Service and StatefulSet), app.yaml (Service and Deployment)
 ├── Dockerfile                # Three stages: build, migrate (`--target migrate`), runtime; see documentation/backend/docker.md
 ├── .dockerignore             # Keeps node_modules, .env, .git and similar out of the build
 ├── nuxt.config.ts
@@ -156,7 +156,7 @@ Shared structure:
 ## Kubernetes setup (Docker Desktop)
 
 - **App image:** multi-stage Dockerfile, Nuxt built with the `node-server` preset, running `.output/server/index.mjs`; build and run: [`documentation/backend/docker.md`](documentation/backend/docker.md)
-- **App:** Deployment + Service, config via ConfigMap, credentials via Secret, readiness and liveness probes against a health endpoint (`/api/health`, `/api/ready`: [`documentation/backend/health.md`](documentation/backend/health.md)); manifests, Secret workflow and apply order: [`documentation/backend/kubernetes.md`](documentation/backend/kubernetes.md)
+- **App:** Deployment + Service, config via ConfigMap, credentials via Secret, readiness and liveness probes against a health endpoint (`/api/health`, `/api/ready`: [`documentation/backend/health.md`](documentation/backend/health.md)); manifests, Secret workflow and apply order: [`documentation/backend/kubernetes.md`](documentation/backend/kubernetes.md), app details: [App](documentation/backend/kubernetes.md#app)
 - **PostgreSQL:** own StatefulSet manifests with a PersistentVolumeClaim + Service (no Helm chart, no operator; see the Kubernetes decision below); details in [`documentation/backend/kubernetes.md`](documentation/backend/kubernetes.md#postgres)
 - **Migrations:** run as a Kubernetes Job or init container before the app starts, not on every request; the image is the `migrate` target of the Dockerfile, see [`documentation/backend/docker.md`](documentation/backend/docker.md#migrations)
 - **Access:** port-forward at first, Ingress later if needed

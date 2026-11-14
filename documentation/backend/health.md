@@ -48,7 +48,7 @@ Consequence: if the database host drops packets instead of refusing the connecti
 curl --max-time 5 -i http://localhost:3000/api/ready
 ```
 
-Docker's own `HEALTHCHECK` is not set in the `Dockerfile` (see [docker.md](docker.md)). The probes are *(planned, #46)*; no manifest exists yet.
+Docker's own `HEALTHCHECK` is not set in the `Dockerfile` (see [docker.md](docker.md)). The probes are set in `k8s/app.yaml`, see [kubernetes.md](kubernetes.md#probes).
 
 ## Tests
 
@@ -64,4 +64,4 @@ Checked by hand against the real dev server with the local Postgres container:
 
 Checked by mutation: swallowing the error in `ready` and making `health` query the database make 4 of the 6 tests fail.
 
-Not checked: a database that hangs instead of refusing the connection, and the probes in Kubernetes (#46).
+Not checked: a database that hangs instead of refusing the connection, and the exact probe timing under load. The probes in Kubernetes were checked, see [kubernetes.md](kubernetes.md#app).
