@@ -31,7 +31,7 @@ spec:
         - name: roles-sql
           mountPath: /sql
       containers:
-      - image: costcompass-migrate:0.1.0
+      - image: costcompass-migrate:IMAGE_TAG
         name: costcompass-migrate
         imagePullPolicy: IfNotPresent
         env:

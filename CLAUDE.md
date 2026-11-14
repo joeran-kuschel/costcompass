@@ -63,6 +63,7 @@ costcompass/
 ├── tests/nuxt/               # Vitest tests, run in the Nuxt environment
 ├── public/                   # Static files: favicons, app icons, manifest.webmanifest
 ├── k8s/                      # Plain YAML manifests: namespace, ConfigMap, Secret example (the real secret.yaml is git-ignored), postgres.yaml (Service and StatefulSet), db-roles.yaml (ConfigMap with the SQL for the restricted app user), network-policy.yaml (NetworkPolicy for Postgres), migrate-job.yaml (Job), app.yaml (Service and Deployment), ingress.yaml (Ingress)
+├── deploy.sh                 # Builds both images, copies them into the Docker Desktop node, runs the migrations Job, updates the app; see documentation/backend/kubernetes.md#deploy-script
 ├── Dockerfile                # Three stages: build, migrate (`--target migrate`), runtime; see documentation/backend/docker.md
 ├── .dockerignore             # Keeps node_modules, .env, .git and similar out of the build
 ├── nuxt.config.ts
@@ -156,12 +157,13 @@ Shared structure:
 ## Kubernetes setup (Docker Desktop)
 
 - **App image:** multi-stage Dockerfile, Nuxt built with the `node-server` preset, running `.output/server/index.mjs`; build and run: [`documentation/backend/docker.md`](documentation/backend/docker.md)
-- **App:** Deployment + Service, config via ConfigMap, credentials via Secret, readiness and liveness probes against a health endpoint (`/api/health`, `/api/ready`: [`documentation/backend/health.md`](documentation/backend/health.md)); manifests, Secret workflow and apply order: [`documentation/backend/kubernetes.md`](documentation/backend/kubernetes.md), app details: [App](documentation/backend/kubernetes.md#app)
+- **App:** Deployment + Service, config via ConfigMap, credentials via Secret, readiness and liveness probes against a health endpoint (`/api/health`, `/api/ready`: [`documentation/backend/health.md`](documentation/backend/health.md)); manifests, Secret workflow and apply order: [`documentation/backend/kubernetes.md`](documentation/backend/kubernetes.md), app details: [App](documentation/backend/kubernetes.md#app); the image tag in `app.yaml` is the placeholder `IMAGE_TAG`, so deploy with `./deploy.sh`, not `kubectl apply` (#174)
 - **PostgreSQL:** own StatefulSet manifests with a PersistentVolumeClaim + Service (no Helm chart, no operator; see the Kubernetes decision below); details in [`documentation/backend/kubernetes.md`](documentation/backend/kubernetes.md#postgres); a NetworkPolicy lets only the app and the migrations Job connect, and the app uses the restricted user `costcompass_app` (the owner is used only by the Job), see [Database access](documentation/backend/kubernetes.md#database-access) (#169)
-- **Migrations:** run as a Kubernetes Job (`k8s/migrate-job.yaml`) before the app starts, not on every request; the image is the `migrate` target of the Dockerfile, see [`documentation/backend/kubernetes.md`](documentation/backend/kubernetes.md#migrations-job) and [`docker.md`](documentation/backend/docker.md#migrations)
+- **Migrations:** run as a Kubernetes Job (`k8s/migrate-job.yaml`) before the app starts, not on every request, started by `./deploy.sh`; the image is the `migrate` target of the Dockerfile, see [`documentation/backend/kubernetes.md`](documentation/backend/kubernetes.md#migrations-job) and [`docker.md`](documentation/backend/docker.md#migrations)
 - **Access:** the app is served at https://costcompass.local through the shared nginx Ingress (`k8s/ingress.yaml`, `/etc/hosts` entry needed); HTTP redirects to HTTPS; the certificate comes from mkcert and lives in the Secret `costcompass-tls`, created by command, not a file (#167); the port-forward still works
+- **Deploy script (#174):** `./deploy.sh` builds `costcompass` and `costcompass-migrate` with a tag from the git SHA (plus `-dirty-<time>` for uncommitted changes), copies them into the node, runs the Job, applies the app and waits for the rollout; only the `docker-desktop` context (other clusters: #188); rollback with `kubectl rollout undo`; details: [Deploy script](documentation/backend/kubernetes.md#deploy-script)
 - **Local development:** `nuxt dev` against Postgres in the cluster (via port-forward) or a separate local container
-- **Manifests (#43):** plain YAML files in `k8s/`, applied with `kubectl apply -f` in the order given in the docs (namespace, ConfigMap, Secret, roles ConfigMap and NetworkPolicy, Postgres, migrations Job, app, TLS Secret, Ingress). Kustomize only when a second environment appears.
+- **Manifests (#43):** plain YAML files in `k8s/`, applied with `kubectl apply -f` in the order given in the docs (namespace, ConfigMap, Secret, roles ConfigMap and NetworkPolicy, Postgres, then `./deploy.sh` for the migrations Job and the app, TLS Secret, Ingress). Kustomize only when a second environment appears.
 
 ## Roadmap
 

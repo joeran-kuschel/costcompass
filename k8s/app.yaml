@@ -35,7 +35,7 @@ spec:
         app: costcompass
     spec:
       containers:
-      - image: costcompass:0.1.0
+      - image: costcompass:IMAGE_TAG
         name: costcompass
         ports:
         - containerPort: 3000

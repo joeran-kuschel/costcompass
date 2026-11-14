@@ -2,7 +2,7 @@
 
 What is in `k8s/`, how to create the Secret and how to apply the manifests. Written for: developers and operators, on the local Docker Desktop cluster (context `docker-desktop`).
 
-The manifests are plain YAML files applied with `kubectl apply -f`. There is no Kustomize or Helm (decision #43, see [decisions.md](decisions.md)). `k8s/` holds the namespace, the configuration, the credentials, Postgres, the database access rules, the migrations Job, the app and the Ingress.
+The manifests are plain YAML files applied with `kubectl apply -f`. There is no Kustomize or Helm (decision #43, see [decisions.md](decisions.md)). `k8s/` holds the namespace, the configuration, the credentials, Postgres, the database access rules, the migrations Job, the app and the Ingress. The images and the Job and app updates are done by `./deploy.sh`, see [Deploy script](#deploy-script).
 
 ## What is in `k8s/`
 
@@ -13,8 +13,8 @@ The manifests are plain YAML files applied with `kubectl apply -f`. There is no 
 | `postgres.yaml` | Service `postgres` and StatefulSet `postgres` | Yes | The database, see [Postgres](#postgres) |
 | `db-roles.yaml` | ConfigMap `costcompass-db-roles` | Yes | The SQL file `roles.sql` that creates the restricted database user, see [Database access](#database-access) |
 | `network-policy.yaml` | NetworkPolicy `costcompass-db-from-app` | Yes | Only the app and the migrations Job may connect to Postgres, see [Database access](#database-access) |
-| `migrate-job.yaml` | Job `costcompass-migrate` | Yes | The database role step and the migrations, see [Migrations Job](#migrations-job) |
-| `app.yaml` | Service `costcompass` and Deployment `costcompass` | Yes | The app, see [App](#app) |
+| `migrate-job.yaml` | Job `costcompass-migrate` | Yes | The database role step and the migrations, see [Migrations Job](#migrations-job). The image tag is the placeholder `IMAGE_TAG`; `deploy.sh` fills it in |
+| `app.yaml` | Service `costcompass` and Deployment `costcompass` | Yes | The app, see [App](#app). The image tag is the placeholder `IMAGE_TAG`; `deploy.sh` fills it in |
 | `ingress.yaml` | Ingress `costcompass` | Yes | The address `https://costcompass.local` for the app, with TLS from the Secret `costcompass-tls` (created by command, not a file), see [Ingress](#ingress) |
 | `secret.yaml.example` | none (template) | Yes | Template of the Secret `costcompass-db` with `change-me` values |
 | `secret.yaml` | Secret `costcompass-db`, type Opaque | No, listed in `.gitignore` | Your real credentials |
@@ -72,9 +72,9 @@ Never commit `k8s/secret.yaml`. Do not paste its content into issues, pull reque
 
 ## Apply and check
 
-The namespace must exist first, because the other objects name it. The Secret `k8s/secret.yaml` must exist before the apply (see above); without it the Postgres pod, the Job and the app pod cannot start. The ConfigMap `costcompass-db-roles` must exist before the Job, because the Job mounts it. Both images must be in the cluster node (see [Get the images into the cluster](#get-the-images-into-the-cluster)). The whole stack, in order, is in [Apply the whole stack](#apply-the-whole-stack).
+The namespace must exist first, because the other objects name it. The Secret `k8s/secret.yaml` must exist before the apply (see above); without it the Postgres pod, the Job and the app pod cannot start. The ConfigMap `costcompass-db-roles` must exist before the Job, because the Job mounts it. The Job and the app are not applied by hand: `./deploy.sh` builds the images, loads them into the node and applies both (see [Deploy script](#deploy-script)). The whole stack, in order, is in [Apply the whole stack](#apply-the-whole-stack).
 
-Do not apply the whole folder with `kubectl apply -f k8s/`. It would apply the Job and the app at the same time, so the app could start before the migrations are done.
+Do not apply the whole folder with `kubectl apply -f k8s/`. It would apply the Job and the app at the same time, so the app could start before the migrations are done. It would also apply the image `IMAGE_TAG`, which does not exist.
 
 1. Apply the namespace, the configuration, the database access rules and Postgres:
 
@@ -232,21 +232,19 @@ Do the steps in this order. The app must be restarted last: running pods keep th
    kubectl apply -f k8s/secret.yaml -f k8s/db-roles.yaml -f k8s/network-policy.yaml
    ```
 
-3. Run the Job again (it creates the role, then migrates as the owner):
+3. Deploy. The script runs the Job (it creates the role, then migrates as the owner) and then updates the app, see [Deploy script](#deploy-script):
 
    ```bash
-   kubectl delete job costcompass-migrate -n costcompass --ignore-not-found
-   kubectl apply -f k8s/migrate-job.yaml
-   kubectl wait --for=condition=complete job/costcompass-migrate -n costcompass --timeout=120s
+   ./deploy.sh
    ```
 
-4. Restart the app:
+4. Restart the app, so it reads the changed Secret even if the image tag did not change (to verify: a deploy with the same tag does not restart the pods):
 
    ```bash
    kubectl rollout restart deployment/costcompass -n costcompass
    ```
 
-To change the password of the app user, change `APP_DB_PASSWORD` and the password inside `NUXT_DATABASE_URL` in `k8s/secret.yaml`, apply it, run the Job again (the `ALTER ROLE` sets the new password), then restart the app.
+To change the password of the app user, change `APP_DB_PASSWORD` and the password inside `NUXT_DATABASE_URL` in `k8s/secret.yaml`, apply it, run `./deploy.sh` (the Job's `ALTER ROLE` sets the new password), then restart the app.
 
 ### Check the access
 
@@ -262,7 +260,7 @@ Expected: `costcompass` with `rolsuper` `t` (true), and `costcompass_app` with `
 
 | Setting | Value |
 | --- | --- |
-| Image | `costcompass-migrate:0.1.0`, `imagePullPolicy: IfNotPresent` |
+| Image | `costcompass-migrate:IMAGE_TAG`, `imagePullPolicy: IfNotPresent`. `deploy.sh` replaces `IMAGE_TAG` with the tag of the build, see [Deploy script](#deploy-script). |
 | Credentials | The migration container gets the owner URL: its variable is named `NUXT_DATABASE_URL` (`server/db/migrate.ts` reads that name), the value comes from the Secret key `MIGRATE_DATABASE_URL`. |
 | Init container 1 | `wait-for-postgres` (image `postgres:17`, already in the cluster) loops `pg_isready -h postgres -p 5432` until Postgres accepts connections. Waiting does not use up the retries. |
 | Init container 2 | `create-app-role` (image `postgres:17`) runs `psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -v app_password="$APP_DB_PASSWORD" -f /sql/roles.sql`. `DATABASE_URL` comes from `MIGRATE_DATABASE_URL`, `APP_DB_PASSWORD` from the Secret key of the same name, and the ConfigMap `costcompass-db-roles` is mounted at `/sql`. See [Database access](#database-access). |
@@ -276,31 +274,21 @@ The image is large (813 MB in the node) and runs as root, because no `securityCo
 
 ### Run the migrations
 
-Both images must be in the node (see [Get the images into the cluster](#get-the-images-into-the-cluster)), Postgres must be running, and the Secret and the ConfigMap `costcompass-db-roles` must be applied.
+Postgres must be running, and the Secret and the ConfigMap `costcompass-db-roles` must be applied. `./deploy.sh` runs the Job as one of its steps (see [Deploy script](#deploy-script)); it needs no separate command. Do not run `kubectl apply -f k8s/migrate-job.yaml` by hand: the image `costcompass-migrate:IMAGE_TAG` does not exist.
 
-```bash
-kubectl apply -f k8s/migrate-job.yaml
-kubectl wait --for=condition=complete job/costcompass-migrate -n costcompass --timeout=120s
-```
-
-Expected: `job.batch/costcompass-migrate condition met`. Read the log:
+When the script has finished, the Job is `Complete`. Read the log:
 
 ```bash
 kubectl logs job/costcompass-migrate -n costcompass
 ```
 
-Expected: the log is empty, because the script prints nothing on success; the Job status `condition met` is the result. The log of the role step is `kubectl logs job/costcompass-migrate -n costcompass -c create-app-role`; it shows `GRANT` and `ALTER DEFAULT PRIVILEGES` lines. On a database that is already migrated, the Job also succeeds (about 3 s here) and changes nothing.
+Expected: the log is empty, because the script prints nothing on success; the Job status `Complete` is the result. The log of the role step is `kubectl logs job/costcompass-migrate -n costcompass -c create-app-role`; it shows `GRANT` and `ALTER DEFAULT PRIVILEGES` lines. On a database that is already migrated, the Job also succeeds (about 3 s here) and changes nothing.
 
 ### Run the migrations again
 
-After you add a migration, delete the finished Job and apply it again:
+After you add a migration, run `./deploy.sh`. It deletes the finished Job, builds a new migration image with the new files and applies the Job again.
 
-```bash
-kubectl delete job costcompass-migrate -n costcompass --ignore-not-found
-kubectl apply -f k8s/migrate-job.yaml
-```
-
-Without the delete, nothing runs. Applying an unchanged finished Job only prints `unchanged`, and a changed pod template is rejected as immutable. Rebuild and load the migration image first, so it holds the new migration files.
+The delete is needed: applying an unchanged finished Job only prints `unchanged`, and a changed pod template is rejected as immutable.
 
 ### When the Job fails
 
@@ -323,7 +311,7 @@ The `-c` flag picks the migration container, not an init container. Examples of 
 | --- | --- |
 | Pod `Init:0/2` | Postgres is not ready yet. The init container keeps waiting. Check `postgres-0`. |
 | Pod shows an init error, then a new pod starts | The step `create-app-role` failed. Read `kubectl logs job/costcompass-migrate -n costcompass -c create-app-role`. Typical causes: `MIGRATE_DATABASE_URL` or `APP_DB_PASSWORD` is missing in the Secret, the owner password is wrong, or the ConfigMap `costcompass-db-roles` is not applied (the pod stays `ContainerCreating`). |
-| `ErrImagePull`, `ImagePullBackOff` | The node does not have `costcompass-migrate:0.1.0`. Load it. |
+| `ErrImagePull`, `ImagePullBackOff` | The node does not have the image. The Job was applied by hand with the placeholder `costcompass-migrate:IMAGE_TAG`, or the load failed. Run `./deploy.sh`. |
 | Job `Failed` with `BackoffLimitExceeded` | Read the error in the log of the container `costcompass-migrate`, see above. |
 
 ## App
@@ -333,13 +321,13 @@ The `-c` flag picks the migration container, not an init container. Examples of 
 | Object | What it does |
 | --- | --- |
 | Service `costcompass` | Type ClusterIP, port 3000 to 3000, selects pods with `app: costcompass`. |
-| Deployment `costcompass` | One replica of the image `costcompass:0.1.0`. |
+| Deployment `costcompass` | One replica of the image `costcompass:IMAGE_TAG`. |
 
 Settings of the Deployment:
 
 | Setting | Value |
 | --- | --- |
-| Image | `costcompass:0.1.0`, `imagePullPolicy: IfNotPresent`, container port 3000. The tag is explicit, not `latest`. |
+| Image | `costcompass:IMAGE_TAG`, `imagePullPolicy: IfNotPresent`, container port 3000. The tag is explicit, not `latest`. `IMAGE_TAG` is a placeholder; `deploy.sh` replaces it with the tag of the build, see [Deploy script](#deploy-script). |
 | Configuration | `envFrom` the ConfigMap `costcompass-config` (`NODE_ENV`, `NITRO_PORT`). |
 | Database URL | `NUXT_DATABASE_URL` through `secretKeyRef` from the Secret `costcompass-db`. Only this key: the app does not get `POSTGRES_PASSWORD`. |
 | Readiness probe | `GET /api/ready`, period 10 s, timeout 3 s, failure threshold 3. |
@@ -357,20 +345,20 @@ What this means: when Postgres is down, the app pod leaves the Service endpoints
 
 ### Get the images into the cluster
 
-Two images are needed: the app and the migrations. Build them with explicit tags:
+Background. `./deploy.sh` does the build and the copy for you (see [Deploy script](#deploy-script)); read this to understand the step or to do it by hand. Two images are needed: the app and the migrations. Build them with explicit tags (`<tag>` stands for the tag the script computes):
 
 ```bash
-docker build -t costcompass:0.1.0 .
-docker build --target migrate -t costcompass-migrate:0.1.0 .
+docker build -t costcompass:<tag> .
+docker build --target migrate -t costcompass-migrate:<tag> .
 ```
 
-The Docker Desktop cluster does not see images in your local Docker store. Docker uses the classic `overlay2` image store, and the cluster node (the container `desktop-control-plane`) has its own container runtime with its own image list. Without a load, the pod shows `ErrImagePull` and then `ImagePullBackOff` ("failed to pull and unpack image docker.io/library/costcompass:0.1.0").
+The Docker Desktop cluster does not see images in your local Docker store. Docker uses the classic `overlay2` image store, and the cluster node (the container `desktop-control-plane`) has its own container runtime with its own image list. Without a load, the pod shows `ErrImagePull` and then `ImagePullBackOff` ("failed to pull and unpack image docker.io/library/costcompass:<tag>").
 
 Copy both images into the node:
 
 ```bash
-docker save costcompass:0.1.0 | docker exec -i desktop-control-plane ctr -n k8s.io images import -
-docker save costcompass-migrate:0.1.0 | docker exec -i desktop-control-plane ctr -n k8s.io images import -
+docker save costcompass:<tag> | docker exec -i desktop-control-plane ctr -n k8s.io images import -
+docker save costcompass-migrate:<tag> | docker exec -i desktop-control-plane ctr -n k8s.io images import -
 ```
 
 Check that the node has them:
@@ -379,35 +367,25 @@ Check that the node has them:
 docker exec desktop-control-plane crictl images | grep costcompass
 ```
 
-Expected: a line with `costcompass` and a line with `costcompass-migrate`, both with the tag `0.1.0`.
+Expected: a line with `costcompass` and a line with `costcompass-migrate`, both with the tag you built.
 
-Repeat the load after every rebuild of a tag. Then restart the app pod so it uses the new image:
-
-```bash
-kubectl rollout restart deployment/costcompass -n costcompass
-```
-
-The migration image is used by the next Job run, see [Run the migrations again](#run-the-migrations-again).
+With `imagePullPolicy: IfNotPresent`, a tag that is already in the node is not pulled again. A rebuild under the same tag would leave the old image running, and the Deployment would not restart. This is why the script uses a new tag for every change, see [Deploy script](#deploy-script).
 
 Build from the current code. An image built before the health routes existed answers 404 on `/api/health` and `/api/ready`, and the liveness probe kills the pod again and again.
 
 ### Apply the whole stack
 
-The order is: namespace, configuration with the database access rules, Postgres, migrations Job, app, TLS Secret, Ingress.
+The order is: namespace, configuration with the database access rules, Postgres, `./deploy.sh` (images, migrations Job, app), TLS Secret, Ingress.
 
-1. Build both images and load them into the node (see above).
-2. Create `k8s/secret.yaml` (see [Create the Secret](#create-the-secret)).
-3. Apply in this order:
+1. Create `k8s/secret.yaml` (see [Create the Secret](#create-the-secret)).
+2. Apply in this order:
 
    ```bash
    kubectl apply -f k8s/namespace.yaml
    kubectl apply -f k8s/configmap.yaml -f k8s/secret.yaml -f k8s/db-roles.yaml -f k8s/network-policy.yaml
    kubectl apply -f k8s/postgres.yaml
    kubectl rollout status statefulset/postgres -n costcompass
-   kubectl delete job costcompass-migrate -n costcompass --ignore-not-found
-   kubectl apply -f k8s/migrate-job.yaml
-   kubectl wait --for=condition=complete job/costcompass-migrate -n costcompass --timeout=120s
-   kubectl apply -f k8s/app.yaml
+   ./deploy.sh
    ```
 
    Then create the TLS Secret `costcompass-tls` if it does not exist yet (commands in [Ingress](#ingress)) and apply the Ingress:
@@ -416,9 +394,9 @@ The order is: namespace, configuration with the database access rules, Postgres,
    kubectl apply -f k8s/ingress.yaml
    ```
 
-   The `delete` line removes a Job from an earlier run, so this order also works the second time. The `wait` line stops the sequence until the migrations are done, so the app never starts before the role and the tables exist.
+   The script removes a Job from an earlier run, so this order also works the second time. It waits until the migrations are done before it applies the app, so the app never starts before the role and the tables exist.
 
-4. Check the pods:
+3. Check the pods:
 
    ```bash
    kubectl get pods -n costcompass
@@ -426,7 +404,7 @@ The order is: namespace, configuration with the database access rules, Postgres,
 
    Expected: `postgres-0` and the `costcompass-...` pod are `1/1 Running`, and the `costcompass-migrate-...` pod is `Completed`.
 
-The readiness check covers the database connection, not the schema. If the migrations have not run, the pod is ready but queries fail. A script for this order is planned (#174).
+The readiness check covers the database connection, not the schema. If the migrations have not run, the pod is ready but queries fail. The script `deploy.sh` prevents this by waiting for the Job.
 
 ### Open the app
 
@@ -514,12 +492,74 @@ The app needs no setting for the host name (no base URL, no CORS origin). The pr
 
 | Symptom | Cause and fix |
 | --- | --- |
-| `ErrImagePull`, `ImagePullBackOff` | The node does not have the image. Load it, see [Get the images into the cluster](#get-the-images-into-the-cluster). |
-| Pod restarts, `/api/health` gives 404 | Stale image from before the health routes. Rebuild, load, restart. |
+| `ErrImagePull`, `ImagePullBackOff` | The node does not have the image. Run `./deploy.sh`; it loads the images. If you applied `app.yaml` by hand, the image is the placeholder `costcompass:IMAGE_TAG`. See [Get the images into the cluster](#get-the-images-into-the-cluster). |
+| Pod restarts, `/api/health` gives 404 | Stale image from before the health routes. Run `./deploy.sh` to build and roll out a new one. |
 | Pod `0/1`, restarts stay 0 | Not ready: usually the database is not reachable. Check `kubectl get pods -n costcompass` and `curl http://localhost:3001/api/ready`. |
 | Pod is ready, requests fail | The migrations have not run. Check the Job, see [Migrations Job](#migrations-job). |
 | Requests fail with `permission denied` or `password authentication failed` in the app log | The app was restarted before the Job ran, so the role `costcompass_app` does not exist or has an old password. Run the Job again, then restart the app, see [Upgrade an existing installation](#upgrade-an-existing-installation). |
 | A pod that you started by hand cannot reach Postgres (`no response`) | The NetworkPolicy refuses it, by design. Use `kubectl exec -it postgres-0 -n costcompass -- …` instead, see [NetworkPolicy](#networkpolicy). |
+
+## Deploy script
+
+`./deploy.sh` in the project root builds both images, loads them into the cluster and updates the app. Written for: developers and operators on the local Docker Desktop cluster.
+
+Use it for the first install (after Postgres runs, see [Apply the whole stack](#apply-the-whole-stack)) and for every later change. It replaces the hand-run steps for build, image copy, migrations Job and app apply. It needs Docker, `kubectl`, `git` and the `docker-desktop` context.
+
+```bash
+./deploy.sh
+```
+
+The script runs from any directory: it changes to the project root first. It stops at the first error (`set -euo pipefail`).
+
+### What it does
+
+1. Prints the kube context and the namespace (`costcompass`). If the context is not `docker-desktop`, it exits with 1 and changes nothing. Other clusters are not supported yet (#188).
+2. Computes the image tag (see [The image tag](#the-image-tag)).
+3. Builds `costcompass:<tag>` and `costcompass-migrate:<tag>` (`--target migrate`).
+4. Copies both images into the cluster node (`docker save` piped into `ctr images import` in the container `desktop-control-plane`, see [Get the images into the cluster](#get-the-images-into-the-cluster)).
+5. Deletes the old Job `costcompass-migrate`, applies `k8s/migrate-job.yaml` with the tag and waits until the Job is `Complete`. It checks every 2 s, for at most about 120 s.
+6. Applies `k8s/app.yaml` with the tag and waits with `kubectl rollout status` (timeout 120 s).
+7. Prints `Deployed costcompass:<tag>`.
+
+### The image tag
+
+The tag is the short git commit hash, for example `ce72c59`. If the working tree has uncommitted changes, the script appends `-dirty-` and the Unix time, for example `ce72c59-dirty-1763100000`.
+
+The suffix changes on every run for a reason: the Deployment uses `imagePullPolicy: IfNotPresent`. With a reused tag, the node would keep the old image and the Deployment would see no change, so the pods would not restart. A new tag changes the pod template, and Kubernetes rolls out the new version.
+
+### Why the manifests contain `IMAGE_TAG`
+
+`k8s/app.yaml` and `k8s/migrate-job.yaml` name the images `costcompass:IMAGE_TAG` and `costcompass-migrate:IMAGE_TAG`. The script replaces the placeholder with `sed "s/IMAGE_TAG/$TAG/"` and pipes the result to `kubectl apply -f -`. A tag derived from the git hash cannot be committed into the file: the hash depends on the file's content, so it would need a second commit. With the placeholder the files never go stale. The real tag is in the cluster:
+
+```bash
+kubectl get deployment costcompass -n costcompass -o jsonpath='{..image}'
+```
+
+This means `kubectl apply -f k8s/app.yaml` and `kubectl apply -f k8s/migrate-job.yaml` do not work by hand any more. The image `costcompass:IMAGE_TAG` does not exist and the pod does not start. Use `./deploy.sh`. The reasoning is in [decisions.md](decisions.md).
+
+### When something fails
+
+| Step | What happens | State of the cluster |
+| --- | --- | --- |
+| Build | Docker prints the error, the script exits with a non-zero code. | Untouched. |
+| Migration | The script prints the log of the Job (the container `costcompass-migrate`) and exits with 1. Read the error in the log, fix it, run the script again. | The app stays on the old version. |
+| Migration timeout | The script prints `The migration did not finish in time` and exits with 1. Check `kubectl get pods -n costcompass`. | The app stays on the old version. |
+| Rollout | `kubectl rollout status` ends non-zero after 120 s. Check `kubectl get pods -n costcompass` and the pod log. | Kubernetes keeps the old pods running until the new ones are ready. |
+
+### Roll back
+
+The old image is still in the node, so a rollback needs no rebuild:
+
+```bash
+kubectl rollout undo deployment/costcompass -n costcompass
+kubectl rollout status deployment/costcompass -n costcompass
+```
+
+Database migrations are not rolled back. The old version of the app runs against the new schema.
+
+### Images pile up
+
+Every deploy leaves two new images, in Docker and in the node. The script does not remove old ones. Cleaning up is issue #182 and is not built yet.
 
 ## Secrets are not encrypted
 
@@ -534,7 +574,8 @@ This is acceptable for a local cluster. Do not reuse these values anywhere else.
 ## Later additions
 
 - A login (#168). HTTPS is now in front of the app, so a login would not travel in plain text between the browser and the controller.
-- A `deploy.sh` that runs the apply order as a release (#174).
+- Removing old images from Docker and from the node after a deploy (#182). Not built.
+- Deploying to a cluster other than `docker-desktop` (#188). Not supported.
 
 ## Verification status
 
@@ -605,3 +646,13 @@ Database access (#169), checked on the same cluster:
 - The whole apply order on an empty temporary namespace took 12 s. The role step ran before the tables existed, the app (as `costcompass_app`) answered `/api/ready`, listed an empty table, and could insert (serial id) and delete a purchase.
 
 Not checked: concurrent Job runs, egress rules (none are set), another network plugin than kindnet, a non-superuser owner, other CPU architectures.
+
+Deploy script (#174), checked on the same cluster:
+
+- A changed locale text reached the running app after one `./deploy.sh` (HTTP check of the page).
+- `kubectl rollout undo deployment/costcompass -n costcompass` brought the previous version back, and `/api/ready` answered 200.
+- With a deliberately failing migration container, the script exited with 1 at the migration step and printed the log of the Job (`simulated migration failure`). The Deployment stayed on the old image.
+- Repeated runs delete and re-run the Job without problems.
+- `bash -n deploy.sh` reports no syntax error.
+
+Not checked: two runs in a row on a clean working tree (same tag), the refusal of a context other than `docker-desktop` (only one context exists here; checked by reading the script), ShellCheck, another cluster, the timeout path of the wait loop.
