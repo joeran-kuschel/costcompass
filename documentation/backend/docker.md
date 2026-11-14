@@ -2,7 +2,7 @@
 
 How to build and run the Costcompass app as a container image. Written for: developers and operators.
 
-The app image contains the built Nuxt server and nothing else. The database is not part of it, and neither are the migrations. Migrations run from a second image, see [Migrations](#migrations). For the cluster, `./deploy.sh` builds both images, see [Deploy script](kubernetes.md#deploy-script).
+The app image contains the built Nuxt server and nothing else. The database is not part of it, and neither are the migrations. Migrations run from a second image, see [Migrations](#migrations). For the cluster, `./deploy.sh` builds both images, see [Deploy script](kubernetes.md#deploy-script). Old images are removed by hand, see [Old images pile up](#old-images-pile-up).
 
 ## Build the image
 
@@ -125,6 +125,59 @@ Checked before #176 with `drizzle-kit migrate` in the image, against a throwaway
 - The app image then started against the migrated empty database: `/api/ready` returns ok, `/api/purchases` returns `[]`, and creating a recurring cost works.
 
 Not checked here (the Job is checked in [kubernetes.md](kubernetes.md#verification-status)): two runs at the same time, other CPU architectures. The image is 813 MB in the Kubernetes node. Rollback (down migrations) is out of scope.
+
+## Old images pile up
+
+Every `./deploy.sh` builds `costcompass:<tag>` (about 192 MB) and `costcompass-migrate:<tag>` (about 717 MB) with a new tag, and copies both into the cluster node. The node keeps its own image store, separate from the host's Docker. So every deploy leaves two more tags in two places. `deploy.sh` removes nothing. `./k8s/clean-images.sh` does, when you run it.
+
+```bash
+./k8s/clean-images.sh --dry-run   # list what would be removed
+./k8s/clean-images.sh             # remove it
+KEEP=5 ./k8s/clean-images.sh      # keep the newest 5 revisions instead of 3
+```
+
+Always run `--dry-run` first and read the list. The first version of the script had a bug that the dry run showed before anything was removed.
+
+### What is kept
+
+| Kept | How the script finds it |
+| --- | --- |
+| The image tags of the newest `KEEP` revisions of the Deployment `costcompass` (default 3) | The ReplicaSets of the Deployment, sorted by the annotation `deployment.kubernetes.io/revision`. These are exactly the revisions `kubectl rollout undo` can reach. |
+| Every tag used by a container or init container of a pod in the namespace `costcompass` | `kubectl get pods`. An image that a running pod uses is never removed. |
+
+Everything else is removed, for both image names, from two places:
+
+1. The host's Docker: `docker rmi`.
+2. The cluster node's image store: `docker exec desktop-control-plane ctr -n k8s.io images rm --sync`.
+
+The script touches only the names `costcompass` and `costcompass-migrate`. It does not run `docker system prune`, and other apps' images stay. It refuses every kube context other than `docker-desktop` (other clusters: #188).
+
+### Why not by date
+
+The creation date of an image is not the deploy time: Docker reuses cached layers, so a fresh build can carry an old date. The Deployment's revisions are the reliable record of which versions were deployed.
+
+### What this means for you
+
+- `kubectl rollout undo` works for the last `KEEP` revisions. `kubectl rollout undo --to-revision=<older>` fails with an image pull error, because the image is gone and the node cannot pull it.
+- The old manual builds `costcompass:0.1.0` and `costcompass:latest` are removed too, because no kept revision or pod uses them.
+- Images of failed deploys (build ok, migration failed, so no new revision) are removed.
+- Dangling layers and the build cache are not touched.
+- Only the namespace `costcompass` is looked at, so a pod of another namespace that uses one of these images does not protect it.
+
+### How much it frees
+
+On the first real run it removed 48 tags (25 from the host, 23 from the node). `docker system df` reported about 0.6 GB less in total. Images share layers, so the gain is smaller than the number of tags suggests.
+
+### Checked and not checked
+
+Checked on Docker Desktop (#182):
+
+- The dry run listed 25 host and 23 node removals, and none of the kept tags.
+- The real run removed 48 tags and left exactly three tags for both images, on the host and in the node: the running one and two earlier deploys.
+- Afterwards the app answered `/api/ready` with 200. `kubectl rollout undo` to the previous revision worked (its image was kept), and a second undo returned to the running version.
+- A second run found nothing to remove.
+
+Not checked: `KEEP` with a value other than 3, another cluster (the script refuses other contexts), a deploy and a clean-up at the same time, images used by pods of other namespaces.
 
 ## Verification status
 
