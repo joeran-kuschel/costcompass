@@ -5,6 +5,10 @@ metadata:
   namespace: costcompass
 spec:
   ingressClassName: nginx
+  tls:
+    - hosts:
+        - costcompass.local
+      secretName: costcompass-tls
   rules:
   - host: costcompass.local
     http:

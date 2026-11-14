@@ -13,7 +13,7 @@ The manifests are plain YAML files applied with `kubectl apply -f`. There is no 
 | `postgres.yaml` | Service `postgres` and StatefulSet `postgres` | Yes | The database, see [Postgres](#postgres) |
 | `migrate-job.yaml` | Job `costcompass-migrate` | Yes | The database migrations, see [Migrations Job](#migrations-job) |
 | `app.yaml` | Service `costcompass` and Deployment `costcompass` | Yes | The app, see [App](#app) |
-| `ingress.yaml` | Ingress `costcompass` | Yes | The address `costcompass.local` for the app, see [Ingress](#ingress) |
+| `ingress.yaml` | Ingress `costcompass` | Yes | The address `https://costcompass.local` for the app, with TLS from the Secret `costcompass-tls` (created by command, not a file), see [Ingress](#ingress) |
 | `secret.yaml.example` | none (template) | Yes | Template of the Secret `costcompass-db` with `change-me` values |
 | `secret.yaml` | Secret `costcompass-db`, type Opaque | No, listed in `.gitignore` | Your real credentials |
 
@@ -286,7 +286,7 @@ Build from the current code. An image built before the health routes existed ans
 
 ### Apply the whole stack
 
-The order is: namespace and configuration, Postgres, migrations Job, app, Ingress.
+The order is: namespace and configuration, Postgres, migrations Job, app, TLS Secret, Ingress.
 
 1. Build both images and load them into the node (see above).
 2. Create `k8s/secret.yaml` (see [Create the Secret](#create-the-secret)).
@@ -301,6 +301,11 @@ The order is: namespace and configuration, Postgres, migrations Job, app, Ingres
    kubectl apply -f k8s/migrate-job.yaml
    kubectl wait --for=condition=complete job/costcompass-migrate -n costcompass --timeout=120s
    kubectl apply -f k8s/app.yaml
+   ```
+
+   Then create the TLS Secret `costcompass-tls` if it does not exist yet (commands in [Ingress](#ingress)) and apply the Ingress:
+
+   ```bash
    kubectl apply -f k8s/ingress.yaml
    ```
 
@@ -318,7 +323,7 @@ The readiness check covers the database connection, not the schema. If the migra
 
 ### Open the app
 
-Add the host name to `/etc/hosts` once (see [Ingress](#ingress)), apply `k8s/ingress.yaml`, then open <http://costcompass.local>. You see the dashboard. No port-forward is needed.
+Add the host name to `/etc/hosts` once, create the certificate Secret and apply `k8s/ingress.yaml` (see [Ingress](#ingress)), then open <https://costcompass.local>. You see the dashboard. No port-forward is needed. `http://costcompass.local` redirects to HTTPS.
 
 Alternative without the controller: forward a local port to the Service.
 
@@ -328,13 +333,24 @@ kubectl port-forward -n costcompass svc/costcompass 3001:3000
 
 Open <http://localhost:3001>. The left port (3001) is free to choose; 3000 is used by `nuxt dev`. The right port (3000) is the Service port. The command keeps running; use another terminal for the next steps. It binds to 127.0.0.1 only.
 
-Why ClusterIP and not a `LoadBalancer` Service: a `LoadBalancer` would work on Docker Desktop (published on `localhost:8080`), but it binds to all network interfaces (0.0.0.0). The app has no login (#168) and no HTTPS (#167), so this was not adopted (#46). The Ingress has the same exposure, see the security note below.
+Why ClusterIP and not a `LoadBalancer` Service: a `LoadBalancer` would work on Docker Desktop (published on `localhost:8080`), but it binds to all network interfaces (0.0.0.0). The app has no login (#168), so this was not adopted (#46). The Ingress has the same exposure, see the security note below.
 
 ### Ingress
 
-`k8s/ingress.yaml` holds one Ingress, `costcompass`, in the namespace `costcompass`. It uses `ingressClassName: nginx`, the host `costcompass.local` and the path `/` (Prefix), and sends everything to the Service `costcompass` on port 3000. It is plain HTTP: there is no TLS section (HTTPS is #167). It is its own file so that `app.yaml` stays about the app.
+`k8s/ingress.yaml` holds one Ingress, `costcompass`, in the namespace `costcompass`. It uses `ingressClassName: nginx`, the host `costcompass.local` and the path `/` (Prefix), and sends everything to the Service `costcompass` on port 3000. A `tls` block names the host and the Secret `costcompass-tls` (#167):
+
+```yaml
+  tls:
+    - hosts:
+        - costcompass.local
+      secretName: costcompass-tls
+```
+
+The Ingress is its own file so that `app.yaml` stays about the app.
 
 The cluster already runs one shared ingress-nginx controller (IngressClass `nginx`). Other local apps use it too (`dinner.local`, `time-tracking.local`, `watchlist.local`). Docker Desktop publishes it on the Mac as `0.0.0.0:80` and 443, so there is nothing to install.
+
+TLS (Transport Layer Security, the encryption behind HTTPS) ends at the controller. From the controller to the app pod the traffic is plain HTTP on port 3000 inside the cluster. No HSTS header is set.
 
 1. Add the host name to `/etc/hosts` once. It needs `sudo`:
 
@@ -344,25 +360,48 @@ The cluster already runs one shared ingress-nginx controller (IngressClass `ngin
 
    The `::1` line is harmless: nothing listens on IPv6 port 80 here, so browsers fall back to IPv4. The name ends in `.local`, which is reserved for mDNS; it works here because of these entries.
 
-2. Apply the Ingress (last in the apply order):
+2. Create the certificate Secret `costcompass-tls`, once. It comes from a command, not from a file in `k8s/`, so no certificate or key file is ever in the repository. The commands use a temporary folder outside the project and delete it afterwards.
+
+   Prerequisite: [mkcert](https://github.com/FiloSottile/mkcert) is installed and its CA is trusted (`mkcert -install`, once; `mkcert -CAROOT` shows where the CA lives). It is the same CA the other local apps use, so the browser already trusts the certificate.
+
+   ```bash
+   D=$(mktemp -d)
+   mkcert -cert-file $D/tls.crt -key-file $D/tls.key costcompass.local
+   kubectl create secret tls costcompass-tls --cert=$D/tls.crt --key=$D/tls.key -n costcompass
+   rm -rf $D
+   ```
+
+   The Secret has type `kubernetes.io/tls` and the keys `tls.crt` and `tls.key`. The certificate is valid for `costcompass.local` until 14 February 2029.
+
+   To renew it, delete the Secret (`kubectl delete secret costcompass-tls -n costcompass`) and create it again with the same commands. The Ingress picks it up. This was not tested.
+
+3. Apply the Ingress (last in the apply order). The Secret must exist first. Without it the controller serves its own default (fake) certificate and the browser shows a warning.
 
    ```bash
    kubectl apply -f k8s/ingress.yaml
    ```
 
-3. Check it:
+4. Check it:
 
    ```bash
    kubectl get ingress -n costcompass
    ```
 
-   Expected: class `nginx`, host `costcompass.local`, port 80.
+   Expected: class `nginx`, host `costcompass.local`, ports `80, 443`.
 
-4. Open <http://costcompass.local>.
+5. Check the certificate with curl, using the mkcert CA:
 
-The app needs no setting for the host name (no base URL, no CORS origin). The probes talk to the pod directly, so the Ingress does not affect them. A request with a host name that has no Ingress rule gets 404 from the controller.
+   ```bash
+   curl --cacert "$(mkcert -CAROOT)/rootCA.pem" https://costcompass.local/api/health
+   ```
 
-**Security: the controller listens on all network interfaces**, not only on localhost. The Ingress routes by host name, but anyone on the same network can send a request with the host name `costcompass.local` (for example with a `Host` header) and reach the app. The app has no login (#168) and no HTTPS (#167), so they could read and change the costs. Use it only on a network you trust. This is the same reason a `LoadBalancer` Service was not used.
+   Expected: HTTP 200 without a certificate error. Then open <https://costcompass.local> in the browser. You see the dashboard, with no warning.
+
+With TLS, the controller redirects HTTP to HTTPS: `http://costcompass.local/` returns 308 to `https://costcompass.local/`. This is the default of ingress-nginx; no annotation is set. So `http://costcompass.local` does not serve the app any more. The `/etc/hosts` entry is unchanged.
+
+The app needs no setting for the host name (no base URL, no CORS origin). The probes talk to the pod directly, so the Ingress and TLS do not affect them. A request with a host name that has no Ingress rule gets 404 from the controller.
+
+**Security: the controller still listens on all network interfaces** (`0.0.0.0:80` and `0.0.0.0:443`), not only on localhost. HTTPS encrypts the traffic between the browser and the controller. It does not restrict who can connect. The app has no login (#168), so anyone on the same network can still read and change the costs. HTTPS only protects the traffic, and a later login, from being read on the way. Use it only on a network you trust. This is the same reason a `LoadBalancer` Service was not used.
 
 ### Troubleshooting
 
@@ -386,8 +425,7 @@ This is acceptable for a local cluster. Do not reuse these values anywhere else.
 ## Later additions
 
 - A second, restricted database user needs further Secret keys, and a NetworkPolicy may restrict access to Postgres (#169). The Job will keep the owner user.
-- HTTPS for `costcompass.local` (#167). It builds on the Ingress above, which gets a TLS section.
-- A login (#168).
+- A login (#168). HTTPS is now in front of the app, so a login would not travel in plain text between the browser and the controller.
 - A `deploy.sh` that runs the apply order as a release (#174).
 - A migrate image that prints the error of a failed migration (#176).
 
@@ -425,11 +463,23 @@ Migrations Job (#47), checked on the same cluster:
 
 Not checked: the Job on a cluster with more than one replica of anything, concurrent runs, a migration that takes long, other CPU architectures.
 
-Ingress (#173), checked on the same cluster:
+Ingress (#173), checked on the same cluster, over plain HTTP (before #167 added TLS):
 
 - `http://costcompass.local` shows the dashboard (title "Dashboard – Costcompass") over IPv4. `/`, `/api/health`, `/api/ready` and `/api/purchases` return 200 through the Ingress.
 - A test cost created with `POST /api/recurring-costs` through the Ingress was listed and then deleted (204). In the browser, a cost was added and still showed after a reload.
 - The other apps on the controller still answer: `watchlist.local` returns 200; `dinner.local` and `time-tracking.local` redirect to HTTPS with 308, which is their own setting.
 - A request with a host name that has no Ingress rule gets 404 from the controller.
 
-Not checked: HTTPS (#167), access from another machine on the network (the exposure is stated from the published port, not tested from a second device), other browsers, the IPv6 path.
+Not checked: access from another machine on the network (the exposure is stated from the published port, not tested from a second device), other browsers, the IPv6 path.
+
+HTTPS (#167), checked on the same cluster:
+
+- With the CA root from mkcert (`--cacert "$(mkcert -CAROOT)/rootCA.pem"`), `/`, `/api/health`, `/api/ready` and `/api/purchases` return 200 over HTTPS. The page title is "Dashboard – Costcompass".
+- `openssl s_client -connect 127.0.0.1:443 -servername costcompass.local` shows the subject "mkcert development certificate", the mkcert development CA as issuer and `Verify return code: 0 (ok)`.
+- `http://costcompass.local/` returns 308 to `https://costcompass.local/`.
+- A test cost created with the API through HTTPS was listed and then deleted (204).
+- In the browser, <https://costcompass.local> opens without a warning or an error, and the redirect from HTTP works.
+- The other apps on the controller still answer: `dinner.local` and `time-tracking.local` return 308 to HTTPS (their own setting), `watchlist.local` returns 200.
+- The app pods had no restarts, because the probes talk to the pod directly and not through the Ingress.
+
+Not checked: access from another machine (it would need the mkcert CA to trust the certificate), other browsers, renewing the certificate, a certificate for a real host name (out of scope).
