@@ -16,6 +16,7 @@ A short log of what was decided and why. Written for: developers and contributor
 | Database access | Drizzle with `drizzle-kit` migrations | TypeScript schema, no code generation |
 | Migrations in a container | Second Dockerfile target `migrate` that reuses `drizzle-kit` | The app image holds only `.output`, so a `migrate()` script would lack `drizzle-orm` and `pg`. Cost: a bigger image, used only for the migration run. See [docker.md](docker.md#migrations) |
 | Kubernetes manifests | Plain YAML in `k8s/`, applied with `kubectl apply -f`; no Kustomize or Helm for now | Simplest and fully visible; Kustomize when a second environment appears (#43) |
+| Migrations in Kubernetes | A Job with an init container that waits for Postgres, `restartPolicy: Never`, `backoffLimit: 3`, no TTL; to rerun, delete the Job and apply again | Runs once per release, not at every app start; failed pods keep their logs; a finished Job stays readable. See [kubernetes.md](kubernetes.md#migrations-job) (#47) |
 | PostgreSQL in Kubernetes | Own StatefulSet manifests with a PersistentVolumeClaim and a Service; no Helm chart, no operator | Most to learn, no extra tooling; backups and upgrades are ours. An operator such as CloudNativePG is too heavy for one node (#43) |
 | API | REST per resource; `GET`/`POST` on the list, `PATCH`/`DELETE` on `[id]`; thin routes, Zod validation | Logic stays testable in `server/utils` |
 | Status codes | 400 invalid, 404 unknown id, 204 for delete, 200 for `PATCH` | See [api.md](api.md) |

@@ -85,6 +85,8 @@ Replace `USER`, `PASSWORD`, `PORT` and `DB`. `host.docker.internal` reaches a Po
 
 `drizzle.config.ts` loads `.env` only if the file exists, so the container needs none. The local `pnpm drizzle-kit migrate` with a `.env` file works as before.
 
+In Kubernetes, the Job `costcompass-migrate` runs this image. See [Migrations Job](kubernetes.md#migrations-job).
+
 ### Exit codes
 
 | Code | Case |
@@ -114,7 +116,7 @@ Checked by building and running, against a throwaway `postgres:17` container:
 - The app image then started against the migrated empty database: `/api/ready` returns ok, `/api/purchases` returns `[]`, and creating a recurring cost works.
 - Exit code 1 for an unreachable host, a wrong password and a missing `NUXT_DATABASE_URL`.
 
-Not checked: running it as a Kubernetes Job (#47), a migration with broken SQL that fails midway, two runs at the same time, other CPU architectures. The image size was not measured. Rollback (down migrations) is out of scope.
+Not checked here (the Job is checked in [kubernetes.md](kubernetes.md#verification-status)): a migration with broken SQL that fails midway, two runs at the same time, other CPU architectures. The image is 813 MB in the Kubernetes node. Rollback (down migrations) is out of scope.
 
 ## Verification status
 

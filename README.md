@@ -43,11 +43,13 @@ Details, including a PostgreSQL container example: [Get started](documentation/b
 
 For the Kubernetes built into Docker Desktop. You need Docker, `kubectl` and the `docker-desktop` context.
 
-1. Build the image and copy it into the cluster. The cluster does not see your local Docker images, so the second command is required after every rebuild:
+1. Build both images (app and migrations) and copy them into the cluster. The cluster does not see your local Docker images, so the load commands are required after every rebuild:
 
    ```bash
    docker build -t costcompass:0.1.0 .
+   docker build --target migrate -t costcompass-migrate:0.1.0 .
    docker save costcompass:0.1.0 | docker exec -i desktop-control-plane ctr -n k8s.io images import -
+   docker save costcompass-migrate:0.1.0 | docker exec -i desktop-control-plane ctr -n k8s.io images import -
    ```
 
 2. Create the Secret from the template, then replace every `change-me` (the password appears twice and must be identical):
@@ -56,24 +58,20 @@ For the Kubernetes built into Docker Desktop. You need Docker, `kubectl` and the
    cp k8s/secret.yaml.example k8s/secret.yaml
    ```
 
-3. Apply the namespace first, then everything else:
+3. Apply in this order: namespace and configuration, Postgres, the migrations Job, the app. Do not use `kubectl apply -f k8s/`; it would start the app before the migrations are done.
 
    ```bash
    kubectl apply -f k8s/namespace.yaml
-   kubectl apply -f k8s/
+   kubectl apply -f k8s/configmap.yaml -f k8s/secret.yaml
+   kubectl apply -f k8s/postgres.yaml
+   kubectl rollout status statefulset/postgres -n costcompass
+   kubectl delete job costcompass-migrate -n costcompass --ignore-not-found
+   kubectl apply -f k8s/migrate-job.yaml
+   kubectl wait --for=condition=complete job/costcompass-migrate -n costcompass --timeout=120s
+   kubectl apply -f k8s/app.yaml
    ```
 
-4. Apply the database migrations once. When `kubectl get pods -n costcompass` shows `postgres-0` as `1/1 Running`, forward the Postgres port in a second terminal and run the migrations from the project (the password is the one from `k8s/secret.yaml`). Stop the forward with Ctrl-C afterwards:
-
-   ```bash
-   kubectl port-forward -n costcompass svc/postgres 5435:5432
-   ```
-
-   ```bash
-   NUXT_DATABASE_URL="postgresql://costcompass:PASSWORD@localhost:5435/costcompass" pnpm drizzle-kit migrate
-   ```
-
-5. When the `costcompass-…` pod is `1/1 Running` too, open the app:
+4. When the `costcompass-…` pod is `1/1 Running`, open the app:
 
    ```bash
    kubectl port-forward -n costcompass svc/costcompass 3001:3000
@@ -91,7 +89,7 @@ More, including the probes, troubleshooting and what was checked: [Kubernetes](d
 
 ## Status
 
-In development. Cost tracking and its UI work. A Docker image and Kubernetes manifests (Postgres, app, probes) run on Docker Desktop's cluster. The migrations Job, HTTPS and a login are planned.
+In development. Cost tracking and its UI work. A Docker image and Kubernetes manifests (Postgres, migrations Job, app, probes) run on Docker Desktop's cluster. HTTPS and a login are planned.
 
 ## License
 
