@@ -15,7 +15,7 @@ The `Dockerfile` in the project root has three stages. `docker build .` builds t
 | Stage | Base | What it does |
 | --- | --- | --- |
 | `build` | `node:26-alpine` | Installs pnpm, installs the dependencies, runs `pnpm build` (the `node-server` preset) |
-| `migrate` | the `build` stage | Runs `pnpm drizzle-kit migrate`, see [Migrations](#migrations) |
+| `migrate` | the `build` stage | Runs the script `server/db/migrate.ts`, see [Migrations](#migrations) |
 | `runtime` | `node:26-alpine` | Copies only `/app/.output`, runs as the `node` user, starts the server |
 
 Why two stages: the build needs `node_modules`, the sources and the build tools. The running server needs only `.output`, which already contains what it uses. Copying just that folder keeps the image small (192 MB) and leaves the sources out.
@@ -65,7 +65,7 @@ If the variable is missing or wrong, the server still starts, but every API call
 
 Apply the database migrations from a container, without a Node setup on your machine. Written for: developers and operators.
 
-The `migrate` stage starts from the `build` stage and runs `pnpm drizzle-kit migrate`. The app image has no `drizzle-kit` and no migration files, so migrations get their own image.
+The `migrate` stage starts from the `build` stage and runs the script `server/db/migrate.ts` with `node` (`CMD ["node", "server/db/migrate.ts"]`; Node 26 runs the TypeScript file directly, no extra tool). The script reads `NUXT_DATABASE_URL`, applies `server/db/migrations` with `migrate()` from `drizzle-orm`, and closes the connection. If a migration fails, it prints the error and exits with 1. The app image has no `drizzle-orm` and no migration files, so migrations get their own image.
 
 Build it with a target:
 
@@ -83,7 +83,7 @@ docker run --rm \
 
 Replace `USER`, `PASSWORD`, `PORT` and `DB`. `host.docker.internal` reaches a Postgres on your Mac, as explained under [Run the container](#run-the-container).
 
-`drizzle.config.ts` loads `.env` only if the file exists, so the container needs none. The local `pnpm drizzle-kit migrate` with a `.env` file works as before.
+The script reads the variable from the environment and needs no `.env` file. On success it prints nothing and exits with 0. The local `pnpm drizzle-kit migrate` with a `.env` file is unchanged: it still uses `drizzle.config.ts`, not the script.
 
 In Kubernetes, the Job `costcompass-migrate` runs this image. See [Migrations Job](kubernetes.md#migrations-job).
 
@@ -93,30 +93,38 @@ In Kubernetes, the Job `costcompass-migrate` runs this image. See [Migrations Jo
 | --- | --- |
 | 0 | Migrations were applied |
 | 0 | Nothing was pending |
-| 1 | Host unreachable, wrong password, or `NUXT_DATABASE_URL` missing |
+| 1 | Database unreachable, or a migration failed. The error is in the log. |
 
 ### Run it more than once
 
-A second run changes nothing and exits with 0. Drizzle records applied migrations in the table `__drizzle_migrations`.
+A second run changes nothing and exits with 0. Drizzle records applied migrations in the table `drizzle.__drizzle_migrations`. The script uses the same table as `drizzle-kit migrate`, so a database migrated with `pnpm drizzle-kit migrate` is not migrated twice.
 
 ### What is in the migration image
 
-It reuses the `build` stage, so it holds the sources, all dependencies including `drizzle-kit`, and `server/db/migrations`. It is much larger than the app image and runs as root, because the `build` stage sets no `USER`. Use it only for the migration run and do not deploy it as the app.
+It reuses the `build` stage, so it holds the sources, all dependencies including `drizzle-orm`, `pg` and `drizzle-kit`, and `server/db/migrations`. It is much larger than the app image and runs as root, because the `build` stage sets no `USER`. Use it only for the migration run and do not deploy it as the app.
 
 ### Why a second target
 
-The alternative was a script calling `migrate()` from `drizzle-orm` inside the app image. The runtime image contains only `.output`, so such a script would find no `drizzle-orm` or `pg` and would need its own bundling step. Reusing `drizzle-kit` costs a bigger image that is used only once per migration run. See [decisions.md](decisions.md).
+A script calling `migrate()` from `drizzle-orm` does not fit the app image: the runtime image contains only `.output`, so it would find no `drizzle-orm` or `pg`. The `migrate` stage reuses the `build` stage, which has both, so the script runs there. It replaced `drizzle-kit migrate` (#176) because that command prints no error text when a migration fails, so a failed Job log said nothing. The image stays large and is used only once per migration run. See [decisions.md](decisions.md).
 
 ### Checked and not checked
 
-Checked by building and running, against a throwaway `postgres:17` container:
+Checked for the script (#176), building and running against a throwaway Postgres container:
+
+- Empty database: exit 0, both tables exist.
+- Already migrated database: exit 0, nothing applied twice.
+- Database migrated earlier with `pnpm drizzle-kit migrate` in the image: the script exits 0 and applies nothing twice (still 1 row in `drizzle.__drizzle_migrations`).
+- Unreachable database: exit 1, the log shows a `DrizzleQueryError`.
+- A failing migration (`type "category" already exists`): exit 1, the log shows the database error.
+- `pnpm drizzle-kit migrate` locally with `.env` after the change: `migrations applied successfully`.
+
+Checked before #176 with `drizzle-kit migrate` in the image, against a throwaway `postgres:17` container:
 
 - On an empty database, the first run creates `purchases`, `recurring_costs` and `__drizzle_migrations` (exit 0). The second run changes nothing (exit 0).
 - On a copy of the development data (5 recurring costs, 9 purchases), the row counts were identical after the migration (exit 0).
 - The app image then started against the migrated empty database: `/api/ready` returns ok, `/api/purchases` returns `[]`, and creating a recurring cost works.
-- Exit code 1 for an unreachable host, a wrong password and a missing `NUXT_DATABASE_URL`.
 
-Not checked here (the Job is checked in [kubernetes.md](kubernetes.md#verification-status)): a migration with broken SQL that fails midway, two runs at the same time, other CPU architectures. The image is 813 MB in the Kubernetes node. Rollback (down migrations) is out of scope.
+Not checked here (the Job is checked in [kubernetes.md](kubernetes.md#verification-status)): two runs at the same time, other CPU architectures. The image is 813 MB in the Kubernetes node. Rollback (down migrations) is out of scope.
 
 ## Verification status
 
