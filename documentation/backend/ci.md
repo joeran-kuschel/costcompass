@@ -80,9 +80,10 @@ The job runs only if the repository is public (`if: github.event.repository.priv
 - Both changes were reverted and the run was green again.
 - The `docker` commands and the `CMD` checks were run locally before pushing. kubeconform was run locally on all 9 files (11 resources valid).
 
+The jobs `test`, `docker` and `manifests` are required checks. They are set in the GitHub ruleset `main` (set on 2026-11-14): a pull request is required, deletion and force-push are blocked, the required status checks are `test`, `docker` and `manifests`, and enforcement is active.
+
 Not checked or not set up:
 
-- The jobs are not required checks for merging. That is a branch protection setting on GitHub and the author's decision.
 - No image scanning and no manifest scanning.
 - No cluster in CI (see issue #187).
 - No build cache: the `docker` job builds everything on each run.

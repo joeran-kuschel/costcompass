@@ -16,6 +16,9 @@ The manifests are plain YAML files applied with `kubectl apply -f`. There is no 
 | `migrate-job.yaml` | Job `costcompass-migrate` | Yes | The database role step and the migrations, see [Migrations Job](#migrations-job). The image tag is the placeholder `IMAGE_TAG`; `deploy.sh` fills it in |
 | `app.yaml` | Service `costcompass` and Deployment `costcompass` | Yes | The app, see [App](#app). The image tag is the placeholder `IMAGE_TAG`; `deploy.sh` fills it in |
 | `clean-images.sh` | none (script) | Yes | Removes old `costcompass` and `costcompass-migrate` images from Docker and from the node, run by hand: `./k8s/clean-images.sh`, see [Images pile up](#images-pile-up) |
+| `backup-db.sh` | none (script) | Yes | Dumps the database to a compressed file outside the repo, run by hand: `./k8s/backup-db.sh`, see [Backup and restore](#backup-and-restore) |
+| `restore-db.sh` | none (script) | Yes | Replaces the database with the contents of a backup file, run by hand: `./k8s/restore-db.sh <file>`, see [Backup and restore](#backup-and-restore) |
+| `db-common.sh` | none (script) | Yes | Settings (namespace, pod) and the check for the `docker-desktop` context, loaded with `source` by the two scripts above; not run on its own |
 | `ingress.yaml` | Ingress `costcompass` | Yes | The address `https://costcompass.local` for the app, with TLS from the Secret `costcompass-tls` (created by command, not a file), see [Ingress](#ingress) |
 | `secret.yaml.example` | none (template) | Yes | Template of the Secret `costcompass-db` with `change-me` values |
 | `secret.yaml` | Secret `costcompass-db`, type Opaque | No, listed in `.gitignore` | Your real credentials |
@@ -161,7 +164,7 @@ Expected: `migrations applied successfully`. The tables `purchases` and `recurri
 
   The new database is empty, so run the migrations again. Scaling the StatefulSet to 0 instead of deleting it also works as the first step. The commands above were not run.
 - **The reclaim policy is Delete.** Deleting the PVC or the namespace deletes the data. `kubectl delete pod postgres-0 -n costcompass` keeps it; the new pod finds the same volume. Deleting the StatefulSet keeps the PVC too, by the documented Kubernetes default (unverified here).
-- **One replica only.** There are no backups, no replication and no major-version upgrades. These are out of scope.
+- **One replica only.** There is no replication and there are no major-version upgrades; these are out of scope. Backups are made by hand, see [Backup and restore](#backup-and-restore).
 
 ## Database access
 
@@ -571,6 +574,93 @@ Every deploy leaves two new images, in Docker and in the node. `deploy.sh` does 
 
 What is kept, why not by date, the rollback consequence and how much it frees: [Old images pile up](docker.md#old-images-pile-up) (#182).
 
+## Backup and restore
+
+How to save the database to a file and put it back, on the local Docker Desktop cluster. The scripts refuse any context other than `docker-desktop`; the namespace is `costcompass` and the pod is `postgres-0` (both set in `k8s/db-common.sh`). Added in #181.
+
+### Make a backup
+
+```bash
+./k8s/backup-db.sh
+```
+
+The script runs `pg_dump --clean --if-exists` inside the Postgres pod (`kubectl exec`) as the database owner and compresses the result. It needs no password and prints none: the pod uses its own environment and the local socket.
+
+| Setting | Default | Meaning |
+| --- | --- | --- |
+| `BACKUP_DIR` | `~/costcompass-backups` | Folder for the backups, outside the repository |
+| `KEEP` | `10` | How many backups to keep |
+
+```bash
+BACKUP_DIR=~/Documents/costcompass-backups KEEP=5 ./k8s/backup-db.sh
+```
+
+- The file is named `costcompass-<YYYYMMDD-HHMMSS>.sql.gz`.
+- Files get mode 600 and the folder mode 700 (`umask 077`), because the dump holds all your cost data in plain text.
+- The dump is written to a `.partial` file and moved into place only when it is complete. If the dump fails, the script exits with a non-zero code, no file is left behind and earlier backups stay.
+- After a successful backup only the newest `KEEP` files that match `costcompass-*.sql.gz` are kept. Other files in the folder are not touched.
+- `.gitignore` lists `*.sql.gz`, so a backup placed in the repository does not show up in `git status`. It does not list `*.sql`, because Drizzle migration files are committed.
+
+### What the dump holds
+
+Tables, data, sequences, the table `drizzle.__drizzle_migrations` and the grants for the app user `costcompass_app`. The role itself is not in the dump: the migrations Job creates it (see [Where the app user is created](#where-the-app-user-is-created)).
+
+### Restore a backup
+
+```bash
+./k8s/restore-db.sh ~/costcompass-backups/costcompass-20261114-093000.sql.gz
+```
+
+1. The script checks that the file exists and that `gunzip -t` passes. A damaged or wrongly named file stops here, with the app still running and the data unchanged.
+2. It shows the database name, the number of recurring and one-off costs that will be deleted and the file that replaces them.
+3. Type `restore` to continue. Any other answer prints `Aborted, nothing changed` and exits with 1. Without a terminal and without input it also exits with 1 and changes nothing.
+4. It scales the Deployment `costcompass` to 0 and waits until its pods are gone.
+5. It loads the dump with `psql -v ON_ERROR_STOP=1 --single-transaction`. This is all or nothing: if the restore fails, the old data stays.
+6. It scales the app back to 1 and waits for the rollout. An `EXIT` trap does this also after a failure, so the app is not left stopped.
+
+There is deliberately no `--yes` flag. To script a restore, pipe the answer in on purpose: `echo restore | ./k8s/restore-db.sh <file>`.
+
+The restore replaces the data and the migration table with the state of the dump. Take a backup before a deploy that runs migrations, and restore only into an app version that matches the dump: a dump from an older schema restores the older schema.
+
+### Restore after a reset of the cluster
+
+A reset of Docker Desktop's Kubernetes removes the database and the role `costcompass_app`, and the dump does not create the role. Bring the stack up first, then restore:
+
+1. Follow [Apply the whole stack](#apply-the-whole-stack), including `./deploy.sh`. The Job creates the role and the tables.
+2. Run `./k8s/restore-db.sh <file>`.
+
+This order was not run after a real reset (see below).
+
+### What a backup does not cover
+
+- The Secret and the ConfigMap. Keep `k8s/secret.yaml` safe yourself, or recreate it.
+- The TLS Secret `costcompass-tls`, the images and other namespaces.
+- The Postgres volume itself. A backup is a logical dump, not a copy of the files.
+- An off-site copy. The folder is on the same Mac.
+- Encryption. The protection is the folder mode 700.
+- Point-in-time recovery. You get the state at the time of the backup.
+- A schedule. Backups are made only when you run the script. A launchd job is planned in #192.
+
+### ShellCheck
+
+The scripts load `db-common.sh` with `source`. A `# shellcheck source=db-common.sh` comment tells ShellCheck where the file is, and `.shellcheckrc` sets `external-sources=true` so it follows the `source` line.
+
+### Checked and not checked
+
+Checked on the same cluster (#181):
+
+- A dump of the real database is about 1.7 KB gzipped, with file mode 600 and folder mode 700. The dump contains no password and no `change-me` text.
+- A dump that fails halfway (simulated with a fake `kubectl`) exits with 1, leaves no file and keeps earlier backups.
+- The wrong context is refused with exit 1 before anything is written (checked for `backup-db.sh` with a fake `kubectl`).
+- Retention with `KEEP=2` on a scratch folder kept the two newest backups, removed the older ones and left a foreign file (`notes.txt`) alone.
+- Restore mechanics on a scratch database in the same Postgres: the same dump restored twice in a row (exit 0), equal row counts, the INSERT privilege of the app user kept. A dump with a deliberate SQL error exited non-zero and left the data unchanged.
+- Confirmation: `no` aborts with `Aborted, nothing changed` and exit 1; no terminal and no input exits with 1.
+- A damaged or wrongly named file stops at `gunzip -t`, with the app running and the data unchanged.
+- End to end on the real database: a one-off cost `BACKUPTEST` was added through the API, backed up, deleted and restored with the script (exit 0). The output showed the warning with the counts, stopping the app, restoring, restored, starting the app. The cost was back and `/api/ready` returned 200. The test cost was deleted afterwards.
+- A `.sql.gz` file in the repo does not show up in `git status`.
+
+Not checked: a restore after a real reset of Docker Desktop's cluster (only restores in the same cluster), the refusal of another context by `restore-db.sh` itself (it shares `db-common.sh`), a restore while the app receives requests, a dump from an older schema than the app, `KEEP` and `BACKUP_DIR` with unusual values (for example spaces in a path), the scheduled job (not built).
+
 ## Secrets are not encrypted
 
 Kubernetes stores Secret values as base64, which is an encoding, not encryption. Anyone who can read the Secret in the namespace can decode it:
@@ -586,6 +676,7 @@ This is acceptable for a local cluster. Do not reuse these values anywhere else.
 - A login (#168). HTTPS is now in front of the app, so a login would not travel in plain text between the browser and the controller.
 - Removing old images automatically after a deploy. `./k8s/clean-images.sh` exists (#182) but is run by hand.
 - Deploying to a cluster other than `docker-desktop` (#188). Not supported.
+- A scheduled backup (a launchd job on the Mac). The scripts exist (#181) but run only by hand; the schedule is #192.
 
 ## Verification status
 
