@@ -52,7 +52,7 @@ For the Kubernetes built into Docker Desktop. You need Docker, `kubectl` and the
    docker save costcompass-migrate:0.1.0 | docker exec -i desktop-control-plane ctr -n k8s.io images import -
    ```
 
-2. Create the Secret from the template, then replace every `change-me` (the password appears twice and must be identical):
+2. Create the Secret from the template, then replace every `change-me`. There are two passwords and they must differ: the owner password (in `POSTGRES_PASSWORD` and `MIGRATE_DATABASE_URL`) and the app user password (in `APP_DB_PASSWORD` and `NUXT_DATABASE_URL`). Each appears twice and must be identical:
 
    ```bash
    cp k8s/secret.yaml.example k8s/secret.yaml
@@ -64,11 +64,11 @@ For the Kubernetes built into Docker Desktop. You need Docker, `kubectl` and the
    printf '127.0.0.1 costcompass.local\n::1 costcompass.local\n' | sudo tee -a /etc/hosts
    ```
 
-4. Apply in this order: namespace and configuration, Postgres, the migrations Job, the app, the certificate, the Ingress. Do not use `kubectl apply -f k8s/`; it would start the app before the migrations are done.
+4. Apply in this order: namespace, configuration and database access rules, Postgres, the migrations Job, the app, the certificate, the Ingress. Do not use `kubectl apply -f k8s/`; it would start the app before the migrations are done.
 
    ```bash
    kubectl apply -f k8s/namespace.yaml
-   kubectl apply -f k8s/configmap.yaml -f k8s/secret.yaml
+   kubectl apply -f k8s/configmap.yaml -f k8s/secret.yaml -f k8s/db-roles.yaml -f k8s/network-policy.yaml
    kubectl apply -f k8s/postgres.yaml
    kubectl rollout status statefulset/postgres -n costcompass
    kubectl delete job costcompass-migrate -n costcompass --ignore-not-found
@@ -90,6 +90,8 @@ For the Kubernetes built into Docker Desktop. You need Docker, `kubectl` and the
 5. When the `costcompass-…` pod is `1/1 Running`, open `https://costcompass.local` (`http://` redirects to it).
 
 The shared nginx controller listens on all network interfaces, and the app has no login yet. HTTPS encrypts the traffic but does not keep anyone out. Use this only on a network you trust. Without the Ingress, `kubectl port-forward -n costcompass svc/costcompass 3001:3000` (localhost only) works too.
+
+The app connects as the restricted database user `costcompass_app`, and a NetworkPolicy lets only the app and the migrations Job reach Postgres. To upgrade an existing installation, see [Database access](documentation/backend/kubernetes.md#database-access).
 
 More, including the probes, troubleshooting and what was checked: [Kubernetes](documentation/backend/kubernetes.md).
 

@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: costcompass-db-roles
+  namespace: costcompass
+data:
+  roles.sql: |
+    SELECT 'CREATE ROLE costcompass_app LOGIN'
+    WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'costcompass_app')
+    \gexec
+    ALTER ROLE costcompass_app PASSWORD :'app_password';
+    GRANT USAGE ON SCHEMA public TO costcompass_app;
+    GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO costcompass_app;
+    GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO costcompass_app;
+    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO costcompass_app;
+    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO costcompass_app;

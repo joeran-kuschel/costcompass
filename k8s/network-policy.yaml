@@ -1,0 +1,33 @@
+# Only the app and the migrations Job may open a connection to the database.
+# Without a policy, any pod in the shared cluster, in any namespace, can reach
+# postgres:5432 and only the database login stands in the way.
+#
+# Ingress only. Not affected, because they are no pod-to-pod connections: the
+# kubelet's probes (the Postgres readiness probe), `kubectl exec` into the
+# database pod and `kubectl port-forward` to it. A pod started by hand
+# (`kubectl run … psql`) is refused: use `kubectl exec` into postgres-0 instead.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: costcompass-db-from-app
+  namespace: costcompass
+spec:
+  podSelector:
+    matchLabels:
+      app: postgres
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        # The app pods.
+        - podSelector:
+            matchLabels:
+              app: costcompass
+        # The migrations Job pods (its wait-for-postgres init container runs in
+        # the same pod).
+        - podSelector:
+            matchLabels:
+              job-name: costcompass-migrate
+      ports:
+        - port: 5432
+          protocol: TCP

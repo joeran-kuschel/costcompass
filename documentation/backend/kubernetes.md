@@ -2,7 +2,7 @@
 
 What is in `k8s/`, how to create the Secret and how to apply the manifests. Written for: developers and operators, on the local Docker Desktop cluster (context `docker-desktop`).
 
-The manifests are plain YAML files applied with `kubectl apply -f`. There is no Kustomize or Helm (decision #43, see [decisions.md](decisions.md)). `k8s/` holds the namespace, the configuration, the credentials, Postgres, the migrations Job, the app and the Ingress.
+The manifests are plain YAML files applied with `kubectl apply -f`. There is no Kustomize or Helm (decision #43, see [decisions.md](decisions.md)). `k8s/` holds the namespace, the configuration, the credentials, Postgres, the database access rules, the migrations Job, the app and the Ingress.
 
 ## What is in `k8s/`
 
@@ -11,7 +11,9 @@ The manifests are plain YAML files applied with `kubectl apply -f`. There is no 
 | `namespace.yaml` | Namespace `costcompass` | Yes | The namespace for everything of the app |
 | `configmap.yaml` | ConfigMap `costcompass-config` | Yes | `NODE_ENV=production` and `NITRO_PORT="3000"` |
 | `postgres.yaml` | Service `postgres` and StatefulSet `postgres` | Yes | The database, see [Postgres](#postgres) |
-| `migrate-job.yaml` | Job `costcompass-migrate` | Yes | The database migrations, see [Migrations Job](#migrations-job) |
+| `db-roles.yaml` | ConfigMap `costcompass-db-roles` | Yes | The SQL file `roles.sql` that creates the restricted database user, see [Database access](#database-access) |
+| `network-policy.yaml` | NetworkPolicy `costcompass-db-from-app` | Yes | Only the app and the migrations Job may connect to Postgres, see [Database access](#database-access) |
+| `migrate-job.yaml` | Job `costcompass-migrate` | Yes | The database role step and the migrations, see [Migrations Job](#migrations-job) |
 | `app.yaml` | Service `costcompass` and Deployment `costcompass` | Yes | The app, see [App](#app) |
 | `ingress.yaml` | Ingress `costcompass` | Yes | The address `https://costcompass.local` for the app, with TLS from the Secret `costcompass-tls` (created by command, not a file), see [Ingress](#ingress) |
 | `secret.yaml.example` | none (template) | Yes | Template of the Secret `costcompass-db` with `change-me` values |
@@ -23,10 +25,12 @@ All ConfigMap values are strings, so the port is written in quotes.
 
 | Key | Read by |
 | --- | --- |
-| `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` | The Postgres pod (`postgres.yaml`, #45) |
-| `NUXT_DATABASE_URL` | The app (`app.yaml`, #46) and the migrations Job (`migrate-job.yaml`, #47) |
+| `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` | The Postgres pod (`postgres.yaml`, #45). This is the database owner. |
+| `MIGRATE_DATABASE_URL` | The migrations Job (`migrate-job.yaml`): the init container `create-app-role` and the migration container. The owner URL, `postgresql://costcompass:OWNER_PASSWORD@postgres:5432/costcompass`. |
+| `APP_DB_PASSWORD` | The init container `create-app-role`. The password of the restricted user `costcompass_app`. |
+| `NUXT_DATABASE_URL` | The app (`app.yaml`). The URL of the restricted user, `postgresql://costcompass_app:APP_DB_PASSWORD@postgres:5432/costcompass`. |
 
-The app reads `NUXT_DATABASE_URL` as its `runtimeConfig` override (see [architecture.md](architecture.md)).
+The app reads `NUXT_DATABASE_URL` as its `runtimeConfig` override (see [architecture.md](architecture.md)). The migration container takes the value of `MIGRATE_DATABASE_URL`, but still names its variable `NUXT_DATABASE_URL`, because `drizzle.config.ts` reads that name.
 
 ### Why the example is called `secret.yaml.example`
 
@@ -40,15 +44,22 @@ A folder-wide `kubectl apply -f k8s/` reads only `.yaml`, `.yml` and `.json` fil
    cp k8s/secret.yaml.example k8s/secret.yaml
    ```
 
-2. Generate a password without special characters:
+2. Generate two passwords without special characters, one for the owner and one for the app user. Run the command twice:
 
    ```bash
    openssl rand -hex 16
    ```
 
-3. In `k8s/secret.yaml`, replace every `change-me` with the password. It appears twice: in `POSTGRES_PASSWORD` and inside `NUXT_DATABASE_URL`. Both must be identical. If you pick a password with special characters, percent-encode it inside the URL.
+3. In `k8s/secret.yaml`, replace every `change-me`:
 
-4. Keep user and database name in step. `POSTGRES_USER` and `POSTGRES_DB` must match the user and the database name in the URL, which has this form:
+   | Password | Where it appears (must be identical) |
+   | --- | --- |
+   | Owner | `POSTGRES_PASSWORD` and inside `MIGRATE_DATABASE_URL` |
+   | App user | `APP_DB_PASSWORD` and inside `NUXT_DATABASE_URL` |
+
+   The two passwords must differ. With the same password, the separation of the two users is pointless. If you pick a password with special characters, percent-encode it inside the URL.
+
+4. Keep user and database name in step. `POSTGRES_USER` and `POSTGRES_DB` must match the user and the database name in `MIGRATE_DATABASE_URL`. `NUXT_DATABASE_URL` uses the user `costcompass_app` and the same database. The URLs have this form:
 
    ```text
    postgresql://USER:PASSWORD@postgres:5432/DB
@@ -61,15 +72,15 @@ Never commit `k8s/secret.yaml`. Do not paste its content into issues, pull reque
 
 ## Apply and check
 
-The namespace must exist first, because the other objects name it. The Secret `k8s/secret.yaml` must exist before the apply (see above); without it the Postgres pod, the Job and the app pod cannot start. Both images must be in the cluster node (see [Get the images into the cluster](#get-the-images-into-the-cluster)). The whole stack, in order, is in [Apply the whole stack](#apply-the-whole-stack).
+The namespace must exist first, because the other objects name it. The Secret `k8s/secret.yaml` must exist before the apply (see above); without it the Postgres pod, the Job and the app pod cannot start. The ConfigMap `costcompass-db-roles` must exist before the Job, because the Job mounts it. Both images must be in the cluster node (see [Get the images into the cluster](#get-the-images-into-the-cluster)). The whole stack, in order, is in [Apply the whole stack](#apply-the-whole-stack).
 
 Do not apply the whole folder with `kubectl apply -f k8s/`. It would apply the Job and the app at the same time, so the app could start before the migrations are done.
 
-1. Apply the namespace, the configuration and Postgres:
+1. Apply the namespace, the configuration, the database access rules and Postgres:
 
    ```bash
    kubectl apply -f k8s/namespace.yaml
-   kubectl apply -f k8s/configmap.yaml -f k8s/secret.yaml
+   kubectl apply -f k8s/configmap.yaml -f k8s/secret.yaml -f k8s/db-roles.yaml -f k8s/network-policy.yaml
    kubectl apply -f k8s/postgres.yaml
    ```
 
@@ -79,7 +90,7 @@ Do not apply the whole folder with `kubectl apply -f k8s/`. It would apply the J
    kubectl get configmap,secret -n costcompass
    ```
 
-   Expected: `configmap/costcompass-config` with DATA 2, `configmap/kube-root-ca.crt` (added by Kubernetes itself) and `secret/costcompass-db` of type Opaque with DATA 4.
+   Expected: `configmap/costcompass-config` with DATA 2, `configmap/costcompass-db-roles` with DATA 1, `configmap/kube-root-ca.crt` (added by Kubernetes itself) and `secret/costcompass-db` of type Opaque with DATA 6. `kubectl get networkpolicy -n costcompass` lists `costcompass-db-from-app`.
 
 3. Check Postgres:
 
@@ -127,7 +138,7 @@ The cluster database is separate from the local dev container: own volume, own c
 
 ### Run the migrations from the project
 
-An empty cluster database has no tables. The cluster normally migrates through the [Migrations Job](#migrations-job). To migrate from your machine instead, for example to try a migration, use the port-forward. Replace `USER`, `PASSWORD` and the database name with the values from your `k8s/secret.yaml`:
+An empty cluster database has no tables. The cluster normally migrates through the [Migrations Job](#migrations-job). To migrate from your machine instead, for example to try a migration, use the port-forward. Use the owner credentials, the ones in `MIGRATE_DATABASE_URL`, not the app user: `costcompass_app` may not create tables. Replace `USER`, `PASSWORD` and the database name with the owner values from your `k8s/secret.yaml`:
 
 ```bash
 NUXT_DATABASE_URL="postgresql://USER:PASSWORD@localhost:5435/costcompass" pnpm drizzle-kit migrate
@@ -139,7 +150,7 @@ Expected: `migrations applied successfully`. The tables `purchases` and `recurri
 
 ### Things to know
 
-- **Credentials are read once.** Postgres reads `POSTGRES_USER`, `POSTGRES_PASSWORD` and `POSTGRES_DB` only when it initialises an empty data directory. Changing the Secret later does not change the password of an existing database. To start over, delete the volume. This destroys the data:
+- **Credentials are read once.** Postgres reads `POSTGRES_USER`, `POSTGRES_PASSWORD` and `POSTGRES_DB` only when it initialises an empty data directory. Changing the Secret later does not change the password of an existing database. (The password of the app user is the exception: the Job sets it again on every run, see [Database access](#database-access).) To start over, delete the volume. This destroys the data:
 
   ```bash
   kubectl delete statefulset postgres -n costcompass
@@ -151,26 +162,121 @@ Expected: `migrations applied successfully`. The tables `purchases` and `recurri
 - **The reclaim policy is Delete.** Deleting the PVC or the namespace deletes the data. `kubectl delete pod postgres-0 -n costcompass` keeps it; the new pod finds the same volume. Deleting the StatefulSet keeps the PVC too, by the documented Kubernetes default (unverified here).
 - **One replica only.** There are no backups, no replication and no major-version upgrades. These are out of scope.
 
+## Database access
+
+Two rules limit who can use the database (#169): a NetworkPolicy limits who can connect, and a restricted database user limits what the app can do once connected.
+
+### NetworkPolicy
+
+`k8s/network-policy.yaml` holds the NetworkPolicy `costcompass-db-from-app`. It selects the Postgres pod (`app: postgres`) and covers incoming traffic only.
+
+| Who connects to port 5432 | Result |
+| --- | --- |
+| App pods (label `app=costcompass`) | Allowed |
+| The migrations Job pod (label `job-name=costcompass-migrate`), including its init containers | Allowed |
+| Any other pod in the namespace `costcompass` | Refused |
+| Any pod in another namespace | Refused |
+
+The policy does not affect connections that are not pod-to-pod:
+
+- The kubelet's probes, so the Postgres readiness probe keeps working.
+- `kubectl exec` into `postgres-0`.
+- `kubectl port-forward` to Postgres.
+
+A pod that you start by hand, for example `kubectl run … psql`, is refused. To open a database shell, use `kubectl exec` instead. Use the owner user here, because `psql` inside the pod connects as the owner by default:
+
+```bash
+kubectl exec -it postgres-0 -n costcompass -- sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
+```
+
+Enforcement was checked, not assumed. The cluster's network plugin is kindnet, and it was not known beforehand whether it enforces policies. A throwaway `postgres:17` pod ran `pg_isready -h postgres -p 5432`. Without the policy it printed `accepting connections` (exit 0). With the policy it printed `no response` (exit 2). The result was the same from the namespace `costcompass` and from the namespace `default` (host `postgres.costcompass`).
+
+Egress is not restricted: no egress rules are set.
+
+### Two database users
+
+| User | Rights | Used by |
+| --- | --- | --- |
+| `costcompass` (owner) | Superuser. Postgres creates it from `POSTGRES_USER`. Owns the tables. | The migrations Job only |
+| `costcompass_app` | Login only: not a superuser, cannot create databases or roles. `SELECT`, `INSERT`, `UPDATE`, `DELETE` on all tables in the schema `public`, `USAGE` and `SELECT` on all sequences (the tables use `serial` ids), `USAGE` on the schema `public`. | The app |
+
+Tables that later migrations create get the same rights for `costcompass_app` through `ALTER DEFAULT PRIVILEGES`. The app user has no right on the schema `drizzle` (the migrations table) and cannot create objects.
+
+What this means for the app: a bug or an attack through the app can read and change cost rows, but cannot drop or alter tables, truncate them, read the migrations table or create roles. The owner is still a superuser; making it a normal user is out of scope.
+
+### Where the app user is created
+
+The Job `costcompass-migrate` creates it, in the init container `create-app-role` (see [Migrations Job](#migrations-job)). The init container runs `psql` as the owner with the SQL file `roles.sql`, which comes from the ConfigMap `costcompass-db-roles` (`k8s/db-roles.yaml`), mounted at `/sql`. The file is safe to run again:
+
+- `CREATE ROLE` runs only if the role does not exist.
+- `ALTER ROLE … PASSWORD` runs every time, so the password follows the Secret.
+- The grants can be repeated.
+
+The Job runs this step on every run, before the migration. So a new installation needs no extra step, and the role exists before the first table is created.
+
+Why not somewhere else:
+
+- A Postgres init script (`/docker-entrypoint-initdb.d`) runs only on an empty data directory. It would never reach an existing volume.
+- A Drizzle migration lives in git, so it cannot hold the password.
+
+The role step prints no password: `psql` prints only command tags such as `GRANT`. The password does pass through a Postgres statement, so with the default `log_min_error_statement` a failing `ALTER ROLE` could appear in the Postgres log.
+
+### Upgrade an existing installation
+
+Do the steps in this order. The app must be restarted last: running pods keep their old URL, but a restart before the Job fails, because the role does not exist yet.
+
+1. Edit `k8s/secret.yaml`: add `MIGRATE_DATABASE_URL` (the owner URL, the value `NUXT_DATABASE_URL` had before) and `APP_DB_PASSWORD` (a new password, different from `POSTGRES_PASSWORD`), and change `NUXT_DATABASE_URL` to the `costcompass_app` URL. See [Create the Secret](#create-the-secret).
+2. Apply the Secret and the roles file:
+
+   ```bash
+   kubectl apply -f k8s/secret.yaml -f k8s/db-roles.yaml -f k8s/network-policy.yaml
+   ```
+
+3. Run the Job again (it creates the role, then migrates as the owner):
+
+   ```bash
+   kubectl delete job costcompass-migrate -n costcompass --ignore-not-found
+   kubectl apply -f k8s/migrate-job.yaml
+   kubectl wait --for=condition=complete job/costcompass-migrate -n costcompass --timeout=120s
+   ```
+
+4. Restart the app:
+
+   ```bash
+   kubectl rollout restart deployment/costcompass -n costcompass
+   ```
+
+To change the password of the app user, change `APP_DB_PASSWORD` and the password inside `NUXT_DATABASE_URL` in `k8s/secret.yaml`, apply it, run the Job again (the `ALTER ROLE` sets the new password), then restart the app.
+
+### Check the access
+
+```bash
+kubectl exec postgres-0 -n costcompass -- sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "select rolname, rolsuper, rolcreatedb, rolcreaterole, rolcanlogin from pg_roles where rolname like '"'"'costcompass%'"'"'"'
+```
+
+Expected: `costcompass` with `rolsuper` `t` (true), and `costcompass_app` with `rolsuper`, `rolcreatedb` and `rolcreaterole` `f` (false) and `rolcanlogin` `t`. The check was run on the cluster.
+
 ## Migrations Job
 
-`k8s/migrate-job.yaml` holds one Job, `costcompass-migrate`. It applies the database migrations before the app starts. It runs the `migrate` target of the Dockerfile (see [docker.md](docker.md#migrations)), which runs `pnpm drizzle-kit migrate`.
+`k8s/migrate-job.yaml` holds one Job, `costcompass-migrate`. It creates the restricted app user and applies the database migrations before the app starts. It runs the `migrate` target of the Dockerfile (see [docker.md](docker.md#migrations)), which runs `pnpm drizzle-kit migrate`.
 
 | Setting | Value |
 | --- | --- |
 | Image | `costcompass-migrate:0.1.0`, `imagePullPolicy: IfNotPresent` |
-| Credentials | `NUXT_DATABASE_URL` through `secretKeyRef` from the Secret `costcompass-db`. Only this key. |
-| Init container | `wait-for-postgres` (image `postgres:17`, already in the cluster) loops `pg_isready -h postgres -p 5432` until Postgres accepts connections. Waiting does not use up the retries. |
+| Credentials | The migration container gets the owner URL: its variable is named `NUXT_DATABASE_URL` (`drizzle.config.ts` reads that name), the value comes from the Secret key `MIGRATE_DATABASE_URL`. |
+| Init container 1 | `wait-for-postgres` (image `postgres:17`, already in the cluster) loops `pg_isready -h postgres -p 5432` until Postgres accepts connections. Waiting does not use up the retries. |
+| Init container 2 | `create-app-role` (image `postgres:17`) runs `psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -v app_password="$APP_DB_PASSWORD" -f /sql/roles.sql`. `DATABASE_URL` comes from `MIGRATE_DATABASE_URL`, `APP_DB_PASSWORD` from the Secret key of the same name, and the ConfigMap `costcompass-db-roles` is mounted at `/sql`. See [Database access](#database-access). |
 | `restartPolicy` | `Never`. Every attempt is its own pod with its own log. |
 | `backoffLimit` | 3: up to 4 pods, then the Job is `Failed`. |
 | `ttlSecondsAfterFinished` | Not set. A finished Job stays, so you can read its log. |
 
 Why a Job and not an init container on the app pod: the migrations run once per release, not at every app start (see [decisions.md](decisions.md)).
 
-The image is large (813 MB in the node) and runs as root, because no `securityContext` is set (see [docker.md](docker.md#what-is-in-the-migration-image)). The Job uses the database owner user; a restricted app user is #169.
+The image is large (813 MB in the node) and runs as root, because no `securityContext` is set (see [docker.md](docker.md#what-is-in-the-migration-image)). The Job uses the database owner user; the app uses the restricted user `costcompass_app` (see [Database access](#database-access)).
 
 ### Run the migrations
 
-Both images must be in the node (see [Get the images into the cluster](#get-the-images-into-the-cluster)) and Postgres must be running.
+Both images must be in the node (see [Get the images into the cluster](#get-the-images-into-the-cluster)), Postgres must be running, and the Secret and the ConfigMap `costcompass-db-roles` must be applied.
 
 ```bash
 kubectl apply -f k8s/migrate-job.yaml
@@ -183,7 +289,7 @@ Expected: `job.batch/costcompass-migrate condition met`. Read the log:
 kubectl logs job/costcompass-migrate -n costcompass
 ```
 
-Expected: the log ends with `migrations applied successfully`. On a database that is already migrated, the Job also succeeds (about 3 s here) and changes nothing.
+Expected: the log ends with `migrations applied successfully`. The log of the role step is `kubectl logs job/costcompass-migrate -n costcompass -c create-app-role`; it shows `GRANT` and `ALTER DEFAULT PRIVILEGES` lines. On a database that is already migrated, the Job also succeeds (about 3 s here) and changes nothing.
 
 ### Run the migrations again
 
@@ -215,7 +321,8 @@ Examples: `relation "purchases" already exists` (a table exists but is not recor
 
 | Symptom | Cause and fix |
 | --- | --- |
-| Pod `Init:0/1` | Postgres is not ready yet. The init container keeps waiting. Check `postgres-0`. |
+| Pod `Init:0/2` | Postgres is not ready yet. The init container keeps waiting. Check `postgres-0`. |
+| Pod shows an init error, then a new pod starts | The step `create-app-role` failed. Read `kubectl logs job/costcompass-migrate -n costcompass -c create-app-role`. Typical causes: `MIGRATE_DATABASE_URL` or `APP_DB_PASSWORD` is missing in the Secret, the owner password is wrong, or the ConfigMap `costcompass-db-roles` is not applied (the pod stays `ContainerCreating`). |
 | `ErrImagePull`, `ImagePullBackOff` | The node does not have `costcompass-migrate:0.1.0`. Load it. |
 | Job `Failed`, log shows only `applying migrations...` | Read the Postgres log, see above. |
 
@@ -286,7 +393,7 @@ Build from the current code. An image built before the health routes existed ans
 
 ### Apply the whole stack
 
-The order is: namespace and configuration, Postgres, migrations Job, app, TLS Secret, Ingress.
+The order is: namespace, configuration with the database access rules, Postgres, migrations Job, app, TLS Secret, Ingress.
 
 1. Build both images and load them into the node (see above).
 2. Create `k8s/secret.yaml` (see [Create the Secret](#create-the-secret)).
@@ -294,7 +401,7 @@ The order is: namespace and configuration, Postgres, migrations Job, app, TLS Se
 
    ```bash
    kubectl apply -f k8s/namespace.yaml
-   kubectl apply -f k8s/configmap.yaml -f k8s/secret.yaml
+   kubectl apply -f k8s/configmap.yaml -f k8s/secret.yaml -f k8s/db-roles.yaml -f k8s/network-policy.yaml
    kubectl apply -f k8s/postgres.yaml
    kubectl rollout status statefulset/postgres -n costcompass
    kubectl delete job costcompass-migrate -n costcompass --ignore-not-found
@@ -309,7 +416,7 @@ The order is: namespace and configuration, Postgres, migrations Job, app, TLS Se
    kubectl apply -f k8s/ingress.yaml
    ```
 
-   The `delete` line removes a Job from an earlier run, so this order also works the second time. The `wait` line stops the sequence until the migrations are done, so the app never starts before the tables exist.
+   The `delete` line removes a Job from an earlier run, so this order also works the second time. The `wait` line stops the sequence until the migrations are done, so the app never starts before the role and the tables exist.
 
 4. Check the pods:
 
@@ -411,6 +518,8 @@ The app needs no setting for the host name (no base URL, no CORS origin). The pr
 | Pod restarts, `/api/health` gives 404 | Stale image from before the health routes. Rebuild, load, restart. |
 | Pod `0/1`, restarts stay 0 | Not ready: usually the database is not reachable. Check `kubectl get pods -n costcompass` and `curl http://localhost:3001/api/ready`. |
 | Pod is ready, requests fail | The migrations have not run. Check the Job, see [Migrations Job](#migrations-job). |
+| Requests fail with `permission denied` or `password authentication failed` in the app log | The app was restarted before the Job ran, so the role `costcompass_app` does not exist or has an old password. Run the Job again, then restart the app, see [Upgrade an existing installation](#upgrade-an-existing-installation). |
+| A pod that you started by hand cannot reach Postgres (`no response`) | The NetworkPolicy refuses it, by design. Use `kubectl exec -it postgres-0 -n costcompass -- …` instead, see [NetworkPolicy](#networkpolicy). |
 
 ## Secrets are not encrypted
 
@@ -424,14 +533,13 @@ This is acceptable for a local cluster. Do not reuse these values anywhere else.
 
 ## Later additions
 
-- A second, restricted database user needs further Secret keys, and a NetworkPolicy may restrict access to Postgres (#169). The Job will keep the owner user.
 - A login (#168). HTTPS is now in front of the app, so a login would not travel in plain text between the browser and the controller.
 - A `deploy.sh` that runs the apply order as a release (#174).
 - A migrate image that prints the error of a failed migration (#176).
 
 ## Verification status
 
-Checked on Docker Desktop (context `docker-desktop`): `kubectl apply --dry-run=client -f k8s/` lists three objects; the apply order above creates the ConfigMap with 2 entries and the Secret with 4; applying twice is safe.
+Checked on Docker Desktop (context `docker-desktop`): `kubectl apply --dry-run=client -f k8s/` lists three objects; the apply order above creates the ConfigMap with 2 entries and, since #169, the Secret with 6 keys; applying twice is safe.
 
 Postgres (#45), checked on the same cluster:
 
@@ -483,3 +591,13 @@ HTTPS (#167), checked on the same cluster:
 - The app pods had no restarts, because the probes talk to the pod directly and not through the Ingress.
 
 Not checked: access from another machine (it would need the mkcert CA to trust the certificate), other browsers, renewing the certificate, a certificate for a real host name (out of scope).
+
+Database access (#169), checked on the same cluster:
+
+- NetworkPolicy: a throwaway `postgres:17` pod running `pg_isready -h postgres -p 5432` got `accepting connections` (exit 0) without the policy and `no response` (exit 2) with it, from the same namespace and from the namespace `default`. So kindnet enforces the policy. The app, the Job, `kubectl exec` and `kubectl port-forward` all work with the policy applied.
+- Upgrade of the existing installation, as described above: the Job was `Complete`; `create-app-role` printed `GRANT` and `ALTER DEFAULT PRIVILEGES` lines; `pg_roles` shows `costcompass` as superuser and `costcompass_app` as not superuser, without `createdb` and `createrole`, with login. After the restart, `pg_stat_activity` shows the app's connection as `costcompass_app`. Through <https://costcompass.local>, reading, creating, updating (PATCH) and deleting a cost works, and the existing data is intact.
+- As `costcompass_app` on the real database: `select` works. `create table` gives `permission denied for schema public`; `drop table` and `alter table` give `must be owner of table`; `truncate` gives `permission denied for table`; reading `drizzle.__drizzle_migrations` gives `permission denied for schema drizzle`; `create role` gives `permission denied to create role`. The destructive statements ran inside a rolled-back transaction, and the data was unchanged afterwards.
+- The SQL was first tested on a scratch database (since removed): run twice (safe to repeat), an insert with a `serial` id works, and a table created later by the owner is usable by the app user through the default privileges.
+- The whole apply order on an empty temporary namespace took 12 s. The role step ran before the tables existed, the app (as `costcompass_app`) answered `/api/ready`, listed an empty table, and could insert (serial id) and delete a purchase.
+
+Not checked: concurrent Job runs, egress rules (none are set), another network plugin than kindnet, a non-superuser owner, other CPU architectures.

@@ -12,6 +12,24 @@ spec:
         image: postgres:17
         imagePullPolicy: IfNotPresent
         command: ["sh", "-c", "until pg_isready -h postgres -p 5432; do sleep 2; done"]
+      - name: create-app-role
+        image: postgres:17
+        imagePullPolicy: IfNotPresent
+        command: ["sh", "-c", "psql \"$DATABASE_URL\" -v ON_ERROR_STOP=1 -v app_password=\"$APP_DB_PASSWORD\" -f /sql/roles.sql"]
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: costcompass-db
+              key: MIGRATE_DATABASE_URL
+        - name: APP_DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: costcompass-db
+              key: APP_DB_PASSWORD
+        volumeMounts:
+        - name: roles-sql
+          mountPath: /sql
       containers:
       - image: costcompass-migrate:0.1.0
         name: costcompass-migrate
@@ -21,5 +39,9 @@ spec:
           valueFrom:
             secretKeyRef:
               name: costcompass-db
-              key: NUXT_DATABASE_URL
+              key: MIGRATE_DATABASE_URL
       restartPolicy: Never
+      volumes:
+      - name: roles-sql
+        configMap:
+          name: costcompass-db-roles
