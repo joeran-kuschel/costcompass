@@ -11,7 +11,7 @@ CMD ["node", "server/db/migrate.ts"]
 
 FROM node:26-alpine AS runtime
 WORKDIR /app
-COPY --from=build /app/.output ./.output
+COPY --from=build /app/.outputt ./.output
 USER node
 ENV NODE_ENV=production
 EXPOSE 3000
