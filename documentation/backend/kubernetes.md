@@ -2,7 +2,7 @@
 
 What is in `k8s/`, how to create the Secret and how to apply the manifests. Written for: developers and operators, on the local Docker Desktop cluster (context `docker-desktop`).
 
-The manifests are plain YAML files applied with `kubectl apply -f`. There is no Kustomize or Helm (decision #43, see [decisions.md](decisions.md)). `k8s/` holds the namespace, the configuration, the credentials, Postgres, the migrations Job and the app.
+The manifests are plain YAML files applied with `kubectl apply -f`. There is no Kustomize or Helm (decision #43, see [decisions.md](decisions.md)). `k8s/` holds the namespace, the configuration, the credentials, Postgres, the migrations Job, the app and the Ingress.
 
 ## What is in `k8s/`
 
@@ -13,6 +13,7 @@ The manifests are plain YAML files applied with `kubectl apply -f`. There is no 
 | `postgres.yaml` | Service `postgres` and StatefulSet `postgres` | Yes | The database, see [Postgres](#postgres) |
 | `migrate-job.yaml` | Job `costcompass-migrate` | Yes | The database migrations, see [Migrations Job](#migrations-job) |
 | `app.yaml` | Service `costcompass` and Deployment `costcompass` | Yes | The app, see [App](#app) |
+| `ingress.yaml` | Ingress `costcompass` | Yes | The address `costcompass.local` for the app, see [Ingress](#ingress) |
 | `secret.yaml.example` | none (template) | Yes | Template of the Secret `costcompass-db` with `change-me` values |
 | `secret.yaml` | Secret `costcompass-db`, type Opaque | No, listed in `.gitignore` | Your real credentials |
 
@@ -285,7 +286,7 @@ Build from the current code. An image built before the health routes existed ans
 
 ### Apply the whole stack
 
-The order is: namespace and configuration, Postgres, migrations Job, app.
+The order is: namespace and configuration, Postgres, migrations Job, app, Ingress.
 
 1. Build both images and load them into the node (see above).
 2. Create `k8s/secret.yaml` (see [Create the Secret](#create-the-secret)).
@@ -300,6 +301,7 @@ The order is: namespace and configuration, Postgres, migrations Job, app.
    kubectl apply -f k8s/migrate-job.yaml
    kubectl wait --for=condition=complete job/costcompass-migrate -n costcompass --timeout=120s
    kubectl apply -f k8s/app.yaml
+   kubectl apply -f k8s/ingress.yaml
    ```
 
    The `delete` line removes a Job from an earlier run, so this order also works the second time. The `wait` line stops the sequence until the migrations are done, so the app never starts before the tables exist.
@@ -316,21 +318,57 @@ The readiness check covers the database connection, not the schema. If the migra
 
 ### Open the app
 
-Forward a local port to the Service:
+Add the host name to `/etc/hosts` once (see [Ingress](#ingress)), apply `k8s/ingress.yaml`, then open <http://costcompass.local>. You see the dashboard. No port-forward is needed.
+
+Alternative without the controller: forward a local port to the Service.
 
 ```bash
 kubectl port-forward -n costcompass svc/costcompass 3001:3000
 ```
 
-Open <http://localhost:3001>. The left port (3001) is free to choose; 3000 is used by `nuxt dev`. The right port (3000) is the Service port. The command keeps running; use another terminal for the next steps.
+Open <http://localhost:3001>. The left port (3001) is free to choose; 3000 is used by `nuxt dev`. The right port (3000) is the Service port. The command keeps running; use another terminal for the next steps. It binds to 127.0.0.1 only.
 
-Why ClusterIP and a port-forward: a `LoadBalancer` Service would work on Docker Desktop (published on `localhost:8080`), but it binds to all network interfaces (0.0.0.0). The app has no login (#168) and no HTTPS (#167), so this was not adopted. An Ingress is #167.
+Why ClusterIP and not a `LoadBalancer` Service: a `LoadBalancer` would work on Docker Desktop (published on `localhost:8080`), but it binds to all network interfaces (0.0.0.0). The app has no login (#168) and no HTTPS (#167), so this was not adopted (#46). The Ingress has the same exposure, see the security note below.
+
+### Ingress
+
+`k8s/ingress.yaml` holds one Ingress, `costcompass`, in the namespace `costcompass`. It uses `ingressClassName: nginx`, the host `costcompass.local` and the path `/` (Prefix), and sends everything to the Service `costcompass` on port 3000. It is plain HTTP: there is no TLS section (HTTPS is #167). It is its own file so that `app.yaml` stays about the app.
+
+The cluster already runs one shared ingress-nginx controller (IngressClass `nginx`). Other local apps use it too (`dinner.local`, `time-tracking.local`, `watchlist.local`). Docker Desktop publishes it on the Mac as `0.0.0.0:80` and 443, so there is nothing to install.
+
+1. Add the host name to `/etc/hosts` once. It needs `sudo`:
+
+   ```bash
+   printf '127.0.0.1 costcompass.local\n::1 costcompass.local\n' | sudo tee -a /etc/hosts
+   ```
+
+   The `::1` line is harmless: nothing listens on IPv6 port 80 here, so browsers fall back to IPv4. The name ends in `.local`, which is reserved for mDNS; it works here because of these entries.
+
+2. Apply the Ingress (last in the apply order):
+
+   ```bash
+   kubectl apply -f k8s/ingress.yaml
+   ```
+
+3. Check it:
+
+   ```bash
+   kubectl get ingress -n costcompass
+   ```
+
+   Expected: class `nginx`, host `costcompass.local`, port 80.
+
+4. Open <http://costcompass.local>.
+
+The app needs no setting for the host name (no base URL, no CORS origin). The probes talk to the pod directly, so the Ingress does not affect them. A request with a host name that has no Ingress rule gets 404 from the controller.
+
+**Security: the controller listens on all network interfaces**, not only on localhost. The Ingress routes by host name, but anyone on the same network can send a request with the host name `costcompass.local` (for example with a `Host` header) and reach the app. The app has no login (#168) and no HTTPS (#167), so they could read and change the costs. Use it only on a network you trust. This is the same reason a `LoadBalancer` Service was not used.
 
 ### Troubleshooting
 
 | Symptom | Cause and fix |
 | --- | --- |
-| `ErrImagePull`, `ImagePullBackOff` | The node does not have the image. Load it, see [Get the image into the cluster](#get-the-image-into-the-cluster). |
+| `ErrImagePull`, `ImagePullBackOff` | The node does not have the image. Load it, see [Get the images into the cluster](#get-the-images-into-the-cluster). |
 | Pod restarts, `/api/health` gives 404 | Stale image from before the health routes. Rebuild, load, restart. |
 | Pod `0/1`, restarts stay 0 | Not ready: usually the database is not reachable. Check `kubectl get pods -n costcompass` and `curl http://localhost:3001/api/ready`. |
 | Pod is ready, requests fail | The migrations have not run. Check the Job, see [Migrations Job](#migrations-job). |
@@ -348,6 +386,8 @@ This is acceptable for a local cluster. Do not reuse these values anywhere else.
 ## Later additions
 
 - A second, restricted database user needs further Secret keys, and a NetworkPolicy may restrict access to Postgres (#169). The Job will keep the owner user.
+- HTTPS for `costcompass.local` (#167). It builds on the Ingress above, which gets a TLS section.
+- A login (#168).
 - A `deploy.sh` that runs the apply order as a release (#174).
 - A migrate image that prints the error of a failed migration (#176).
 
@@ -384,3 +424,12 @@ Migrations Job (#47), checked on the same cluster:
 - A failing migration (a table `purchases` that existed without being recorded): the Job ended `Failed` with `BackoffLimitExceeded` after 4 pods in 78 s. Each pod exited with code 1 and kept its log. The log shows no reason (see [When the Job fails](#when-the-job-fails)). Wrong credentials fail the same way.
 
 Not checked: the Job on a cluster with more than one replica of anything, concurrent runs, a migration that takes long, other CPU architectures.
+
+Ingress (#173), checked on the same cluster:
+
+- `http://costcompass.local` shows the dashboard (title "Dashboard – Costcompass") over IPv4. `/`, `/api/health`, `/api/ready` and `/api/purchases` return 200 through the Ingress.
+- A test cost created with `POST /api/recurring-costs` through the Ingress was listed and then deleted (204). In the browser, a cost was added and still showed after a reload.
+- The other apps on the controller still answer: `watchlist.local` returns 200; `dinner.local` and `time-tracking.local` redirect to HTTPS with 308, which is their own setting.
+- A request with a host name that has no Ingress rule gets 404 from the controller.
+
+Not checked: HTTPS (#167), access from another machine on the network (the exposure is stated from the published port, not tested from a second device), other browsers, the IPv6 path.

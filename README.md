@@ -58,7 +58,13 @@ For the Kubernetes built into Docker Desktop. You need Docker, `kubectl` and the
    cp k8s/secret.yaml.example k8s/secret.yaml
    ```
 
-3. Apply in this order: namespace and configuration, Postgres, the migrations Job, the app. Do not use `kubectl apply -f k8s/`; it would start the app before the migrations are done.
+3. Add the host name to `/etc/hosts` once (needs `sudo`):
+
+   ```bash
+   printf '127.0.0.1 costcompass.local\n::1 costcompass.local\n' | sudo tee -a /etc/hosts
+   ```
+
+4. Apply in this order: namespace and configuration, Postgres, the migrations Job, the app, the Ingress. Do not use `kubectl apply -f k8s/`; it would start the app before the migrations are done.
 
    ```bash
    kubectl apply -f k8s/namespace.yaml
@@ -69,15 +75,12 @@ For the Kubernetes built into Docker Desktop. You need Docker, `kubectl` and the
    kubectl apply -f k8s/migrate-job.yaml
    kubectl wait --for=condition=complete job/costcompass-migrate -n costcompass --timeout=120s
    kubectl apply -f k8s/app.yaml
+   kubectl apply -f k8s/ingress.yaml
    ```
 
-4. When the `costcompass-…` pod is `1/1 Running`, open the app:
+5. When the `costcompass-…` pod is `1/1 Running`, open `http://costcompass.local`.
 
-   ```bash
-   kubectl port-forward -n costcompass svc/costcompass 3001:3000
-   ```
-
-   Open `http://localhost:3001`.
+The shared nginx controller listens on all network interfaces, and the app has no login or HTTPS yet. Use this only on a network you trust. Without the Ingress, `kubectl port-forward -n costcompass svc/costcompass 3001:3000` (localhost only) works too.
 
 More, including the probes, troubleshooting and what was checked: [Kubernetes](documentation/backend/kubernetes.md).
 

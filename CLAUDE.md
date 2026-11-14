@@ -62,7 +62,7 @@ costcompass/
 ├── i18n/locales/             # en.json and de.json locale files
 ├── tests/nuxt/               # Vitest tests, run in the Nuxt environment
 ├── public/                   # Static files: favicons, app icons, manifest.webmanifest
-├── k8s/                      # Plain YAML manifests: namespace, ConfigMap, Secret example (the real secret.yaml is git-ignored), postgres.yaml (Service and StatefulSet), migrate-job.yaml (Job), app.yaml (Service and Deployment)
+├── k8s/                      # Plain YAML manifests: namespace, ConfigMap, Secret example (the real secret.yaml is git-ignored), postgres.yaml (Service and StatefulSet), migrate-job.yaml (Job), app.yaml (Service and Deployment), ingress.yaml (Ingress)
 ├── Dockerfile                # Three stages: build, migrate (`--target migrate`), runtime; see documentation/backend/docker.md
 ├── .dockerignore             # Keeps node_modules, .env, .git and similar out of the build
 ├── nuxt.config.ts
@@ -159,9 +159,9 @@ Shared structure:
 - **App:** Deployment + Service, config via ConfigMap, credentials via Secret, readiness and liveness probes against a health endpoint (`/api/health`, `/api/ready`: [`documentation/backend/health.md`](documentation/backend/health.md)); manifests, Secret workflow and apply order: [`documentation/backend/kubernetes.md`](documentation/backend/kubernetes.md), app details: [App](documentation/backend/kubernetes.md#app)
 - **PostgreSQL:** own StatefulSet manifests with a PersistentVolumeClaim + Service (no Helm chart, no operator; see the Kubernetes decision below); details in [`documentation/backend/kubernetes.md`](documentation/backend/kubernetes.md#postgres)
 - **Migrations:** run as a Kubernetes Job (`k8s/migrate-job.yaml`) before the app starts, not on every request; the image is the `migrate` target of the Dockerfile, see [`documentation/backend/kubernetes.md`](documentation/backend/kubernetes.md#migrations-job) and [`docker.md`](documentation/backend/docker.md#migrations)
-- **Access:** port-forward at first, Ingress later if needed
+- **Access:** the app is served at http://costcompass.local through the shared nginx Ingress (`k8s/ingress.yaml`, plain HTTP, `/etc/hosts` entry needed); the port-forward still works; HTTPS is #167
 - **Local development:** `nuxt dev` against Postgres in the cluster (via port-forward) or a separate local container
-- **Manifests (#43):** plain YAML files in `k8s/`, applied with `kubectl apply -f` in the order given in the docs (namespace, ConfigMap and Secret, Postgres, migrations Job, app). Kustomize only when a second environment appears.
+- **Manifests (#43):** plain YAML files in `k8s/`, applied with `kubectl apply -f` in the order given in the docs (namespace, ConfigMap and Secret, Postgres, migrations Job, app, Ingress). Kustomize only when a second environment appears.
 
 ## Roadmap
 
