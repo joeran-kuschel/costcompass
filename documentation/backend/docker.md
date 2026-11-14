@@ -190,4 +190,6 @@ Checked by building and running the image:
 - Started without `NUXT_DATABASE_URL` and with a wrong one: the server starts, the UI shows "could not load data", the log shows the error.
 - Local Node is 26.9.0, the image has 26.13.1 (same major version).
 
-Not checked: Kubernetes, a build in CI, other CPU architectures.
+CI builds both images on every pull request and checks what they start: [ci.md](ci.md#job-docker).
+
+Not checked: Kubernetes, other CPU architectures.
