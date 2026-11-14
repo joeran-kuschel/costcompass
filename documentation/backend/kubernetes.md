@@ -238,7 +238,7 @@ Do the steps in this order. The app must be restarted last: running pods keep th
    ./deploy.sh
    ```
 
-4. Restart the app, so it reads the changed Secret even if the image tag did not change (to verify: a deploy with the same tag does not restart the pods):
+4. Restart the app, so it reads the changed Secret even if the image tag did not change (checked: a second `./deploy.sh` on the same commit leaves the Deployment `unchanged` and does not restart the pods):
 
    ```bash
    kubectl rollout restart deployment/costcompass -n costcompass
@@ -653,6 +653,7 @@ Deploy script (#174), checked on the same cluster:
 - `kubectl rollout undo deployment/costcompass -n costcompass` brought the previous version back, and `/api/ready` answered 200.
 - With a deliberately failing migration container, the script exited with 1 at the migration step and printed the log of the Job (`simulated migration failure`). The Deployment stayed on the old image.
 - Repeated runs delete and re-run the Job without problems.
+- Two runs in a row on a clean working tree gave the same tag (the commit's short SHA). The second run left the Deployment `unchanged`, so no pod restarted, and the Job ran again and completed.
 - `bash -n deploy.sh` reports no syntax error.
 
-Not checked: two runs in a row on a clean working tree (same tag), the refusal of a context other than `docker-desktop` (only one context exists here; checked by reading the script), ShellCheck, another cluster, the timeout path of the wait loop.
+Not checked: the refusal of a context other than `docker-desktop` (only one context exists here; checked by reading the script), ShellCheck, another cluster, the timeout path of the wait loop.
