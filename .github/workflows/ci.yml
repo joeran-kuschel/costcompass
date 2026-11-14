@@ -25,3 +25,28 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm vitest run
       - run: pnpm build
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build the app image (default target)
+        run: docker build -t costcompass:ci .
+      - name: Build the migrations image
+        run: docker build --target migrate -t costcompass-migrate:ci .
+      - name: Check what the images run
+        run: |
+          test "$(docker inspect --format '{{json .Config.Cmd}}' costcompass:ci)" = '["node",".output/server/index.mjs"]'
+          test "$(docker inspect --format '{{json .Config.Cmd}}' costcompass-migrate:ci)" = '["node","server/db/migrate.ts"]'
+  manifests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install kubeconform
+        run: |
+          curl -sSfL -o kubeconform.tar.gz https://github.com/yannh/kubeconform/releases/download/v0.8.0/kubeconform-linux-amd64.tar.gz
+          echo "9bc2bffbf71f261128533edaf912153948b7ff238f9a531ae6d34466ec287883  kubeconform.tar.gz" | sha256sum -c -
+          tar xzf kubeconform.tar.gz kubeconform
+      - name: Validate the manifests
+        run: ./kubeconform -strict -summary k8s/*.yaml k8s/secret.yaml.example
+
+
