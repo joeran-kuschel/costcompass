@@ -2,7 +2,7 @@
 
 How to build and run the Costcompass app as a container image. Written for: developers and operators.
 
-The app image contains the built Nuxt server and nothing else. The database is not part of it, and neither are the migrations. Migrations run from a second image, see [Migrations](#migrations).
+The app image contains the built Nuxt server and nothing else. The database is not part of it, and neither are the migrations. Migrations run from a second image, see [Migrations](#migrations). For the cluster, `./deploy.sh` builds both images, see [Deploy script](kubernetes.md#deploy-script).
 
 ## Build the image
 
@@ -85,7 +85,7 @@ Replace `USER`, `PASSWORD`, `PORT` and `DB`. `host.docker.internal` reaches a Po
 
 The script reads the variable from the environment and needs no `.env` file. On success it prints nothing and exits with 0. The local `pnpm drizzle-kit migrate` with a `.env` file is unchanged: it still uses `drizzle.config.ts`, not the script.
 
-In Kubernetes, the Job `costcompass-migrate` runs this image. See [Migrations Job](kubernetes.md#migrations-job).
+In Kubernetes, the Job `costcompass-migrate` runs this image. `./deploy.sh` builds it and copies it into the cluster node; the manual copy is explained in [Get the images into the cluster](kubernetes.md#get-the-images-into-the-cluster). See [Migrations Job](kubernetes.md#migrations-job).
 
 ### Exit codes
 
