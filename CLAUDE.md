@@ -53,7 +53,7 @@ costcompass/
 │   └── pages/                # Pages (auto-routing): index.vue (dashboard), costs.vue, months/[year]/[month].vue
 ├── server/                   # Nitro server, the only layer touching the DB
 │   ├── api/                  # API routes: recurring-costs/ and purchases/ (index.get/post, [id].patch/delete), health.get.ts and ready.get.ts (liveness and readiness)
-│   ├── db/                   # Drizzle schema and migrations
+│   ├── db/                   # Drizzle schema and migrations, migrate.ts (the script the migrate image runs)
 │   ├── middleware/           # (planned) Server middleware
 │   └── utils/                # Server utilities (db.ts client, costs.ts queries and row mappers)
 ├── shared/                   # Code for both app and server (the ~~ alias is the project root)

@@ -30,7 +30,7 @@ All ConfigMap values are strings, so the port is written in quotes.
 | `APP_DB_PASSWORD` | The init container `create-app-role`. The password of the restricted user `costcompass_app`. |
 | `NUXT_DATABASE_URL` | The app (`app.yaml`). The URL of the restricted user, `postgresql://costcompass_app:APP_DB_PASSWORD@postgres:5432/costcompass`. |
 
-The app reads `NUXT_DATABASE_URL` as its `runtimeConfig` override (see [architecture.md](architecture.md)). The migration container takes the value of `MIGRATE_DATABASE_URL`, but still names its variable `NUXT_DATABASE_URL`, because `drizzle.config.ts` reads that name.
+The app reads `NUXT_DATABASE_URL` as its `runtimeConfig` override (see [architecture.md](architecture.md)). The migration container takes the value of `MIGRATE_DATABASE_URL`, but still names its variable `NUXT_DATABASE_URL`, because the script `server/db/migrate.ts` (and `drizzle.config.ts`) read that name.
 
 ### Why the example is called `secret.yaml.example`
 
@@ -258,12 +258,12 @@ Expected: `costcompass` with `rolsuper` `t` (true), and `costcompass_app` with `
 
 ## Migrations Job
 
-`k8s/migrate-job.yaml` holds one Job, `costcompass-migrate`. It creates the restricted app user and applies the database migrations before the app starts. It runs the `migrate` target of the Dockerfile (see [docker.md](docker.md#migrations)), which runs `pnpm drizzle-kit migrate`.
+`k8s/migrate-job.yaml` holds one Job, `costcompass-migrate`. It creates the restricted app user and applies the database migrations before the app starts. It runs the `migrate` target of the Dockerfile (see [docker.md](docker.md#migrations)), which runs the script `server/db/migrate.ts`.
 
 | Setting | Value |
 | --- | --- |
 | Image | `costcompass-migrate:0.1.0`, `imagePullPolicy: IfNotPresent` |
-| Credentials | The migration container gets the owner URL: its variable is named `NUXT_DATABASE_URL` (`drizzle.config.ts` reads that name), the value comes from the Secret key `MIGRATE_DATABASE_URL`. |
+| Credentials | The migration container gets the owner URL: its variable is named `NUXT_DATABASE_URL` (`server/db/migrate.ts` reads that name), the value comes from the Secret key `MIGRATE_DATABASE_URL`. |
 | Init container 1 | `wait-for-postgres` (image `postgres:17`, already in the cluster) loops `pg_isready -h postgres -p 5432` until Postgres accepts connections. Waiting does not use up the retries. |
 | Init container 2 | `create-app-role` (image `postgres:17`) runs `psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -v app_password="$APP_DB_PASSWORD" -f /sql/roles.sql`. `DATABASE_URL` comes from `MIGRATE_DATABASE_URL`, `APP_DB_PASSWORD` from the Secret key of the same name, and the ConfigMap `costcompass-db-roles` is mounted at `/sql`. See [Database access](#database-access). |
 | `restartPolicy` | `Never`. Every attempt is its own pod with its own log. |
@@ -289,7 +289,7 @@ Expected: `job.batch/costcompass-migrate condition met`. Read the log:
 kubectl logs job/costcompass-migrate -n costcompass
 ```
 
-Expected: the log ends with `migrations applied successfully`. The log of the role step is `kubectl logs job/costcompass-migrate -n costcompass -c create-app-role`; it shows `GRANT` and `ALTER DEFAULT PRIVILEGES` lines. On a database that is already migrated, the Job also succeeds (about 3 s here) and changes nothing.
+Expected: the log is empty, because the script prints nothing on success; the Job status `condition met` is the result. The log of the role step is `kubectl logs job/costcompass-migrate -n costcompass -c create-app-role`; it shows `GRANT` and `ALTER DEFAULT PRIVILEGES` lines. On a database that is already migrated, the Job also succeeds (about 3 s here) and changes nothing.
 
 ### Run the migrations again
 
@@ -311,20 +311,20 @@ kubectl describe job costcompass-migrate -n costcompass
 
 A failed Job shows the reason `BackoffLimitExceeded` after 4 pods (78 s in the test). Each pod exited with code 1 and keeps its log.
 
-Known limit: the log of a failed pod shows only `applying migrations...`. `drizzle-kit migrate` prints no error text. The reason is in the Postgres log:
+The log of a failed pod contains the database error. Read it:
 
 ```bash
-kubectl logs postgres-0 -n costcompass | grep ERROR
+kubectl logs job/costcompass-migrate -n costcompass -c costcompass-migrate
 ```
 
-Examples: `relation "purchases" already exists` (a table exists but is not recorded as migrated) and `password authentication failed` (wrong credentials, same failure pattern). Issue #176 replaces `drizzle-kit migrate` in the image with a small script that prints the error.
+The `-c` flag picks the migration container, not an init container. Examples of what you find: `type "recurring_interval" already exists` (an object exists but is not recorded as migrated), or a connection error such as `DrizzleQueryError` when the database is unreachable or the credentials are wrong. The Postgres log (`kubectl logs postgres-0 -n costcompass | grep ERROR`) still shows the server side.
 
 | Symptom | Cause and fix |
 | --- | --- |
 | Pod `Init:0/2` | Postgres is not ready yet. The init container keeps waiting. Check `postgres-0`. |
 | Pod shows an init error, then a new pod starts | The step `create-app-role` failed. Read `kubectl logs job/costcompass-migrate -n costcompass -c create-app-role`. Typical causes: `MIGRATE_DATABASE_URL` or `APP_DB_PASSWORD` is missing in the Secret, the owner password is wrong, or the ConfigMap `costcompass-db-roles` is not applied (the pod stays `ContainerCreating`). |
 | `ErrImagePull`, `ImagePullBackOff` | The node does not have `costcompass-migrate:0.1.0`. Load it. |
-| Job `Failed`, log shows only `applying migrations...` | Read the Postgres log, see above. |
+| Job `Failed` with `BackoffLimitExceeded` | Read the error in the log of the container `costcompass-migrate`, see above. |
 
 ## App
 
@@ -535,7 +535,6 @@ This is acceptable for a local cluster. Do not reuse these values anywhere else.
 
 - A login (#168). HTTPS is now in front of the app, so a login would not travel in plain text between the browser and the controller.
 - A `deploy.sh` that runs the apply order as a release (#174).
-- A migrate image that prints the error of a failed migration (#176).
 
 ## Verification status
 
@@ -544,7 +543,7 @@ Checked on Docker Desktop (context `docker-desktop`): `kubectl apply --dry-run=c
 Postgres (#45), checked on the same cluster:
 
 - Applying the namespace and then the folder (the order before the Job existed) created the pod `postgres-0`, `1/1 Running` after 13 seconds, and the PVC `data-postgres-0`, `Bound`.
-- Through the port-forward, `pnpm drizzle-kit migrate` printed `migrations applied successfully` and created the tables. The local dev database stayed unchanged.
+- Through the port-forward, `pnpm drizzle-kit migrate` (the Job image used this command then) printed `migrations applied successfully` and created the tables. The local dev database stayed unchanged.
 - Restart test: a scratch table with one row was created, the pod `postgres-0` was deleted, and after the new pod was ready the row was still there. The scratch table was dropped afterwards.
 
 Not checked:
@@ -567,7 +566,12 @@ Migrations Job (#47), checked on the same cluster:
 - Already migrated database (the cluster database): the Job was `Complete` after 3 s. The init container logged `postgres:5432 - accepting connections`, and the log ends with `migrations applied successfully`.
 - Empty database (a scratch database in the cluster's Postgres): the Job was `Complete` and created `purchases`, `recurring_costs` and `drizzle.__drizzle_migrations`.
 - The whole apply order on a clean temporary namespace (a copy of the manifests with only the namespace changed): 20 s in total. The Job completed and created the tables before the app started. The app pod was `1/1`, `/api/ready` returned ok and `/api/purchases` returned `[]`. The delete-and-apply rerun worked.
-- A failing migration (a table `purchases` that existed without being recorded): the Job ended `Failed` with `BackoffLimitExceeded` after 4 pods in 78 s. Each pod exited with code 1 and kept its log. The log shows no reason (see [When the Job fails](#when-the-job-fails)). Wrong credentials fail the same way.
+- A failing migration (a table `purchases` that existed without being recorded): the Job ended `Failed` with `BackoffLimitExceeded` after 4 pods in 78 s. Each pod exited with code 1 and kept its log. With `drizzle-kit migrate` the log showed no reason; since #176 it does (see the next block).
+
+Migrations Job with the script (#176), checked in a temporary namespace:
+
+- Job on an empty database: `Complete`, tables created.
+- Job with a conflicting leftover (`type "recurring_interval" already exists`): `Failed` with `BackoffLimitExceeded`, and the pod log contains the database error.
 
 Not checked: the Job on a cluster with more than one replica of anything, concurrent runs, a migration that takes long, other CPU architectures.
 

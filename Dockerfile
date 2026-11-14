@@ -7,7 +7,7 @@ COPY . .
 RUN pnpm build
 
 FROM build AS migrate
-CMD ["pnpm", "drizzle-kit", "migrate"]
+CMD ["node", "server/db/migrate.ts"]
 
 FROM node:26-alpine AS runtime
 WORKDIR /app
