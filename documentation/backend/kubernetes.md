@@ -18,6 +18,8 @@ The manifests are plain YAML files applied with `kubectl apply -f`. There is no 
 | `clean-images.sh` | none (script) | Yes | Removes old `costcompass` and `costcompass-migrate` images from Docker and from the node, run by hand: `./k8s/clean-images.sh`, see [Images pile up](#images-pile-up) |
 | `backup-db.sh` | none (script) | Yes | Dumps the database to a compressed file outside the repo, run by hand: `./k8s/backup-db.sh`, see [Backup and restore](#backup-and-restore) |
 | `restore-db.sh` | none (script) | Yes | Replaces the database with the contents of a backup file, run by hand: `./k8s/restore-db.sh <file>`, see [Backup and restore](#backup-and-restore) |
+| `scheduled-backup.sh` | none (script) | Yes | The wrapper that launchd runs: calls `backup-db.sh` and writes a log, see [Scheduled backup](#scheduled-backup) |
+| `install-backup-job.sh` | none (script) | Yes | Installs or removes the launchd job that runs the wrapper (macOS): `./k8s/install-backup-job.sh`, see [Scheduled backup](#scheduled-backup) |
 | `db-common.sh` | none (script) | Yes | Settings (namespace, pod) and the check for the `docker-desktop` context, loaded with `source` by the two scripts above; not run on its own |
 | `ingress.yaml` | Ingress `costcompass` | Yes | The address `https://costcompass.local` for the app, with TLS from the Secret `costcompass-tls` (created by command, not a file), see [Ingress](#ingress) |
 | `secret.yaml.example` | none (template) | Yes | Template of the Secret `costcompass-db` with `change-me` values |
@@ -639,7 +641,60 @@ This order was not run after a real reset (see below).
 - An off-site copy. The folder is on the same Mac.
 - Encryption. The protection is the folder mode 700.
 - Point-in-time recovery. You get the state at the time of the backup.
-- A schedule. Backups are made only when you run the script. A launchd job is planned in #192.
+- A schedule unless you install one. Without the [scheduled backup](#scheduled-backup), backups are made only when you run the script.
+
+### Scheduled backup
+
+A launchd job runs the backup on a schedule, so you do not depend on remembering it. launchd is the macOS service that starts jobs; this is a user agent, so it exists only on a Mac and runs only while you are logged in. The scripts themselves are plain bash; only the scheduling and the default log path are macOS-specific. Added in #192.
+
+```bash
+./k8s/install-backup-job.sh
+```
+
+| Command | Schedule | Files kept (`KEEP`) |
+| --- | --- | --- |
+| `./k8s/install-backup-job.sh` | Every hour | 168 (a week) |
+| `./k8s/install-backup-job.sh --daily` | Every day at 12:00 | 30 |
+| `./k8s/install-backup-job.sh --uninstall` | Removes the job | The backups already made stay |
+
+Any other argument prints the usage. Run the installer again to change the schedule: it removes the old job and loads the new one.
+
+The installer:
+
+1. Writes `~/Library/LaunchAgents/com.costcompass.db-backup.plist` with the absolute path of `k8s/scheduled-backup.sh`. The file holds no secrets and no cost data.
+2. Checks it with `plutil -lint`.
+3. Removes an older version of the job (`launchctl bootout`) and loads the new one (`launchctl bootstrap`).
+4. Prints the schedule, the paths and the command to uninstall.
+
+The job also runs once when it is loaded and at each login (`RunAtLoad`). launchd throttles repeated starts of the same job (10 seconds by default).
+
+#### What the wrapper does
+
+`scheduled-backup.sh` sets `PATH=/usr/local/bin:/usr/bin:/bin`, because launchd's own `PATH` is only `/usr/bin:/bin:/usr/sbin:/sbin` and `kubectl` is in `/usr/local/bin`. It runs `backup-db.sh` and appends a timestamped entry to the log, with the script's output and `exit code N`. It then cuts the log to its last 500 lines, so the log cannot grow without limit, and exits with the exit code of the backup. It does not stop at errors, so a failure is logged. `KEEP` and `BACKUP_DIR` from the environment pass through to `backup-db.sh`.
+
+The log is `~/Library/Logs/costcompass-backup.log`. The variable `LOG` overrides it.
+
+```bash
+tail ~/Library/Logs/costcompass-backup.log
+```
+
+A good run ends with `exit code 0` and a new file in `~/costcompass-backups`.
+
+#### Check the job
+
+```bash
+launchctl print gui/$(id -u)/com.costcompass.db-backup
+```
+
+The output shows the interval (`run interval = 3600 seconds` for the hourly job), `KEEP` under the environment, `runatload` and `last exit code`. After an uninstall the command answers `Bad request.`
+
+#### When the cluster is off or the Mac sleeps
+
+- Docker Desktop's Kubernetes is not running: the run fails, the log shows the error and `exit code 1`, no file is left and earlier backups stay. Start the cluster; the next run works again. Checked only with an empty kube config, not with a stopped Docker Desktop.
+- The Mac is asleep: the hourly job runs after it wakes up, not for every missed hour. The daily job runs once after waking. This is launchd's documented behaviour and was not checked here.
+- You are logged out: nothing runs until you log in. The job then runs once at login. This follows from a user agent with `RunAtLoad` and was not checked here.
+
+The installer sets `KEEP` itself (168 hourly, 30 daily). With the manual default of `KEEP=10`, hourly backups would cover only ten hours.
 
 ### ShellCheck
 
@@ -659,7 +714,18 @@ Checked on the same cluster (#181):
 - End to end on the real database: a one-off cost `BACKUPTEST` was added through the API, backed up, deleted and restored with the script (exit 0). The output showed the warning with the counts, stopping the app, restoring, restored, starting the app. The cost was back and `/api/ready` returned 200. The test cost was deleted afterwards.
 - A `.sql.gz` file in the repo does not show up in `git status`.
 
-Not checked: a restore after a real reset of Docker Desktop's cluster (only restores in the same cluster), the refusal of another context by `restore-db.sh` itself (it shares `db-common.sh`), a restore while the app receives requests, a dump from an older schema than the app, `KEEP` and `BACKUP_DIR` with unusual values (for example spaces in a path), the scheduled job (not built).
+Not checked: a restore after a real reset of Docker Desktop's cluster (only restores in the same cluster), the refusal of another context by `restore-db.sh` itself (it shares `db-common.sh`), a restore while the app receives requests, a dump from an older schema than the app, `KEEP` and `BACKUP_DIR` with unusual values (for example spaces in a path), a scheduled run by the clock (see below), the job after a sleep, a reboot or a login, a run while Docker Desktop is really stopped, a run while a restore is in progress, a very long log, Linux or other systems.
+
+Checked for the scheduled backup (#192):
+
+- The wrapper run by hand against the real cluster, with a scratch log and folder, wrote the timestamped entry, `exit code 0` and one backup file (mode 600).
+- Log trimming: a log of 700 lines was cut to 500 lines, the newest kept, no `.tmp` file left.
+- A run without a reachable cluster (empty kube config) logged `error: current-context is not set` and `exit code 1`, exited 1, left no new file and kept the earlier backup.
+- The installer on the real Mac: the hourly install passed `plutil -lint`; launchd listed the job (`run interval = 3600 seconds`, `KEEP => 168`, `runatload`); the run at load ended with `last exit code = 0`, a new backup file and a log entry appeared.
+- `--uninstall` removed the plist and the job (`launchctl print` then answers `Bad request.`).
+- `--daily` produced a plist with `StartCalendarInterval` (hour 12, minute 0) and the message "daily backup, keeping the newest 30". Running the installer again switched back to hourly.
+
+Not checked for the scheduled backup: the hourly or noon trigger firing on its own (only the run at load was seen), the behaviour when the Mac sleeps, after a reboot or login, a run while Docker Desktop is really stopped (the empty kube config only simulates it), a run while a restore is in progress, a very long log, Linux and other systems.
 
 ## Secrets are not encrypted
 
@@ -676,7 +742,6 @@ This is acceptable for a local cluster. Do not reuse these values anywhere else.
 - A login (#168). HTTPS is now in front of the app, so a login would not travel in plain text between the browser and the controller.
 - Removing old images automatically after a deploy. `./k8s/clean-images.sh` exists (#182) but is run by hand.
 - Deploying to a cluster other than `docker-desktop` (#188). Not supported.
-- A scheduled backup (a launchd job on the Mac). The scripts exist (#181) but run only by hand; the schedule is #192.
 
 ## Verification status
 
