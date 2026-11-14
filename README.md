@@ -83,7 +83,7 @@ The shared nginx controller listens on all network interfaces, and the app has n
 
 The app connects as the restricted database user `costcompass_app`, and a NetworkPolicy lets only the app and the migrations Job reach Postgres. To upgrade an existing installation, see [Database access](documentation/backend/kubernetes.md#database-access).
 
-Back up the database with `./k8s/backup-db.sh` (files go to `~/costcompass-backups`) and restore with `./k8s/restore-db.sh <file>`; see [Backup and restore](documentation/backend/kubernetes.md#backup-and-restore).
+Back up the database with `./k8s/backup-db.sh` (files go to `~/costcompass-backups`) and restore with `./k8s/restore-db.sh <file>`; `./k8s/install-backup-job.sh` schedules the backup on a Mac (hourly, or `--daily`); see [Backup and restore](documentation/backend/kubernetes.md#backup-and-restore).
 
 More, including the deploy script, rollback, the probes, troubleshooting and what was checked: [Kubernetes](documentation/backend/kubernetes.md).
 
