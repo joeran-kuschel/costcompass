@@ -15,6 +15,7 @@ The manifests are plain YAML files applied with `kubectl apply -f`. There is no 
 | `network-policy.yaml` | NetworkPolicy `costcompass-db-from-app` | Yes | Only the app and the migrations Job may connect to Postgres, see [Database access](#database-access) |
 | `migrate-job.yaml` | Job `costcompass-migrate` | Yes | The database role step and the migrations, see [Migrations Job](#migrations-job). The image tag is the placeholder `IMAGE_TAG`; `deploy.sh` fills it in |
 | `app.yaml` | Service `costcompass` and Deployment `costcompass` | Yes | The app, see [App](#app). The image tag is the placeholder `IMAGE_TAG`; `deploy.sh` fills it in |
+| `clean-images.sh` | none (script) | Yes | Removes old `costcompass` and `costcompass-migrate` images from Docker and from the node, run by hand: `./k8s/clean-images.sh`, see [Images pile up](#images-pile-up) |
 | `ingress.yaml` | Ingress `costcompass` | Yes | The address `https://costcompass.local` for the app, with TLS from the Secret `costcompass-tls` (created by command, not a file), see [Ingress](#ingress) |
 | `secret.yaml.example` | none (template) | Yes | Template of the Secret `costcompass-db` with `change-me` values |
 | `secret.yaml` | Secret `costcompass-db`, type Opaque | No, listed in `.gitignore` | Your real credentials |
@@ -548,7 +549,7 @@ This means `kubectl apply -f k8s/app.yaml` and `kubectl apply -f k8s/migrate-job
 
 ### Roll back
 
-The old image is still in the node, so a rollback needs no rebuild:
+The image of the previous revision is still in the node, so a rollback needs no rebuild. After a clean-up (see [Images pile up](#images-pile-up)) this holds for the last `KEEP` revisions (default 3) only:
 
 ```bash
 kubectl rollout undo deployment/costcompass -n costcompass
@@ -557,9 +558,18 @@ kubectl rollout status deployment/costcompass -n costcompass
 
 Database migrations are not rolled back. The old version of the app runs against the new schema.
 
+`kubectl rollout undo --to-revision=<older>` to a revision whose image was cleaned up fails: the node cannot pull the image.
+
 ### Images pile up
 
-Every deploy leaves two new images, in Docker and in the node. The script does not remove old ones. Cleaning up is issue #182 and is not built yet.
+Every deploy leaves two new images, in Docker and in the node. `deploy.sh` does not remove old ones. Run `./k8s/clean-images.sh` by hand; it keeps the images of the newest `KEEP` Deployment revisions (default 3) and of every pod in the namespace, and removes the other tags of `costcompass` and `costcompass-migrate` from Docker and from the node.
+
+```bash
+./k8s/clean-images.sh --dry-run   # always first: lists what would be removed
+./k8s/clean-images.sh
+```
+
+What is kept, why not by date, the rollback consequence and how much it frees: [Old images pile up](docker.md#old-images-pile-up) (#182).
 
 ## Secrets are not encrypted
 
@@ -574,7 +584,7 @@ This is acceptable for a local cluster. Do not reuse these values anywhere else.
 ## Later additions
 
 - A login (#168). HTTPS is now in front of the app, so a login would not travel in plain text between the browser and the controller.
-- Removing old images from Docker and from the node after a deploy (#182). Not built.
+- Removing old images automatically after a deploy. `./k8s/clean-images.sh` exists (#182) but is run by hand.
 - Deploying to a cluster other than `docker-desktop` (#188). Not supported.
 
 ## Verification status
@@ -657,3 +667,12 @@ Deploy script (#174), checked on the same cluster:
 - `bash -n deploy.sh` reports no syntax error.
 
 Not checked: the refusal of a context other than `docker-desktop` (only one context exists here; checked by reading the script), ShellCheck, another cluster, the timeout path of the wait loop.
+
+Image clean-up (#182), checked on the same cluster:
+
+- The dry run listed 25 host and 23 node removals and none of the kept tags. A bug found by the dry run (a leftover variable made the node loop treat every node image as removable) was fixed before the real run.
+- The real run removed 48 tags (25 host, 23 node) and left exactly the three kept tags for both images, on the host and in the node (`077dff2`, the running one, and two earlier deploys).
+- `/api/ready` answered 200 afterwards. `kubectl rollout undo` to the previous revision worked and a second undo returned to the running version.
+- A second run found nothing to remove. `docker system df` reported about 0.6 GB less.
+
+Not checked: `KEEP` with a value other than 3, another cluster (the script refuses other contexts, see #188), a deploy and a clean-up at the same time, images used by pods of other namespaces (only the namespace `costcompass` is looked at).

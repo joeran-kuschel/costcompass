@@ -65,7 +65,7 @@ For the Kubernetes built into Docker Desktop. You need Docker, `kubectl` and the
    ./deploy.sh
    ```
 
-   Run `./deploy.sh` again after every change. Do not apply `k8s/app.yaml` or `k8s/migrate-job.yaml` by hand: they contain the placeholder `IMAGE_TAG`, which the script fills in. It works only with the `docker-desktop` context.
+   Run `./deploy.sh` again after every change. Do not apply `k8s/app.yaml` or `k8s/migrate-job.yaml` by hand: they contain the placeholder `IMAGE_TAG`, which the script fills in. It works only with the `docker-desktop` context. Every deploy leaves two more images; remove old ones with `./k8s/clean-images.sh --dry-run`, then `./k8s/clean-images.sh` (see [Old images pile up](documentation/backend/docker.md#old-images-pile-up)).
 
    Create the certificate Secret once (needs [mkcert](https://github.com/FiloSottile/mkcert) with its CA installed, `mkcert -install`), then apply the Ingress:
 
