@@ -164,6 +164,7 @@ Shared structure:
 - **Deploy script (#174):** `./deploy.sh` builds `costcompass` and `costcompass-migrate` with a tag from the git SHA (plus `-dirty-<time>` for uncommitted changes), copies them into the node, runs the Job, applies the app and waits for the rollout; only the `docker-desktop` context (other clusters: #188); rollback with `kubectl rollout undo`; details: [Deploy script](documentation/backend/kubernetes.md#deploy-script); old images are removed by hand with `./k8s/clean-images.sh` (`--dry-run` first; keeps the newest `KEEP`=3 revisions and every running pod's image, #182), see [Old images pile up](documentation/backend/docker.md#old-images-pile-up)
 - **Local development:** `nuxt dev` against Postgres in the cluster (via port-forward) or a separate local container
 - **Manifests (#43):** plain YAML files in `k8s/`, applied with `kubectl apply -f` in the order given in the docs (namespace, ConfigMap, Secret, roles ConfigMap and NetworkPolicy, Postgres, then `./deploy.sh` for the migrations Job and the app, TLS Secret, Ingress). Kustomize only when a second environment appears.
+- **CI (#186):** GitHub Actions runs the tests and the build, builds both images and validates `k8s/` with kubeconform on every pull request; details: [`documentation/backend/ci.md`](documentation/backend/ci.md)
 
 ## Roadmap
 
