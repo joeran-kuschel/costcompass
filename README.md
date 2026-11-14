@@ -64,7 +64,7 @@ For the Kubernetes built into Docker Desktop. You need Docker, `kubectl` and the
    printf '127.0.0.1 costcompass.local\n::1 costcompass.local\n' | sudo tee -a /etc/hosts
    ```
 
-4. Apply in this order: namespace and configuration, Postgres, the migrations Job, the app, the Ingress. Do not use `kubectl apply -f k8s/`; it would start the app before the migrations are done.
+4. Apply in this order: namespace and configuration, Postgres, the migrations Job, the app, the certificate, the Ingress. Do not use `kubectl apply -f k8s/`; it would start the app before the migrations are done.
 
    ```bash
    kubectl apply -f k8s/namespace.yaml
@@ -75,12 +75,21 @@ For the Kubernetes built into Docker Desktop. You need Docker, `kubectl` and the
    kubectl apply -f k8s/migrate-job.yaml
    kubectl wait --for=condition=complete job/costcompass-migrate -n costcompass --timeout=120s
    kubectl apply -f k8s/app.yaml
+   ```
+
+   Create the certificate Secret once (needs [mkcert](https://github.com/FiloSottile/mkcert) with its CA installed, `mkcert -install`), then apply the Ingress:
+
+   ```bash
+   D=$(mktemp -d)
+   mkcert -cert-file $D/tls.crt -key-file $D/tls.key costcompass.local
+   kubectl create secret tls costcompass-tls --cert=$D/tls.crt --key=$D/tls.key -n costcompass
+   rm -rf $D
    kubectl apply -f k8s/ingress.yaml
    ```
 
-5. When the `costcompass-…` pod is `1/1 Running`, open `http://costcompass.local`.
+5. When the `costcompass-…` pod is `1/1 Running`, open `https://costcompass.local` (`http://` redirects to it).
 
-The shared nginx controller listens on all network interfaces, and the app has no login or HTTPS yet. Use this only on a network you trust. Without the Ingress, `kubectl port-forward -n costcompass svc/costcompass 3001:3000` (localhost only) works too.
+The shared nginx controller listens on all network interfaces, and the app has no login yet. HTTPS encrypts the traffic but does not keep anyone out. Use this only on a network you trust. Without the Ingress, `kubectl port-forward -n costcompass svc/costcompass 3001:3000` (localhost only) works too.
 
 More, including the probes, troubleshooting and what was checked: [Kubernetes](documentation/backend/kubernetes.md).
 

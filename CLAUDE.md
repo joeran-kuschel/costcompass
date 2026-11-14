@@ -159,9 +159,9 @@ Shared structure:
 - **App:** Deployment + Service, config via ConfigMap, credentials via Secret, readiness and liveness probes against a health endpoint (`/api/health`, `/api/ready`: [`documentation/backend/health.md`](documentation/backend/health.md)); manifests, Secret workflow and apply order: [`documentation/backend/kubernetes.md`](documentation/backend/kubernetes.md), app details: [App](documentation/backend/kubernetes.md#app)
 - **PostgreSQL:** own StatefulSet manifests with a PersistentVolumeClaim + Service (no Helm chart, no operator; see the Kubernetes decision below); details in [`documentation/backend/kubernetes.md`](documentation/backend/kubernetes.md#postgres)
 - **Migrations:** run as a Kubernetes Job (`k8s/migrate-job.yaml`) before the app starts, not on every request; the image is the `migrate` target of the Dockerfile, see [`documentation/backend/kubernetes.md`](documentation/backend/kubernetes.md#migrations-job) and [`docker.md`](documentation/backend/docker.md#migrations)
-- **Access:** the app is served at http://costcompass.local through the shared nginx Ingress (`k8s/ingress.yaml`, plain HTTP, `/etc/hosts` entry needed); the port-forward still works; HTTPS is #167
+- **Access:** the app is served at https://costcompass.local through the shared nginx Ingress (`k8s/ingress.yaml`, `/etc/hosts` entry needed); HTTP redirects to HTTPS; the certificate comes from mkcert and lives in the Secret `costcompass-tls`, created by command, not a file (#167); the port-forward still works
 - **Local development:** `nuxt dev` against Postgres in the cluster (via port-forward) or a separate local container
-- **Manifests (#43):** plain YAML files in `k8s/`, applied with `kubectl apply -f` in the order given in the docs (namespace, ConfigMap and Secret, Postgres, migrations Job, app, Ingress). Kustomize only when a second environment appears.
+- **Manifests (#43):** plain YAML files in `k8s/`, applied with `kubectl apply -f` in the order given in the docs (namespace, ConfigMap and Secret, Postgres, migrations Job, app, TLS Secret, Ingress). Kustomize only when a second environment appears.
 
 ## Roadmap
 
