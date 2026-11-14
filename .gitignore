@@ -31,3 +31,6 @@ mockups
 
 # Unused logo draft
 app/assets/logo-mark.svg
+
+# Database backups (the scripts write them outside the repo)
+*.sql.gz
